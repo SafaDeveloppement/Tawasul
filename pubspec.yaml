@@ -1,0 +1,231 @@
+name: tawasul_application
+description: "A new Flutter project."
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+# The following defines the version and build number for your application.
+# A version number is three numbers separated by dots, like 1.2.43
+# followed by an optional build number separated by a +.
+# Both the version and the builder number may be overridden in flutter
+# build by specifying --build-name and --build-number, respectively.
+# In Android, build-name is used as versionName while build-number used as versionCode.
+# Read more about Android versioning at https://developer.android.com/studio/publish/versioning
+# In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
+# Read more about iOS versioning at
+# https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+# In Windows, build-name is used as the major, minor, and patch parts
+# of the product and file versions while build-number is used as the build suffix.
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.7.2
+
+# Dependencies specify other packages that your package needs in order to work.
+# To automatically upgrade your package dependencies to the latest versions
+# consider running `flutter pub upgrade --major-versions`. Alternatively,
+# dependencies can be manually updated by changing the version numbers below to
+# the latest version available on pub.dev. To see which dependencies have newer
+# versions available, run `flutter pub outdated`.
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # The following adds the Cupertino Icons font to your application.
+  # Use with the CupertinoIcons class for iOS style icons.
+  cupertino_icons: ^1.0.8
+  flutter_svg: ^2.2.0
+  font_awesome_flutter: ^10.8.0
+  dots_indicator: ^4.0.1
+  intl: ^0.20.2
+  flutter_map: ^8.1.1
+  latlong2: ^0.9.1
+  image_picker: ^1.1.2
+  provider: ^6.1.5
+  flutter_screenutil: ^5.9.3
+  responsive_framework: ^1.5.1
+  platform: ^3.1.6
+  carousel_slider: ^5.1.1
+  google_maps_flutter: ^2.12.3
+  location: ^8.0.1
+  geolocator: ^14.0.2
+  permission_handler: ^12.0.1
+  geolocator_android: ^5.0.2
+  geocoding: ^4.0.0
+  http: ^1.5.0-beta.2
+  shared_preferences: ^2.5.3
+  whatsapp: ^3.0.0
+  pinput: ^5.0.1
+  whatsapp_unilink: ^2.1.0
+  url_launcher: ^6.3.2
+  flutter_secure_storage: ^9.2.4
+
+flutter_launcher_icons: 
+  android: true
+  ios: true
+  image_path: "assets/images/logo_tawasul.png"
+  remove_alpha_ios: true
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_launcher_icons: ^0.14.0
+
+
+  # The "flutter_lints" package below contains a set of recommended lints to
+  # encourage good coding practices. The lint set provided by the package is
+  # activated in the `analysis_options.yaml` file located at the root of your
+  # package. See that file for information about deactivating specific lint
+  # rules and activating additional ones.
+  flutter_lints: ^5.0.0
+
+# For information on the generic Dart part of this file, see the
+# following page: https://dart.dev/tools/pub/pubspec
+
+# The following section is specific to Flutter packages.
+flutter:
+
+  # The following line ensures that the Material Icons font is
+  # included with your application, so that you can use the icons in
+  # the material Icons class.
+  uses-material-design: true
+
+  # To add assets to your application, add an assets section, like this:
+  assets:
+    - assets/images/tawasul_logo.png
+    - assets/icons/icon_user.svg
+    - assets/icons/icon_notif.svg
+    - assets/images/banner_pc.png
+    - assets/images/airpods.png
+    - assets/images/airpods1.webp
+    - assets/images/iphone1.jpg
+    - assets/images/iphone2.jpg
+    - assets/images/iphone3.jpg
+    - assets/images/iphone4.jpg
+    - assets/images/computer.webp
+    - assets/images/computer1.jpg
+    - assets/images/laptop.jpg
+    - assets/images/laptop1.jpg
+    - assets/images/tv1.jpg
+    - assets/images/tv2.jpg
+    - assets/images/tv3.jpg
+    - assets/images/xiaomi_brand.png
+    - assets/images/samsung_brand.png
+    - assets/images/apple_brand.png
+    - assets/images/huawei_brand.png
+    - assets/images/energizer_brand.png
+    - assets/images/nokia_brand.png
+    - assets/images/tcl_brand.png
+    - assets/images/blackshark_brand.png
+    - assets/images/nothing_brand.png
+    - assets/images/forgot_password.png
+    - assets/images/signup_image.png
+    - assets/images/login_image.png
+    - assets/icons/google.png
+    - assets/icons/facebook.png 
+    - assets/images/smartwatch.png   
+    - assets/images/burak.png
+    - assets/images/aylan.png
+    - assets/images/mohamed.png
+    - assets/images/success.png
+    - assets/images/macbook.png
+    - assets/images/iphone.png
+    - assets/images/tv.png
+    - assets/images/matebook.png
+    - assets/images/logo_tawasul.png
+    - assets/images/category_accessory.jpg
+    - assets/images/category_laptop.jpg
+    - assets/images/category_mobile.jpg
+    - assets/images/category_smart_home.jpg
+    - assets/images/category_smart_office.jpg
+    - assets/images/xiaomi_casque.png
+    - assets/images/smart_watch.png
+    - assets/images/xiaomi_iphone.png
+    - assets/images/xiaomi_tablette.png
+    - assets/images/xiaomi_scooter.png
+    - assets/images/xiaomi_scooter1.png
+    - assets/images/xiaomi_scooter2.png
+    - assets/images/xiaomi_scooter3.png
+    - assets/images/xiaomi_tv1.png
+    - assets/images/xiaomi_tv.png
+    - assets/images/xiaomi_airfryer.png
+    - assets/images/xiaomi_airfryer1.png
+    - assets/images/laptop1.png
+    - assets/images/laptop2.png
+    - assets/images/laptop3.png
+    - assets/images/laptop4.png
+    - assets/images/laptop5.png
+    - assets/images/laptop6.png
+    - assets/images/laptop7.png
+    - assets/images/accessory1.png
+    - assets/images/accessory2.png
+    - assets/images/accessory3.png
+    - assets/images/accessory4.png
+    - assets/images/accessory5.png
+    - assets/images/accessory6.png
+    - assets/images/accessory7.png
+    - assets/images/smart_home1.png
+    - assets/images/smart_home2.png
+    - assets/images/smart_home3.png
+    - assets/images/smart_home4.png
+    - assets/images/smart_home5.png
+    - assets/images/smart_home6.png
+    - assets/images/smart_home7.png
+    - assets/images/smart_office1.png
+    - assets/images/smart_office2.png
+    - assets/images/smart_office3.png
+    - assets/images/smart_office4.png
+    - assets/images/smart_office5.png
+    - assets/images/smart_office6.png
+    - assets/images/smart_office7.png
+    - assets/images/saded.png
+    - assets/images/moamalat.png 
+    - assets/images/logo_tawasul_blanc.png
+    - assets/images/chat.png
+    - assets/images/homme.jpg
+    - assets/icons/icon_warranty.svg
+    - assets/icons/icon_promo.svg
+    - assets/icons/icon_bundles.svg
+    - assets/icons/icon_shops.svg
+    - assets/icons/warranty.svg
+    - assets/icons/sale.svg
+    - assets/icons/gift.svg
+    - assets/icons/shops.svg
+    - assets/images/new_airpods.png
+    - assets/images/new_iphone.png
+    - assets/images/high_tech.png
+    - assets/images/smart_home.png
+    - assets/images/smart_office.png
+    - assets/images/lifestyle.png
+    
+  # An image asset can refer to one or more resolution-specific "variants", see
+  # https://flutter.dev/to/resolution-aware-images
+
+  # For details regarding adding assets from package dependencies, see
+  # https://flutter.dev/to/asset-from-package
+
+  # To add custom fonts to your application, add a fonts section here,
+  # in this "flutter" section. Each entry in this list should have a
+  # "family" key with the font family name, and a "fonts" key with a
+  # list giving the asset and other descriptors for the font. For
+  # example:
+  # fonts:
+  #   - family: Schyler
+  #     fonts:
+  #       - asset: fonts/Schyler-Regular.ttf
+  #       - asset: fonts/Schyler-Italic.ttf
+  #         style: italic
+  #   - family: Trajan Pro
+  #     fonts:
+  #       - asset: fonts/TrajanPro.ttf
+  #       - asset: fonts/TrajanPro_Bold.ttf
+  #         weight: 700
+  #
+  # For details regarding fonts from package dependencies,
+  # see https://flutter.dev/to/font-from-package
+
+
+
+
+
