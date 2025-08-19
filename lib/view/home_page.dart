@@ -720,12 +720,11 @@ import 'package:tawasul_application/view/filter.dart';
 import 'package:tawasul_application/view/Flash_sale/all.dart';
 import 'package:tawasul_application/view/Flash_sale/brands.dart';
 import 'package:tawasul_application/view/Flash_sale/newest.dart';
-import 'package:tawasul_application/view/Flash_sale/best_sellers.dart';
 import 'package:tawasul_application/view/navbar.dart';
 import 'package:tawasul_application/view/notification.dart';
 import 'package:tawasul_application/view/searching_result.dart';
 
-enum FlashSaleFilter { all, newest, best_sellers, brands }
+enum FlashSaleFilter { all, newest, brands }
 
 class Category {
   final String icon;
@@ -803,7 +802,7 @@ class _HomePageState extends State<HomePage> {
       listen: false,
     );
     if (productController.allProducts.isEmpty) {
-      await productController.initializeProducts();
+      await productController;
     }
     setState(() {
       _isLoading = false;
@@ -832,7 +831,6 @@ class _HomePageState extends State<HomePage> {
     final Map<FlashSaleFilter, String> filterLabels = {
       FlashSaleFilter.all: 'All',
       FlashSaleFilter.newest: 'Newest',
-      FlashSaleFilter.best_sellers: 'Best Sellers',
       FlashSaleFilter.brands: 'Brands',
     };
 
@@ -899,13 +897,11 @@ class _HomePageState extends State<HomePage> {
 
     switch (_currentFilter) {
       case FlashSaleFilter.newest:
-        return const Newest();
-      case FlashSaleFilter.best_sellers:
-        return const BestSellers();
+        return const Newest(shopId: '4');
       case FlashSaleFilter.brands:
         return const Brands();
       case FlashSaleFilter.all:
-        return const All();
+        return const All(categoryCode: '10', shopId: '4');
     }
   }
 
