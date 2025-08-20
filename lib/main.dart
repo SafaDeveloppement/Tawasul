@@ -76,7 +76,7 @@ class MyApp extends StatelessWidget {
           providers: [
             ChangeNotifierProvider(
               create: (context) => ProductController()..initialize(),
-              lazy: false, // Initialize immediately
+              lazy: false,
             ),
           ],
           child: MaterialApp(
@@ -86,15 +86,20 @@ class MyApp extends StatelessWidget {
               '/': (context) => const SplashScreen(),
               '/home': (context) => const HomePage(),
             },
-            builder: (context, child) => ResponsiveBreakpoints.builder(
-              child: BouncingScrollWrapper.builder(context, child!),
-              breakpoints: [
-                const Breakpoint(start: 0, end: 450, name: MOBILE),
-                const Breakpoint(start: 451, end: 800, name: TABLET),
-                const Breakpoint(start: 801, end: 1200, name: DESKTOP),
-                const Breakpoint(start: 1201, end: double.infinity, name: '4K'),
-              ],
-            ),
+            builder:
+                (context, child) => ResponsiveBreakpoints.builder(
+                  child: BouncingScrollWrapper.builder(context, child!),
+                  breakpoints: [
+                    const Breakpoint(start: 0, end: 450, name: MOBILE),
+                    const Breakpoint(start: 451, end: 800, name: TABLET),
+                    const Breakpoint(start: 801, end: 1200, name: DESKTOP),
+                    const Breakpoint(
+                      start: 1201,
+                      end: double.infinity,
+                      name: '4K',
+                    ),
+                  ],
+                ),
           ),
         );
       },

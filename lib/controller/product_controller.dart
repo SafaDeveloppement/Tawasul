@@ -30,11 +30,9 @@ class ProductController with ChangeNotifier {
       final hasToken = prefs.containsKey('auth_token');
 
       if (hasToken) {
-        // Fetch initial data if user is logged in
-        await fetchAllProducts();
+        //await fetchAllProducts();
         await fetchFavoriteProducts();
       } else {
-        // Use dummy data or empty lists if not logged in
         _initializeWithDummyData();
       }
 
@@ -106,25 +104,7 @@ class ProductController with ChangeNotifier {
     }
   }
 
-  // Fetch all products from API
-  Future<void> fetchAllProducts() async {
-    try {
-      _isLoading = true;
-      _errorMessage = '';
-      notifyListeners();
-
-      final products = await ApiService.getAllProducts();
-
-      _allProducts = products;
-      _isLoading = false;
-      notifyListeners();
-    } catch (e) {
-      _isLoading = false;
-      _errorMessage = 'Failed to load products: $e';
-      notifyListeners();
-      print("Error fetching all products: $e");
-    }
-  }
+  
 
   // Fetch favorite products from API
   Future<void> fetchFavoriteProducts() async {
@@ -157,14 +137,9 @@ class ProductController with ChangeNotifier {
       await fetchCategoryProducts(
         'all',
         shopId,
-      ); // Or whatever category gets all products
+      ); // Use appropriate category code
 
-      // ADD DEBUG CODE:
-      print("🆔 Newest Page - Product IDs:");
-      for (var product in _allProducts) {
-        print("ID: ${product.id}, isNew: ${product.id > 1800}");
-      }
-
+      // The filtering by isNew will happen in the UI
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -227,119 +202,3 @@ class ProductController with ChangeNotifier {
     notifyListeners();
   }
 }
-// import 'package:flutter/material.dart';
-// import 'package:tawasul_application/model/product_model.dart';
-
-// class ProductController with ChangeNotifier {
-//   List<Product> _allProducts = [];
-//   List<Product> _favoriteProducts = [];
-
-//   List<Product> get allProducts => _allProducts;
-//   List<Product> get favoriteProducts => _favoriteProducts;
-
-//   Future<void> initializeProducts() async {
-//     // Replace with your actual product data
-//     _allProducts = [
-//       Product(
-//         id: 1,
-//         name: "Smart TV",
-//         brand: "Samsung",
-//         price: "999 DYL",
-//         image: "assets/images/tv1.jpg",
-//         description: "55-inch 4K Smart TV with HDR",
-//         isBestSeller: false,
-//       ),
-//       Product(
-//         id: 2,
-//         name: "LED 50\"",
-//         brand: "LG",
-//         price: "899 DYL",
-//         image: "assets/images/tv3.jpg",
-//         description: "50-inch LED TV with webOS",
-//         isBestSeller: false,
-//       ),
-//       Product(
-//         id: 3,
-//         name: "Smart TV",
-//         brand: "Samsung",
-//         price: "999 DYL",
-//         image: "assets/images/airpods.png",
-//         description: "55-inch 4K Smart TV with HDR",
-//         isBestSeller: true,
-//       ),
-//       Product(
-//         id: 4,
-//         name: "LED 50\"",
-//         brand: "LG",
-//         price: "899 DYL",
-//         image: "assets/images/airpods1.webp",
-//         description: "50-inch LED TV with webOS",
-//         isBestSeller: true,
-//       ),
-//       Product(
-//         id: 5,
-//         name: "Smart TV",
-//         brand: "Samsung",
-//         price: "999 DYL",
-//         image: "assets/images/tv2.jpg",
-//         description: "55-inch 4K Smart TV with HDR",
-//         isBestSeller: true,
-//       ),
-//       Product(
-//         id: 6,
-//         name: "LED 50\"",
-//         brand: "LG",
-//         price: "899 DYL",
-//         image: "assets/images/iphone1.jpg",
-//         description: "50-inch LED TV with webOS",
-//         isBestSeller: true,
-//       ),
-//       Product(
-//         id: 7,
-//         name: "Smart TV",
-//         brand: "Samsung",
-//         price: "999 DYL",
-//         image: "assets/images/iphone2.jpg",
-//         description: "55-inch 4K Smart TV with HDR",
-//         isBestSeller: false,
-//       ),
-//       Product(
-//         id: 8,
-//         name: "LED 50\"",
-//         brand: "LG",
-//         price: "899 DYL",
-//         image: "assets/images/iphone3.jpg",
-//         description: "50-inch LED TV with webOS",
-//         isBestSeller: true,
-//       ),
-//       Product(
-//         id: 9,
-//         name: "Smart TV",
-//         brand: "Samsung",
-//         price: "999 DYL",
-//         image: "assets/images/iphone4.jpg",
-//         description: "55-inch 4K Smart TV with HDR",
-//         isBestSeller: true,
-//       ),
-//     ];
-
-//     // Initialize favorites
-//     _favoriteProducts = _allProducts.where((p) => p.isFavorite).toList();
-//     notifyListeners();
-//   }
-
-//   void toggleFavorite(int productId) {
-//     final index = _allProducts.indexWhere((p) => p.id == productId);
-//     if (index != -1) {
-//       _allProducts[index].isFavorite = !_allProducts[index].isFavorite;
-
-//       if (_allProducts[index].isFavorite) {
-//         _favoriteProducts.add(_allProducts[index]);
-//       } else {
-//         _favoriteProducts.removeWhere((p) => p.id == productId);
-//       }
-
-//       notifyListeners();
-//     }
-//   }
-// }
