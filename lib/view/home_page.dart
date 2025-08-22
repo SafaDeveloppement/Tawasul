@@ -190,6 +190,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  // In your home_page.dart, update the _buildFilterContent method:
   Widget _buildFilterContent() {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -197,11 +198,25 @@ class _HomePageState extends State<HomePage> {
 
     switch (_currentFilter) {
       case FlashSaleFilter.newest:
-        return const Newest(shopId: '4');
+        return Consumer<ProductController>(
+          builder: (context, productController, child) {
+            if (productController.allProducts.isEmpty) {
+              return Center(child: Text("No products available"));
+            }
+            return const All(categoryCode: '10', shopId: '4');
+          },
+        );
       case FlashSaleFilter.brands:
         return const Brands();
       case FlashSaleFilter.all:
-        return const All(categoryCode: '10', shopId: '4');
+        return Consumer<ProductController>(
+          builder: (context, productController, child) {
+            if (productController.allProducts.isEmpty) {
+              return Center(child: Text("No products available"));
+            }
+            return const All(categoryCode: '10', shopId: '4');
+          },
+        );
     }
   }
 
@@ -383,38 +398,51 @@ class _HomePageState extends State<HomePage> {
                   Row(
                     children: [
                       Expanded(
-                        child: Container(
-                          height: 38.h,
-                          padding: EdgeInsets.symmetric(horizontal: 12.w),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12.r),
-                            border: Border.all(
-                              color: const Color(0xFFC2C2C2),
-                              width: 1,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.search,
-                                color: Colors.grey,
-                                size: 20.sp,
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => SearchingResult(
+                                      searchQuery: _searchController.text,
+                                    ),
                               ),
-                              SizedBox(width: 8.w),
-                              Expanded(
-                                child: TextField(
-                                  controller: _searchController,
-                                  onSubmitted: _performSearch,
-                                  decoration: InputDecoration(
-                                    hintText: 'Search',
-                                    border: InputBorder.none,
-                                    isDense: true,
-                                    hintStyle: TextStyle(fontSize: 14.sp),
+                            );
+                          },
+                          child: Container(
+                            height: 38.h,
+                            padding: EdgeInsets.symmetric(horizontal: 12.w),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12.r),
+                              border: Border.all(
+                                color: const Color(0xFFC2C2C2),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.search,
+                                  color: Colors.grey,
+                                  size: 20.sp,
+                                ),
+                                SizedBox(width: 8.w),
+                                Expanded(
+                                  child: TextField(
+                                    controller: _searchController,
+                                    onSubmitted: _performSearch,
+                                    decoration: InputDecoration(
+                                      hintText: 'Search products...',
+                                      border: InputBorder.none,
+                                      isDense: true,
+                                      hintStyle: TextStyle(fontSize: 14.sp),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),

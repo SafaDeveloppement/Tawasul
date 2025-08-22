@@ -1,219 +1,88 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:tawasul_application/Services/api_service.dart';
 import 'package:tawasul_application/model/product_model.dart';
-import 'package:tawasul_application/view/navbar.dart';
 import 'package:tawasul_application/view/product_detail.dart';
 
 class SearchingResult extends StatefulWidget {
   final String searchQuery;
 
-  const SearchingResult({super.key, required this.searchQuery});
+  const SearchingResult({Key? key, required this.searchQuery})
+    : super(key: key);
 
   @override
   State<SearchingResult> createState() => _SearchingResultState();
 }
 
 class _SearchingResultState extends State<SearchingResult> {
-  int _currentNavIndex = 0;
-  late List<Product> filteredProducts;
-
-  final List<Product> allProducts = [
-    Product(
-      id: 1,
-      name: 'Headset',
-      brand: 'Xiaomi',
-      price: '730 LYD',
-      image: 'assets/images/xiaomi_casque.png',
-      oldPrice: '850 LYD',
-      discount: '14%',
-      description: 'High-quality wireless headset with noise cancellation',
-    ),
-    Product(
-      id: 2,
-      name: 'Smart Watch',
-      brand: 'Xiaomi',
-      price: '1450 LYD',
-      image: 'assets/images/smart_watch.png',
-      oldPrice: '1600 LYD',
-      discount: '9%',
-      description: 'Feature-rich smartwatch with health monitoring',
-    ),
-    Product(
-      id: 3,
-      name: 'Smartphone',
-      brand: 'Xiaomi',
-      price: '1700 LYD',
-      image: 'assets/images/xiaomi_iphone.png',
-      oldPrice: '2000 LYD',
-      discount: '15%',
-      description: 'High-performance smartphone with advanced camera',
-    ),
-    Product(
-      id: 4,
-      name: 'Tablet',
-      brand: 'Xiaomi',
-      price: '1870 LYD',
-      image: 'assets/images/xiaomi_tablette.png',
-      oldPrice: '2100 LYD',
-      discount: '11%',
-      description: 'Powerful tablet with high-resolution display',
-    ),
-  ];
+  late TextEditingController _searchController;
+  List<Product> _allProducts = [];
+  List<Product> _filteredProducts = [];
+  bool _isLoading = true;
+  bool _hasSearched = false;
 
   @override
   void initState() {
     super.initState();
-    _filterProducts();
+    _searchController = TextEditingController(text: widget.searchQuery);
+    _loadProductsAndSearch();
   }
 
-  void _filterProducts() {
+  Future<void> _loadProductsAndSearch() async {
     setState(() {
-      filteredProducts =
-          allProducts.where((product) {
-            return product.name.toLowerCase().contains(
-                  widget.searchQuery.toLowerCase(),
-                ) ||
-                product.brand.toLowerCase().contains(
-                  widget.searchQuery.toLowerCase(),
-                );
+      _isLoading = true;
+    });
+
+    try {
+      // Load all products from the main category (using code '10' as in your home page)
+      _allProducts = await ApiService.getCategoryProducts(
+        categoryCode: '10',
+        shopId: '4',
+      );
+
+      // Filter products based on search query
+      _filterProducts(widget.searchQuery);
+
+      setState(() {
+        _isLoading = false;
+        _hasSearched = true;
+      });
+    } catch (e) {
+      print("Error loading products: $e");
+      setState(() {
+        _isLoading = false;
+        _hasSearched = true;
+      });
+    }
+  }
+
+  void _filterProducts(String query) {
+    if (query.isEmpty) {
+      setState(() {
+        _filteredProducts = _allProducts;
+      });
+      return;
+    }
+
+    final lowerCaseQuery = query.toLowerCase();
+    setState(() {
+      _filteredProducts =
+          _allProducts.where((product) {
+            return product.name.toLowerCase().contains(lowerCaseQuery) ||
+                product.brand.toLowerCase().contains(lowerCaseQuery) ||
+                product.description.toLowerCase().contains(lowerCaseQuery);
           }).toList();
     });
   }
 
-  void _toggleFavorite(int index) {
+  void _performSearch(String query) {
+    _filterProducts(query);
     setState(() {
-      filteredProducts[index].isFavorite = !filteredProducts[index].isFavorite;
+      _hasSearched = true;
     });
   }
 
-  Widget _buildPriceInfo(Product product) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (product.oldPrice != null && product.discount != null)
-          Row(
-            children: [
-              Text(
-                product.oldPrice!,
-                style: TextStyle(
-                  color: Colors.grey,
-                  decoration: TextDecoration.lineThrough,
-                  fontSize: 12,
-                ),
-              ),
-              SizedBox(width: 5),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.red[100],
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  product.discount!,
-                  style: TextStyle(
-                    color: Colors.red,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        Text(
-          product.price,
-          style: TextStyle(
-            color: Color(0xFF008AD2),
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-        ),
-      ],
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Color(0xFF008AD2),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          "Results for '${widget.searchQuery}'",
-          style: TextStyle(color: Colors.white),
-        ),
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: Icon(Icons.search, color: Colors.white),
-          ),
-          IconButton(
-            onPressed: () {},
-            icon: Icon(Icons.shopping_cart, color: Colors.white),
-          ),
-        ],
-      ),
-      body: Padding(
-        padding: EdgeInsets.all(8.0),
-        child:
-            filteredProducts.isEmpty
-                ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.search_off, size: 50, color: Colors.grey),
-                      SizedBox(height: 16),
-                      Text(
-                        'No products found for "${widget.searchQuery}"',
-                        style: TextStyle(fontSize: 18, color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                )
-                : GridView.builder(
-                  itemCount: filteredProducts.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.7,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
-                  ),
-                  itemBuilder: (context, index) {
-                    final product = filteredProducts[index];
-                    return ProductCard(
-                      product: product,
-                      toggleFavorite: () => _toggleFavorite(index),
-                      isFavorite: product.isFavorite,
-                      priceInfo: _buildPriceInfo(product),
-                    );
-                  },
-                ),
-      ),
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: _currentNavIndex,
-        context: context,
-      ),
-    );
-  }
-}
-
-class ProductCard extends StatelessWidget {
-  final Product product;
-  final VoidCallback toggleFavorite;
-  final bool isFavorite;
-  final Widget priceInfo;
-
-  const ProductCard({
-    super.key,
-    required this.product,
-    required this.toggleFavorite,
-    required this.isFavorite,
-    required this.priceInfo,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildProductItem(Product product) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -222,66 +91,219 @@ class ProductCard extends StatelessWidget {
             builder:
                 (context) => ProductDetail(
                   product: product,
-                  toggleFavorite: toggleFavorite,
-                  isFavorite: isFavorite,
+                  toggleFavorite: () => {},
+                  isFavorite: false,
                 ),
           ),
         );
       },
-      child: Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 2,
-        child: Stack(
+      child: Container(
+        margin: EdgeInsets.only(bottom: 16.h),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12.r),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.2),
+              spreadRadius: 1,
+              blurRadius: 5,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Center(
-                      child: Image.asset(
-                        product.image,
-                        fit: BoxFit.contain,
-                        height: 120,
-                      ),
-                    ),
+            // Product Image
+            Container(
+              width: 100.w,
+              height: 100.h,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(12.r),
+                  bottomLeft: Radius.circular(12.r),
+                ),
+                image: DecorationImage(
+                  image: NetworkImage(
+                    product.image.isNotEmpty
+                        ? product.image
+                        : 'https://via.placeholder.com/100',
                   ),
-                  SizedBox(height: 8),
-                  Text(
-                    product.brand,
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                  Text(
-                    product.name,
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: 4),
-                  priceInfo,
-                ],
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
-            Positioned(
-              top: 8,
-              right: 8,
-              child: GestureDetector(
-                onTap: () => toggleFavorite(),
-                child: CircleAvatar(
-                  backgroundColor: Colors.white.withOpacity(0.8),
-                  radius: 14,
-                  child: Icon(
-                    isFavorite ? Icons.favorite : Icons.favorite_border,
-                    color: isFavorite ? Color(0xFF008AD2) : Colors.grey,
-                    size: 18,
-                  ),
+            SizedBox(width: 12.w),
+            // Product Details
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 8.h),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      product.name,
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      product.brand,
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    SizedBox(height: 8.h),
+                    Row(
+                      children: [
+                        Text(
+                          '${product.price} LYD',
+                          style: TextStyle(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF0984E3),
+                          ),
+                        ),
+                        if (product.oldPrice != null &&
+                            product.oldPrice != product.price)
+                          Padding(
+                            padding: EdgeInsets.only(left: 8.w),
+                            child: Text(
+                              '${product.oldPrice} LYD',
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                color: Colors.grey,
+                                decoration: TextDecoration.lineThrough,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    if (product.discount != null)
+                      Padding(
+                        padding: EdgeInsets.only(top: 4.h),
+                        child: Text(
+                          product.discount!,
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white, 
+      appBar: AppBar(
+        title: Container(
+          height: 40.h,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(color: const Color(0xFFC2C2C2)),
+          ),
+          child: Row(
+            children: [
+              SizedBox(width: 18.w),
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search products...',
+                    border: InputBorder.none,
+                    hintStyle: TextStyle(fontSize: 14.sp),
+                  ),
+                  onSubmitted: _performSearch,
+                ), 
+              ),
+              IconButton(
+                icon: const Icon(Icons.search),
+                onPressed: () => _performSearch(_searchController.text),
+              ),
+            ],
+          ),
+        ),
+      ),
+      body:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : Padding(
+                padding: EdgeInsets.all(16.w),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (_hasSearched)
+                      Text(
+                        _filteredProducts.isEmpty
+                            ? 'No results found for "${_searchController.text}"'
+                            : '${_filteredProducts.length} results found for "${_searchController.text}"',
+                        style: TextStyle(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    SizedBox(height: 16.h),
+                    Expanded(
+                      child:
+                          _filteredProducts.isEmpty && _hasSearched
+                              ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.search_off,
+                                      size: 64.sp,
+                                      color: Colors.grey,
+                                    ),
+                                    SizedBox(height: 16.h),
+                                    Text(
+                                      'No products found',
+                                      style: TextStyle(
+                                        fontSize: 18.sp,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    SizedBox(height: 8.h),
+                                    Text(
+                                      'Try different keywords or check your spelling',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 14.sp,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                              : ListView.builder(
+                                itemCount: _filteredProducts.length,
+                                itemBuilder: (context, index) {
+                                  return _buildProductItem(
+                                    _filteredProducts[index],
+                                  );
+                                },
+                              ),
+                    ),
+                  ],
+                ),
+              ),
     );
   }
 }

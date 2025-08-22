@@ -9,9 +9,6 @@ class Product {
   final String? discount;
   bool isFavorite;
   bool isBestSeller;
-  DateTime? dateAdded;
-  DateTime? dateUpdated;
-  final bool isNew;
 
   Product({
     required this.id,
@@ -24,19 +21,20 @@ class Product {
     this.discount,
     this.isFavorite = false,
     this.isBestSeller = false,
-    this.dateAdded,
-    this.dateUpdated,
-    this.isNew = false,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
-    // Parse date fields if available
     DateTime? parseDate(String? dateString) {
-      if (dateString == null) return null;
+      if (dateString == null || dateString.isEmpty) return null;
       try {
-        return DateTime.parse(dateString);
-      } catch (e) {
-        return null;
+        return DateTime.parse(dateString.replaceFirst(" ", "T"));
+      } catch (_) {
+        try {
+          return DateTime.parse(dateString);
+        } catch (e) {
+          print("❌ Failed to parse date: $dateString, error: $e");
+          return null;
+        }
       }
     }
 
@@ -55,9 +53,6 @@ class Product {
           json['reduction'] != null && json['reduction'] > 0
               ? '${(json['reduction'] * 100).toStringAsFixed(0)}% OFF'
               : null,
-      dateAdded: parseDate(json['date_add']),
-      dateUpdated: parseDate(json['date_upd']),
-      isNew: json['new'] == "1" || json['new'] == 1 || json['new'] == true,
     );
   }
 

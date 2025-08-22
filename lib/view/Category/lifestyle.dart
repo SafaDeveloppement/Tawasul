@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
+import 'package:tawasul_application/Services/api_service.dart';
 import 'package:tawasul_application/controller/product_controller.dart';
+import 'package:tawasul_application/model/category_model.dart';
 import 'package:tawasul_application/model/product_model.dart';
 import 'package:tawasul_application/view/filter.dart';
 import 'package:tawasul_application/view/navbar.dart';
@@ -21,10 +23,74 @@ class _LifeStyleState extends State<LifeStyle> with TickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   List<Product> _searchResults = [];
 
+  // In SmartHome.dart, SmartOffice.dart, Lifestyle.dart
+  // Add similar category fetching logic
+
+  List<Category> _categories = [];
+  bool _isLoadingCategories = true;
+  String _selectedCategoryCode = '';
+  bool _isLoadingProducts = false;
+
   @override
   void initState() {
-    _tabController = TabController(length: 3, vsync: this);
     super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+    _fetchCategories(); // Fetch categories on init
+  }
+
+  // In Lifestyle.dart - Replace the _fetchCategories method
+  Future<void> _fetchCategories() async {
+    setState(() => _isLoadingCategories = true);
+    try {
+      // Get the Lifestyle category code directly from API
+      final lifestyleCode = await ApiService.getCategoryCodeByName('Lifestyle');
+
+      if (lifestyleCode.isNotEmpty) {
+        setState(() {
+          _selectedCategoryCode = lifestyleCode;
+          _isLoadingCategories = false;
+          _fetchProductsByCategory(lifestyleCode);
+        });
+      } else {
+        setState(() {
+          _isLoadingCategories = false;
+          print("Lifestyle category not found");
+        });
+      }
+    } catch (e) {
+      setState(() => _isLoadingCategories = false);
+      print("Error fetching Lifestyle category: $e");
+    }
+  }
+
+  // Remove the _buildCategoriesBar method
+
+  Future<void> _fetchProductsByCategory(String categoryCode) async {
+    if (_isLoadingProducts) return;
+
+    setState(() => _isLoadingProducts = true);
+
+    try {
+      final productController = Provider.of<ProductController>(
+        context,
+        listen: false,
+      );
+
+      final products = await ApiService.getCategoryProducts(
+        categoryCode: categoryCode,
+        shopId: '4',
+      );
+
+      productController.setAllProducts(products);
+
+      setState(() {
+        _selectedCategoryCode = categoryCode;
+        _isLoadingProducts = false;
+      });
+    } catch (e) {
+      setState(() => _isLoadingProducts = false);
+      print("Error fetching products: $e");
+    }
   }
 
   @override
@@ -107,12 +173,25 @@ class _LifeStyleState extends State<LifeStyle> with TickerProviderStateMixin {
                 children: [
                   SizedBox(height: 7.h),
                   Center(
-                    child: Image.asset(
-                      product.image,
-                      width: 90.w,
-                      height: 90.h,
-                      fit: BoxFit.contain,
-                    ),
+                    child:
+                        product.image.isNotEmpty
+                            ? Image.network(
+                              product.image,
+                              width: 90.w,
+                              height: 90.h,
+                              fit: BoxFit.contain,
+                              errorBuilder:
+                                  (context, error, stackTrace) => Icon(
+                                    Icons.broken_image,
+                                    size: 50.sp,
+                                    color: Colors.grey,
+                                  ),
+                            )
+                            : Icon(
+                              Icons.image_not_supported,
+                              size: 50.sp,
+                              color: Colors.grey,
+                            ),
                   ),
                   SizedBox(height: 7.h),
                   Text(
@@ -242,15 +321,33 @@ class _LifeStyleState extends State<LifeStyle> with TickerProviderStateMixin {
     );
   }
 
+  // Replace _buildProductGrid in all category files
   Widget _buildProductGrid(BuildContext context, List<Product> products) {
-    return GridView.count(
-      crossAxisCount: 2,
-      childAspectRatio: 0.75,
-      padding: EdgeInsets.only(bottom: 90.h),
-      children:
-          products
-              .map((product) => _buildProductCard(context, product))
-              .toList(),
+    if (_isLoadingProducts) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (products.isEmpty) {
+      return Center(
+        child: Text(
+          'No products found',
+          style: TextStyle(fontSize: 16.sp, color: Colors.grey),
+        ),
+      );
+    }
+
+    return GridView.builder(
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 0.75,
+        mainAxisSpacing: 8.h,
+        crossAxisSpacing: 8.w,
+      ),
+      padding: EdgeInsets.only(bottom: 90.h, left: 8.w, right: 8.w),
+      itemCount: products.length,
+      itemBuilder: (context, index) {
+        return _buildProductCard(context, products[index]);
+      },
     );
   }
 
@@ -283,10 +380,9 @@ class _LifeStyleState extends State<LifeStyle> with TickerProviderStateMixin {
     return _buildProductGrid(context, sortedProducts);
   }
 
+  // In all category files, update the build method to remove the categories bar
   @override
   Widget build(BuildContext context) {
-    Provider.of<ProductController>(context);
-
     return Scaffold(
       backgroundColor: const Color(0xfff5f6f8),
       appBar:
@@ -319,7 +415,7 @@ class _LifeStyleState extends State<LifeStyle> with TickerProviderStateMixin {
                   ),
                 ),
                 title: Text(
-                  'Lifestyle',
+                  'HighTech', // Change this for each page
                   style: TextStyle(
                     color: Colors.black,
                     fontWeight: FontWeight.bold,
@@ -403,39 +499,37 @@ class _LifeStyleState extends State<LifeStyle> with TickerProviderStateMixin {
               if (_showSearch) _buildSearchBar(context),
               Expanded(
                 child: Container(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child:
-                        _showSearch
-                            ? _searchController.text.isEmpty
-                                ? Center(
-                                  child: Text(
-                                    'Type to search products',
-                                    style: TextStyle(
-                                      fontSize: 16.sp,
-                                      color: Colors.grey,
-                                    ),
+                  padding: const EdgeInsets.all(15.0),
+                  child:
+                      _showSearch
+                          ? _searchController.text.isEmpty
+                              ? Center(
+                                child: Text(
+                                  'Type to search products',
+                                  style: TextStyle(
+                                    fontSize: 16.sp,
+                                    color: Colors.grey,
                                   ),
-                                )
-                                : _searchResults.isEmpty
-                                ? Center(
-                                  child: Text(
-                                    'No products found for "${_searchController.text}"',
-                                    style: TextStyle(
-                                      fontSize: 16.sp,
-                                      color: Colors.grey,
-                                    ),
+                                ),
+                              )
+                              : _searchResults.isEmpty
+                              ? Center(
+                                child: Text(
+                                  'No products found for "${_searchController.text}"',
+                                  style: TextStyle(
+                                    fontSize: 16.sp,
+                                    color: Colors.grey,
                                   ),
-                                )
-                                : _buildProductGrid(context, _searchResults)
-                            : TabBarView(
-                              controller: _tabController,
-                              children: List.generate(
-                                3,
-                                (index) => _buildTabContent(context, index),
-                              ),
+                                ),
+                              )
+                              : _buildProductGrid(context, _searchResults)
+                          : TabBarView(
+                            controller: _tabController,
+                            children: List.generate(
+                              3,
+                              (index) => _buildTabContent(context, index),
                             ),
-                  ),
+                          ),
                 ),
               ),
             ],

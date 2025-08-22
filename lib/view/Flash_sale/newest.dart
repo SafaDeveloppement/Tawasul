@@ -7,8 +7,9 @@ import 'package:tawasul_application/view/product_detail.dart';
 
 class Newest extends StatefulWidget {
   final String shopId;
+  final String categoryCode;
 
-  const Newest({super.key, required this.shopId});
+  const Newest({super.key, required this.categoryCode, required this.shopId});
 
   @override
   State<Newest> createState() => _NewestState();
@@ -34,9 +35,16 @@ class _NewestState extends State<Newest> {
     // Show loading indicator while data is being fetched
     if (productController.isLoading) {
       return Center(
-        child: Padding(
-          padding: EdgeInsets.all(20.h),
-          child: CircularProgressIndicator(),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16.h),
+            Text(
+              "Loading newest arrivals...",
+              style: TextStyle(fontSize: 14.sp, color: Colors.grey),
+            ),
+          ],
         ),
       );
     }
@@ -58,7 +66,10 @@ class _NewestState extends State<Newest> {
               ElevatedButton(
                 onPressed: () {
                   productController.clearError();
-                  productController.fetchNewestProducts(widget.shopId);
+                  productController.fetchCategoryProducts(
+                    widget.categoryCode,
+                    widget.shopId,
+                  );
                 },
                 child: Text('Retry'),
               ),
@@ -68,32 +79,12 @@ class _NewestState extends State<Newest> {
       );
     }
 
-    // Check if we have any products at all
-    if (productController.allProducts.isEmpty) {
-      return Center(
-        child: Text(
-          "No products available",
-          style: TextStyle(fontSize: 16.sp, color: Colors.grey),
-        ),
-      );
-    }
-
-    // In newest.dart, add this debug code before filtering:
-    print("📊 Total products: ${productController.allProducts.length}");
-    for (var product in productController.allProducts.take(5)) {
-      print(
-        "🔍 Product ID: ${product.id}, isNew: ${product.isNew}, Name: ${product.name}",
-      );
-    }
-
-    final newestProducts =
-        productController.allProducts
-            .where((product) => product.isNew)
-            .toList();
+    // Use newestProducts instead of filtering allProducts
+    final newestProducts = productController.newestProducts;
 
     print("🆕 Newest products count: ${newestProducts.length}");
 
-    // In newest.dart, replace the empty state with:
+    // Show newest products or empty state
     if (newestProducts.isEmpty) {
       return Center(
         child: Column(
@@ -115,6 +106,7 @@ class _NewestState extends State<Newest> {
         ),
       );
     }
+
     return RefreshIndicator(
       onRefresh: () async {
         await productController.fetchNewestProducts(widget.shopId);
@@ -179,27 +171,8 @@ class _NewestState extends State<Newest> {
         ),
         child: Stack(
           children: [
-            if (product.isNew)
-              Positioned(
-                top: 8.h,
-                left: 8.w,
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
-                  decoration: BoxDecoration(
-                    color: Colors.green, // Different color for "New" badge
-                    borderRadius: BorderRadius.circular(4.r),
-                  ),
-                  child: Text(
-                    'NEW',
-                    style: TextStyle(
-                      fontSize: 10.sp,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-            if (product.discount != null && !product.isNew)
+            // Discount badge (only show if product is not new and has discount)
+            if (product.discount != null)
               Positioned(
                 top: 8.h,
                 left: 8.w,
