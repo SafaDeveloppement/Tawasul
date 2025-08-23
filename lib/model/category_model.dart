@@ -26,7 +26,6 @@
 // }
 
 
-// In category_model.dart
 class Category {
   final int id;
   final String name;

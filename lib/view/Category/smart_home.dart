@@ -23,13 +23,11 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   List<Product> _searchResults = [];
 
-  // In SmartHome.dart, SmartOffice.dart, Lifestyle.dart
-  // Add similar category fetching logic
-
   List<Category> _categories = [];
   bool _isLoadingCategories = true;
   String _selectedCategoryCode = '';
   bool _isLoadingProducts = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -38,30 +36,27 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
     _fetchCategories(); // Fetch categories on init
   }
 
-  // In SmartHome.dart - Replace the _fetchCategories method
   Future<void> _fetchCategories() async {
     setState(() => _isLoadingCategories = true);
     try {
-      // Get the Smart Home category code directly from API
-      final smartHomeCode = await ApiService.getCategoryCodeByName(
-        'Smart Home',
-      );
+      final products = await ApiService.getProductsByCategoryName('Smart Home');
 
-      if (smartHomeCode.isNotEmpty) {
-        setState(() {
-          _selectedCategoryCode = smartHomeCode;
-          _isLoadingCategories = false;
-          _fetchProductsByCategory(smartHomeCode);
-        });
-      } else {
-        setState(() {
-          _isLoadingCategories = false;
-          print("Smart Home category not found");
-        });
-      }
+      final productController = Provider.of<ProductController>(
+        context,
+        listen: false,
+      );
+      productController.setAllProducts(products);
+
+      setState(() {
+        _isLoadingCategories = false;
+        _isLoadingProducts = false;
+      });
     } catch (e) {
-      setState(() => _isLoadingCategories = false);
-      print("Error fetching Smart Home category: $e");
+      setState(() {
+        _isLoadingCategories = false;
+        _isLoadingProducts = false;
+      });
+      print("Error fetching Smart Home products: $e");
     }
   }
 
@@ -150,7 +145,7 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
       child: Container(
         width: 184.w,
         height: 200.h,
-        margin: EdgeInsets.all(8.w),
+        margin: EdgeInsets.all(6.w),
         decoration: BoxDecoration(
           color: const Color.fromARGB(255, 254, 254, 254),
           borderRadius: BorderRadius.circular(16.r),
@@ -205,6 +200,7 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
                       fontWeight: FontWeight.w600,
                       fontSize: 14.sp,
                     ),
+                    maxLines: 1,
                   ),
                   SizedBox(height: 4.h),
                   Row(
@@ -322,14 +318,39 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
   }
 
   Widget _buildProductGrid(BuildContext context, List<Product> products) {
-    return GridView.count(
-      crossAxisCount: 2,
-      childAspectRatio: 0.75,
-      padding: EdgeInsets.only(bottom: 90.h),
-      children:
-          products
-              .map((product) => _buildProductCard(context, product))
-              .toList(),
+    if (_isLoading || _isLoadingProducts) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (products.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 50.sp, color: Colors.grey),
+            SizedBox(height: 16.h),
+            Text(
+              'No products found',
+              style: TextStyle(fontSize: 16.sp, color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return GridView.builder(
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 0.75,
+        mainAxisSpacing: 8.h,
+        crossAxisSpacing: 8.w,
+      ),
+      padding: EdgeInsets.only(bottom: 90.h, left: 8.w, right: 8.w),
+      itemCount: products.length,
+      itemBuilder: (context, index) {
+        return _buildProductCard(context, products[index]);
+      },
     );
   }
 
@@ -397,7 +418,7 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
                   ),
                 ),
                 title: Text(
-                  'HighTech', // Change this for each page
+                  'Smart Home',
                   style: TextStyle(
                     color: Colors.black,
                     fontWeight: FontWeight.bold,
@@ -481,7 +502,7 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
               if (_showSearch) _buildSearchBar(context),
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.all(15.0),
+                  padding: const EdgeInsets.all(5.0),
                   child:
                       _showSearch
                           ? _searchController.text.isEmpty

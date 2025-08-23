@@ -383,99 +383,6 @@ class ApiService {
     return imageIdPart;
   }
 
-  // //Get Categories
-  // static Future<List<Map<String, dynamic>>> getCategories() async {
-  //   try {
-  //     final url = '$baseUrl/public/getCategories';
-  //     print("🌐 Fetching categories from: $url");
-
-  //     final response = await http
-  //         .get(Uri.parse(url), headers: await _getAuthHeaders())
-  //         .timeout(Duration(seconds: timeoutSeconds));
-
-  //     if (response.statusCode == 200) {
-  //       final data = jsonDecode(response.body);
-  //       print("✅ Categories response received");
-
-  //       if (data['response'] != null && data['response'] is List) {
-  //         // Find the "Accueil" category which contains our target categories
-  //         final rootCategories = List<Map<String, dynamic>>.from(
-  //           data['response'],
-  //         );
-
-  //         // Find "Accueil" category (ID: 2)
-  //         final accueilCategory = rootCategories.firstWhere(
-  //           (category) => category['id'] == '2',
-  //           orElse: () => {},
-  //         );
-
-  //         if (accueilCategory.isNotEmpty && accueilCategory['childs'] != null) {
-  //           // Return the child categories of "Accueil" (HighTech, Smart Home, Smart Office, Lifestyle)
-  //           return List<Map<String, dynamic>>.from(accueilCategory['childs']);
-  //         }
-  //       }
-  //       return [];
-  //     } else {
-  //       print("❌ Failed to fetch categories: ${response.statusCode}");
-  //       return [];
-  //     }
-  //   } catch (e) {
-  //     print("‼️ Exception in getCategories: $e");
-  //     return [];
-  //   }
-  // }
-
-  // //category code
-  // static Future<String> getCategoryCode(String categoryName) async {
-  //   try {
-  //     final categories = await getCategories();
-
-  //     // Map category names to their expected API values
-  //     final categoryMap = {
-  //       'HighTech': 'HighTech',
-  //       'Smart Home': 'Smart Home',
-  //       'Smart Office': 'Smart Office',
-  //       'Lifestyle': 'Lifestyle',
-  //     };
-
-  //     // Find the exact category name match
-  //     final targetName = categoryMap[categoryName];
-  //     if (targetName == null) return '';
-
-  //     final category = categories.firstWhere(
-  //       (cat) => cat['name'] == targetName,
-  //       orElse: () => {},
-  //     );
-
-  //     return category['code']?.toString() ?? '';
-  //   } catch (e) {
-  //     print("Error getting category code for $categoryName: $e");
-  //     return '';
-  //   }
-  // }
-
-  // // Add a new method to get category by name
-  // static Future<String> getCategoryCodeByName(String categoryName) async {
-  //   try {
-  //     final categories = await getCategories();
-
-  //     // Find the category by name
-  //     final category = categories.firstWhere(
-  //       (cat) => cat['name']?.toLowerCase() == categoryName.toLowerCase(),
-  //       orElse: () => {},
-  //     );
-
-  //     if (category.isNotEmpty) {
-  //       return category['code'] ?? '';
-  //     }
-
-  //     return '';
-  //   } catch (e) {
-  //     print("Error getting category code: $e");
-  //     return '';
-  //   }
-  // }
-
   // Update the getProductsFromCategory method to handle the actual API structure
   static Future<List<Product>> getProductsFromCategory(
     String categoryName,
@@ -493,10 +400,6 @@ class ApiService {
 
       print("✅ Using category code: $categoryCode");
 
-      // Based on the API structure from Postman, we need to understand how to get products
-      // Since getCategories returns the category structure, we might need to:
-      // 1. Extract products from the category structure itself, or
-      // 2. Use the category code with a different API endpoint
 
       // For now, let's try to extract products from the category structure
       final categoryData = await getCategoryStructure();
@@ -922,4 +825,32 @@ static Future<void> debugApiResponse() async {
       print("Error debugging category structure: $e");
     }
   }
+//Categories
+static Future<List<Product>> getProductsByCategoryName(String categoryName) async {
+  try {
+    // Get the category code
+    String categoryCode = await getCategoryCodeByName(categoryName);
+    
+    // Fallback to hardcoded codes if API fails
+    if (categoryCode.isEmpty) {
+      categoryCode = getHardcodedCategoryCode(categoryName);
+    }
+    
+    if (categoryCode.isEmpty) {
+      print("❌ Could not find category code for $categoryName");
+      return [];
+    }
+    
+    print("✅ Fetching products for $categoryName with code: $categoryCode");
+    
+    // Use getCategoryProducts which seems to work correctly
+    return await getCategoryProducts(
+      categoryCode: categoryCode,
+      shopId: '4', // Your shop ID
+    );
+  } catch (e) {
+    print("❌ Error fetching products for $categoryName: $e");
+    return [];
+  }
+}
 }

@@ -23,22 +23,19 @@ class _LifeStyleState extends State<LifeStyle> with TickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   List<Product> _searchResults = [];
 
-  // In SmartHome.dart, SmartOffice.dart, Lifestyle.dart
-  // Add similar category fetching logic
-
   List<Category> _categories = [];
   bool _isLoadingCategories = true;
   String _selectedCategoryCode = '';
   bool _isLoadingProducts = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _fetchCategories(); // Fetch categories on init
+    _fetchCategories();
   }
 
-  // In Lifestyle.dart - Replace the _fetchCategories method
   Future<void> _fetchCategories() async {
     setState(() => _isLoadingCategories = true);
     try {
@@ -62,8 +59,6 @@ class _LifeStyleState extends State<LifeStyle> with TickerProviderStateMixin {
       print("Error fetching Lifestyle category: $e");
     }
   }
-
-  // Remove the _buildCategoriesBar method
 
   Future<void> _fetchProductsByCategory(String categoryCode) async {
     if (_isLoadingProducts) return;
@@ -148,9 +143,9 @@ class _LifeStyleState extends State<LifeStyle> with TickerProviderStateMixin {
         );
       },
       child: Container(
-        width: 184.w,
-        height: 200.h,
-        margin: EdgeInsets.all(8.w),
+        width: 200.w,
+        height: 220.h,
+        margin: EdgeInsets.all(6.w),
         decoration: BoxDecoration(
           color: const Color.fromARGB(255, 254, 254, 254),
           borderRadius: BorderRadius.circular(16.r),
@@ -167,11 +162,11 @@ class _LifeStyleState extends State<LifeStyle> with TickerProviderStateMixin {
         child: Stack(
           children: [
             Padding(
-              padding: EdgeInsets.all(10.w),
+              padding: EdgeInsets.all(8.w),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(height: 7.h),
+                  SizedBox(height: 4.h),
                   Center(
                     child:
                         product.image.isNotEmpty
@@ -193,29 +188,31 @@ class _LifeStyleState extends State<LifeStyle> with TickerProviderStateMixin {
                               color: Colors.grey,
                             ),
                   ),
-                  SizedBox(height: 7.h),
+                  SizedBox(height: 1.h),
                   Text(
                     product.brand,
                     style: TextStyle(fontSize: 10.sp, color: Colors.grey),
                   ),
-                  SizedBox(height: 2.h),
+                  SizedBox(height: 1.h),
                   Text(
                     product.name,
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      fontSize: 14.sp,
+                      fontSize: 12.sp,
                     ),
                   ),
-                  SizedBox(height: 4.h),
+                  SizedBox(height: 2.h),
                   Row(
                     children: [
                       Text(
                         product.price,
                         style: TextStyle(
-                          fontSize: 14.sp,
+                          fontSize: 12.sp,
                           fontWeight: FontWeight.bold,
                           color: const Color(0xff1264a3),
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       if (product.oldPrice != null) ...[
                         SizedBox(width: 3.w),
@@ -226,6 +223,7 @@ class _LifeStyleState extends State<LifeStyle> with TickerProviderStateMixin {
                             fontSize: 12.sp,
                             color: Colors.grey,
                           ),
+                          
                         ),
                       ],
                     ],
@@ -321,17 +319,24 @@ class _LifeStyleState extends State<LifeStyle> with TickerProviderStateMixin {
     );
   }
 
-  // Replace _buildProductGrid in all category files
   Widget _buildProductGrid(BuildContext context, List<Product> products) {
-    if (_isLoadingProducts) {
+    if (_isLoading || _isLoadingProducts) {
       return const Center(child: CircularProgressIndicator());
     }
 
     if (products.isEmpty) {
       return Center(
-        child: Text(
-          'No products found',
-          style: TextStyle(fontSize: 16.sp, color: Colors.grey),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 50.sp, color: Colors.grey),
+            SizedBox(height: 16.h),
+            Text(
+              'No products found',
+              style: TextStyle(fontSize: 16.sp, color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       );
     }
@@ -415,7 +420,7 @@ class _LifeStyleState extends State<LifeStyle> with TickerProviderStateMixin {
                   ),
                 ),
                 title: Text(
-                  'HighTech', // Change this for each page
+                  'Lifestyle',
                   style: TextStyle(
                     color: Colors.black,
                     fontWeight: FontWeight.bold,
@@ -499,7 +504,7 @@ class _LifeStyleState extends State<LifeStyle> with TickerProviderStateMixin {
               if (_showSearch) _buildSearchBar(context),
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.all(15.0),
+                  padding: const EdgeInsets.all(5.0),
                   child:
                       _showSearch
                           ? _searchController.text.isEmpty
