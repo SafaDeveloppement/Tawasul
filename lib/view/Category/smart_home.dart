@@ -8,6 +8,7 @@ import 'package:tawasul_application/model/product_model.dart';
 import 'package:tawasul_application/view/filter.dart';
 import 'package:tawasul_application/view/navbar.dart';
 import 'package:tawasul_application/view/product_detail.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class SmartHome extends StatefulWidget {
   const SmartHome({super.key});
@@ -33,7 +34,7 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _fetchCategories(); // Fetch categories on init
+    _fetchCategories();
   }
 
   Future<void> _fetchCategories() async {
@@ -255,6 +256,8 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
   }
 
   Widget _buildSearchBar(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     return Container(
       color: Colors.white,
       padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 12.h),
@@ -267,7 +270,7 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
                   controller: _searchController,
                   autofocus: true,
                   decoration: InputDecoration(
-                    hintText: 'Search products...',
+                    hintText: t.searchProducts,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12.r),
                       borderSide: BorderSide.none,
@@ -318,6 +321,8 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
   }
 
   Widget _buildProductGrid(BuildContext context, List<Product> products) {
+    final t = AppLocalizations.of(context)!;
+
     if (_isLoading || _isLoadingProducts) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -330,7 +335,7 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
             Icon(Icons.error_outline, size: 50.sp, color: Colors.grey),
             SizedBox(height: 16.h),
             Text(
-              'No products found',
+              t.noProductsFound,
               style: TextStyle(fontSize: 16.sp, color: Colors.grey),
               textAlign: TextAlign.center,
             ),
@@ -355,26 +360,28 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
   }
 
   Widget _buildTabContent(BuildContext context, int tabIndex) {
+            final t = AppLocalizations.of(context)!;
+
     final productController = Provider.of<ProductController>(context);
     List<Product> sortedProducts = List.from(productController.allProducts);
 
     if (tabIndex == 1) {
       sortedProducts.sort((a, b) {
         double priceA = double.parse(
-          a.price.replaceAll(' DYL', '').replaceAll(',', ''),
+          a.price.replaceAll(t.lyd, '').replaceAll(',', ''),
         );
         double priceB = double.parse(
-          b.price.replaceAll(' DYL', '').replaceAll(',', ''),
+          b.price.replaceAll(t.lyd, '').replaceAll(',', ''),
         );
         return priceA.compareTo(priceB);
       });
     } else if (tabIndex == 2) {
       sortedProducts.sort((a, b) {
         double priceA = double.parse(
-          a.price.replaceAll(' DYL', '').replaceAll(',', ''),
+          a.price.replaceAll(t.lyd, '').replaceAll(',', ''),
         );
         double priceB = double.parse(
-          b.price.replaceAll(' DYL', '').replaceAll(',', ''),
+          b.price.replaceAll(t.lyd, '').replaceAll(',', ''),
         );
         return priceB.compareTo(priceA);
       });
@@ -383,9 +390,10 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
     return _buildProductGrid(context, sortedProducts);
   }
 
-  // In all category files, update the build method to remove the categories bar
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: const Color(0xfff5f6f8),
       appBar:
@@ -418,7 +426,7 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
                   ),
                 ),
                 title: Text(
-                  'Smart Home',
+                  t.smartHome,
                   style: TextStyle(
                     color: Colors.black,
                     fontWeight: FontWeight.bold,
@@ -486,10 +494,10 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
                       unselectedLabelColor: Colors.grey,
                       indicatorColor: Colors.blue,
                       labelStyle: TextStyle(fontSize: 12.sp),
-                      tabs: const [
-                        Tab(text: 'TOP RATED'),
-                        Tab(text: 'PRICE LOW-HIGH'),
-                        Tab(text: 'PRICE HIGH-LOW'),
+                      tabs: [
+                        Tab(text: t.topRated),
+                        Tab(text: t.priceLowHigh),
+                        Tab(text: t.priceHighLow),
                       ],
                     ),
                   ),
@@ -508,7 +516,7 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
                           ? _searchController.text.isEmpty
                               ? Center(
                                 child: Text(
-                                  'Type to search products',
+                                  t.typeToSearch,
                                   style: TextStyle(
                                     fontSize: 16.sp,
                                     color: Colors.grey,
@@ -518,7 +526,7 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
                               : _searchResults.isEmpty
                               ? Center(
                                 child: Text(
-                                  'No products found for "${_searchController.text}"',
+                                  '${t.noProductsFoundFor} "${_searchController.text}"',
                                   style: TextStyle(
                                     fontSize: 16.sp,
                                     color: Colors.grey,

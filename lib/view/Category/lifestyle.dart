@@ -8,6 +8,7 @@ import 'package:tawasul_application/model/product_model.dart';
 import 'package:tawasul_application/view/filter.dart';
 import 'package:tawasul_application/view/navbar.dart';
 import 'package:tawasul_application/view/product_detail.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class LifeStyle extends StatefulWidget {
   const LifeStyle({super.key});
@@ -39,7 +40,6 @@ class _LifeStyleState extends State<LifeStyle> with TickerProviderStateMixin {
   Future<void> _fetchCategories() async {
     setState(() => _isLoadingCategories = true);
     try {
-      // Get the Lifestyle category code directly from API
       final lifestyleCode = await ApiService.getCategoryCodeByName('Lifestyle');
 
       if (lifestyleCode.isNotEmpty) {
@@ -223,7 +223,6 @@ class _LifeStyleState extends State<LifeStyle> with TickerProviderStateMixin {
                             fontSize: 12.sp,
                             color: Colors.grey,
                           ),
-                          
                         ),
                       ],
                     ],
@@ -257,6 +256,8 @@ class _LifeStyleState extends State<LifeStyle> with TickerProviderStateMixin {
   }
 
   Widget _buildSearchBar(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     return Container(
       color: Colors.white,
       padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 12.h),
@@ -269,7 +270,7 @@ class _LifeStyleState extends State<LifeStyle> with TickerProviderStateMixin {
                   controller: _searchController,
                   autofocus: true,
                   decoration: InputDecoration(
-                    hintText: 'Search products...',
+                    hintText: t.searchProducts,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12.r),
                       borderSide: BorderSide.none,
@@ -320,6 +321,7 @@ class _LifeStyleState extends State<LifeStyle> with TickerProviderStateMixin {
   }
 
   Widget _buildProductGrid(BuildContext context, List<Product> products) {
+    final t = AppLocalizations.of(context)!;
     if (_isLoading || _isLoadingProducts) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -332,7 +334,7 @@ class _LifeStyleState extends State<LifeStyle> with TickerProviderStateMixin {
             Icon(Icons.error_outline, size: 50.sp, color: Colors.grey),
             SizedBox(height: 16.h),
             Text(
-              'No products found',
+              t.noProductsFound,
               style: TextStyle(fontSize: 16.sp, color: Colors.grey),
               textAlign: TextAlign.center,
             ),
@@ -357,26 +359,28 @@ class _LifeStyleState extends State<LifeStyle> with TickerProviderStateMixin {
   }
 
   Widget _buildTabContent(BuildContext context, int tabIndex) {
+    final t = AppLocalizations.of(context)!;
+
     final productController = Provider.of<ProductController>(context);
     List<Product> sortedProducts = List.from(productController.allProducts);
 
     if (tabIndex == 1) {
       sortedProducts.sort((a, b) {
         double priceA = double.parse(
-          a.price.replaceAll(' DYL', '').replaceAll(',', ''),
+          a.price.replaceAll(t.lyd, '').replaceAll(',', ''),
         );
         double priceB = double.parse(
-          b.price.replaceAll(' DYL', '').replaceAll(',', ''),
+          b.price.replaceAll(t.lyd, '').replaceAll(',', ''),
         );
         return priceA.compareTo(priceB);
       });
     } else if (tabIndex == 2) {
       sortedProducts.sort((a, b) {
         double priceA = double.parse(
-          a.price.replaceAll(' DYL', '').replaceAll(',', ''),
+          a.price.replaceAll(t.lyd, '').replaceAll(',', ''),
         );
         double priceB = double.parse(
-          b.price.replaceAll(' DYL', '').replaceAll(',', ''),
+          b.price.replaceAll(t.lyd, '').replaceAll(',', ''),
         );
         return priceB.compareTo(priceA);
       });
@@ -388,6 +392,8 @@ class _LifeStyleState extends State<LifeStyle> with TickerProviderStateMixin {
   // In all category files, update the build method to remove the categories bar
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: const Color(0xfff5f6f8),
       appBar:
@@ -420,7 +426,7 @@ class _LifeStyleState extends State<LifeStyle> with TickerProviderStateMixin {
                   ),
                 ),
                 title: Text(
-                  'Lifestyle',
+                  t.lifestyle,
                   style: TextStyle(
                     color: Colors.black,
                     fontWeight: FontWeight.bold,
@@ -488,10 +494,10 @@ class _LifeStyleState extends State<LifeStyle> with TickerProviderStateMixin {
                       unselectedLabelColor: Colors.grey,
                       indicatorColor: Colors.blue,
                       labelStyle: TextStyle(fontSize: 12.sp),
-                      tabs: const [
-                        Tab(text: 'TOP RATED'),
-                        Tab(text: 'PRICE LOW-HIGH'),
-                        Tab(text: 'PRICE HIGH-LOW'),
+                      tabs: [
+                        Tab(text: t.topRated),
+                        Tab(text: t.priceLowHigh),
+                        Tab(text: t.priceHighLow),
                       ],
                     ),
                   ),
@@ -510,7 +516,7 @@ class _LifeStyleState extends State<LifeStyle> with TickerProviderStateMixin {
                           ? _searchController.text.isEmpty
                               ? Center(
                                 child: Text(
-                                  'Type to search products',
+                                  t.typeToSearch,
                                   style: TextStyle(
                                     fontSize: 16.sp,
                                     color: Colors.grey,

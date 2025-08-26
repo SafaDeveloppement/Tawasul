@@ -8,6 +8,7 @@ import 'package:tawasul_application/model/product_model.dart';
 import 'package:tawasul_application/view/filter.dart';
 import 'package:tawasul_application/view/navbar.dart';
 import 'package:tawasul_application/view/product_detail.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class SmartOffice extends StatefulWidget {
   const SmartOffice({super.key});
@@ -61,7 +62,6 @@ class _SmartOfficeState extends State<SmartOffice>
     }
   }
 
-  // Remove the _buildCategoriesBar method
   Future<void> _fetchProductsByCategory(String categoryCode) async {
     if (_isLoadingProducts) return;
 
@@ -209,7 +209,6 @@ class _SmartOfficeState extends State<SmartOffice>
                       Text(
                         product.price,
                         style: TextStyle(
-                          fontSize: 12.sp,
                           fontWeight: FontWeight.bold,
                           color: const Color(0xff1264a3),
                         ),
@@ -256,6 +255,8 @@ class _SmartOfficeState extends State<SmartOffice>
   }
 
   Widget _buildSearchBar(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     return Container(
       color: Colors.white,
       padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 12.h),
@@ -268,7 +269,7 @@ class _SmartOfficeState extends State<SmartOffice>
                   controller: _searchController,
                   autofocus: true,
                   decoration: InputDecoration(
-                    hintText: 'Search products...',
+                    hintText: t.searchProducts,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12.r),
                       borderSide: BorderSide.none,
@@ -319,6 +320,8 @@ class _SmartOfficeState extends State<SmartOffice>
   }
 
   Widget _buildProductGrid(BuildContext context, List<Product> products) {
+    final t = AppLocalizations.of(context)!;
+
     if (_isLoading || _isLoadingProducts) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -331,7 +334,7 @@ class _SmartOfficeState extends State<SmartOffice>
             Icon(Icons.error_outline, size: 50.sp, color: Colors.grey),
             SizedBox(height: 16.h),
             Text(
-              'No products found',
+              t.noProductsFound,
               style: TextStyle(fontSize: 16.sp, color: Colors.grey),
               textAlign: TextAlign.center,
             ),
@@ -356,26 +359,28 @@ class _SmartOfficeState extends State<SmartOffice>
   }
 
   Widget _buildTabContent(BuildContext context, int tabIndex) {
+    final t = AppLocalizations.of(context)!;
+
     final productController = Provider.of<ProductController>(context);
     List<Product> sortedProducts = List.from(productController.allProducts);
 
     if (tabIndex == 1) {
       sortedProducts.sort((a, b) {
         double priceA = double.parse(
-          a.price.replaceAll(' DYL', '').replaceAll(',', ''),
+          a.price.replaceAll(t.lyd, '').replaceAll(',', ''),
         );
         double priceB = double.parse(
-          b.price.replaceAll(' DYL', '').replaceAll(',', ''),
+          b.price.replaceAll(t.lyd, '').replaceAll(',', ''),
         );
         return priceA.compareTo(priceB);
       });
     } else if (tabIndex == 2) {
       sortedProducts.sort((a, b) {
         double priceA = double.parse(
-          a.price.replaceAll(' DYL', '').replaceAll(',', ''),
+          a.price.replaceAll(t.lyd, '').replaceAll(',', ''),
         );
         double priceB = double.parse(
-          b.price.replaceAll(' DYL', '').replaceAll(',', ''),
+          b.price.replaceAll(t.lyd, '').replaceAll(',', ''),
         );
         return priceB.compareTo(priceA);
       });
@@ -387,6 +392,7 @@ class _SmartOfficeState extends State<SmartOffice>
   // In all category files, update the build method to remove the categories bar
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: const Color(0xfff5f6f8),
       appBar:
@@ -419,7 +425,7 @@ class _SmartOfficeState extends State<SmartOffice>
                   ),
                 ),
                 title: Text(
-                  'Smart Office',
+                  t.smartOffice,
                   style: TextStyle(
                     color: Colors.black,
                     fontWeight: FontWeight.bold,
@@ -487,10 +493,10 @@ class _SmartOfficeState extends State<SmartOffice>
                       unselectedLabelColor: Colors.grey,
                       indicatorColor: Colors.blue,
                       labelStyle: TextStyle(fontSize: 12.sp),
-                      tabs: const [
-                        Tab(text: 'TOP RATED'),
-                        Tab(text: 'PRICE LOW-HIGH'),
-                        Tab(text: 'PRICE HIGH-LOW'),
+                      tabs: [
+                        Tab(text: t.topRated),
+                        Tab(text: t.priceLowHigh),
+                        Tab(text: t.priceHighLow),
                       ],
                     ),
                   ),
@@ -509,7 +515,7 @@ class _SmartOfficeState extends State<SmartOffice>
                           ? _searchController.text.isEmpty
                               ? Center(
                                 child: Text(
-                                  'Type to search products',
+                                  t.typeToSearch,
                                   style: TextStyle(
                                     fontSize: 16.sp,
                                     color: Colors.grey,
