@@ -1329,9 +1329,12 @@ class _HomePageState extends State<HomePage> {
                     height: 130.h,
                     child: GridView.extent(
                       shrinkWrap: true,
-                      physics: ScrollPhysics(),
+                      physics: const ScrollPhysics(),
                       maxCrossAxisExtent: 180.w,
                       scrollDirection: Axis.horizontal,
+                      childAspectRatio: 0.8,
+                      crossAxisSpacing: 5.w,
+                      mainAxisSpacing: 2.h, //spacing between items vertically
                       children: [
                         buildCategoryItem(
                           context,

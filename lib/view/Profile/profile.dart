@@ -1,7 +1,272 @@
+// import 'package:flutter/material.dart';
+// import 'package:flutter_screenutil/flutter_screenutil.dart';
+// import 'package:provider/provider.dart';
+// import 'package:tawasul_application/controller/product_controller.dart';
+// import 'package:tawasul_application/view/Connexion/change_password.dart';
+// import 'package:tawasul_application/view/Profile/edit_profile.dart';
+// import 'package:tawasul_application/view/Profile/order_history.dart';
+// import 'package:tawasul_application/view/favorites_page.dart';
+// import 'package:tawasul_application/view/home_page.dart';
+// import 'package:tawasul_application/view/navbar.dart';
+
+// class Profile extends StatefulWidget {
+//   const Profile({super.key});
+
+//   @override
+//   State<Profile> createState() => _ProfileState();
+// }
+
+// class _ProfileState extends State<Profile> {
+//   int _currentNavIndex = 4;
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       backgroundColor: Colors.white,
+//       appBar: AppBar(
+//         backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+//         elevation: 0,
+//         toolbarHeight: 56.h,
+//         leadingWidth: 48.w,
+//         leading: Padding(
+//           padding: EdgeInsets.only(left: 12.w),
+//           child: GestureDetector(
+//             onTap: () {
+//               Navigator.push(
+//                 context,
+//                 MaterialPageRoute(builder: (context) => HomePage()),
+//               );
+//             },
+//             child: Container(
+//               width: 36.w,
+//               height: 36.w,
+//               decoration: const BoxDecoration(
+//                 color: Color(0xFF008AD2),
+//                 shape: BoxShape.circle,
+//               ),
+//               child: Center(
+//                 child: Icon(
+//                   Icons.arrow_back_ios_new,
+//                   color: Colors.white,
+//                   size: 18.sp,
+//                 ),
+//               ),
+//             ),
+//           ),
+//         ),
+//         title: Text(
+//           "Profile",
+//           style: TextStyle(
+//             fontSize: 18.sp,
+//             fontWeight: FontWeight.w500,
+//             color: const Color.fromARGB(255, 0, 0, 0),
+//           ),
+//         ),
+//         centerTitle: true,
+//       ),
+//       body: Stack(
+//         children: [
+//           // Main Content
+//           SafeArea(
+//             child: SingleChildScrollView(
+//               child: Center(
+//                 child: Padding(
+//                   padding: const EdgeInsets.only(
+//                     left: 20,
+//                     right: 20,
+//                     top: 20,
+//                     bottom: 120,
+//                   ),
+//                   child: Column(
+//                     children: [
+//                       Stack(
+//                         children: [
+//                           const CircleAvatar(
+//                             radius: 75,
+//                             backgroundImage: AssetImage(
+//                               'assets/images/homme.jpg',
+//                             ),
+//                           ),
+//                           Positioned(
+//                             bottom: 7,
+//                             right: 6,
+//                             child: CircleAvatar(
+//                               radius: 16,
+//                               backgroundColor: Colors.blue,
+//                               child: const Icon(
+//                                 Icons.edit,
+//                                 size: 16,
+//                                 color: Colors.white,
+//                               ),
+//                             ),
+//                           ),
+//                         ],
+//                       ),
+//                       const SizedBox(height: 8),
+//                       const Text(
+//                         "Med Bechikh",
+//                         style: TextStyle(
+//                           fontSize: 18,
+//                           fontWeight: FontWeight.bold,
+//                           fontFamily: "Montserrat",
+//                         ),
+//                       ),
+//                       const SizedBox(height: 24),
+
+//                       // Navigation Menu Items
+//                       _buildMenuItem(
+//                         Icons.person,
+//                         'Edit Profile Name',
+//                         onTap: () {
+//                           Navigator.push(
+//                             context,
+//                             MaterialPageRoute(
+//                               builder: (context) => EditProfile(),
+//                             ),
+//                           );
+//                         },
+//                       ),
+//                       _buildMenuItem(
+//                         Icons.favorite_border,
+//                         'Favourites',
+//                         onTap: () {
+//                           Navigator.push(
+//                             context,
+//                             MaterialPageRoute(
+//                               builder: (context) => FavoritesPage(),
+//                             ),
+//                           );
+//                         },
+//                       ),
+//                       _buildMenuItem(
+//                         Icons.shopping_bag_outlined,
+//                         'Order History',
+//                         onTap: () {
+//                           Navigator.push(
+//                             context,
+//                             MaterialPageRoute(
+//                               builder: (context) => OrderHistory(),
+//                             ),
+//                           );
+//                         },
+//                       ),
+//                       _buildMenuItem(
+//                         Icons.lock_outline,
+//                         'Change Password',
+//                         onTap: () {
+//                           Navigator.push(
+//                             context,
+//                             MaterialPageRoute(
+//                               builder: (context) => ChangePassword(),
+//                             ),
+//                           );
+//                         },
+//                       ),
+//                       _buildMenuItem(
+//                         Icons.logout,
+//                         'Logout',
+//                         isLogout: true,
+//                         onTap: () {
+//                           showDialog(
+//                             context: context,
+//                             builder:
+//                                 (_) => AlertDialog(
+//                                   title: const Text("Logout"),
+//                                   content: const Text(
+//                                     "Are you sure you want to logout?",
+//                                   ),
+//                                   actions: [
+//                                     TextButton(
+//                                       onPressed: () => Navigator.pop(context),
+//                                       child: const Text("Cancel"),
+//                                     ),
+//                                     TextButton(
+//                                       onPressed: () {
+//                                         Navigator.popUntil(
+//                                           context,
+//                                           (route) => route.isFirst,
+//                                         );
+//                                       },
+//                                       child: const Text(
+//                                         "Logout",
+//                                         style: TextStyle(color: Colors.red),
+//                                       ),
+//                                     ),
+//                                   ],
+//                                 ),
+//                           );
+//                         },
+//                       ),
+//                     ],
+//                   ),
+//                 ),
+//               ),
+//             ),
+//           ),
+
+//           // Bottom Navigation Bar positioned above other content
+//           Positioned(
+//             bottom: 20.h,
+//             left: 20.w,
+//             right: 20.w,
+//             child: Consumer<ProductController>(
+//               builder: (context, productController, child) {
+//                 return CustomBottomNavBar(
+//                   currentIndex: _currentNavIndex,
+//                   context: context,
+//                 );
+//               },
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+
+//   Widget _buildMenuItem(
+//     IconData icon,
+//     String label, {
+//     bool isLogout = false,
+//     VoidCallback? onTap,
+//   }) {
+//     return GestureDetector(
+//       onTap: onTap,
+//       child: Container(
+//         margin: const EdgeInsets.symmetric(vertical: 4),
+//         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+//         decoration: BoxDecoration(
+//           color: Colors.white,
+//           border: Border.all(color: Colors.black12),
+//           borderRadius: BorderRadius.circular(12),
+//         ),
+//         child: Row(
+//           children: [
+//             Icon(icon, color: isLogout ? Colors.red : Colors.black),
+//             const SizedBox(width: 12),
+//             Expanded(
+//               child: Text(
+//                 label,
+//                 style: TextStyle(
+//                   fontSize: 16,
+//                   color: isLogout ? Colors.red : Colors.black,
+//                 ),
+//               ),
+//             ),
+//             const Icon(Icons.arrow_forward_ios, size: 16),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+// }
+
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:tawasul_application/controller/product_controller.dart';
+import 'package:tawasul_application/main.dart';
 import 'package:tawasul_application/view/Connexion/change_password.dart';
 import 'package:tawasul_application/view/Profile/edit_profile.dart';
 import 'package:tawasul_application/view/Profile/order_history.dart';
@@ -21,6 +286,8 @@ class _ProfileState extends State<Profile> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -55,7 +322,7 @@ class _ProfileState extends State<Profile> {
           ),
         ),
         title: Text(
-          "Profile",
+          loc.profile, // localized
           style: TextStyle(
             fontSize: 18.sp,
             fontWeight: FontWeight.w500,
@@ -116,7 +383,7 @@ class _ProfileState extends State<Profile> {
                       // Navigation Menu Items
                       _buildMenuItem(
                         Icons.person,
-                        'Edit Profile Name',
+                        loc.editProfile, // localized
                         onTap: () {
                           Navigator.push(
                             context,
@@ -128,7 +395,7 @@ class _ProfileState extends State<Profile> {
                       ),
                       _buildMenuItem(
                         Icons.favorite_border,
-                        'Favourites',
+                        loc.favorites, // localized
                         onTap: () {
                           Navigator.push(
                             context,
@@ -140,7 +407,7 @@ class _ProfileState extends State<Profile> {
                       ),
                       _buildMenuItem(
                         Icons.shopping_bag_outlined,
-                        'Order History',
+                        loc.orderHistory, // localized
                         onTap: () {
                           Navigator.push(
                             context,
@@ -152,7 +419,7 @@ class _ProfileState extends State<Profile> {
                       ),
                       _buildMenuItem(
                         Icons.lock_outline,
-                        'Change Password',
+                        loc.changePassword, // localized
                         onTap: () {
                           Navigator.push(
                             context,
@@ -162,38 +429,45 @@ class _ProfileState extends State<Profile> {
                           );
                         },
                       ),
+
+                      // 🔥 Language Switcher
+                      _buildMenuItem(
+                        Icons.language,
+                        loc.language,
+                        onTap: () {
+                          _showLanguageDialog(context);
+                        },
+                      ),
+
                       _buildMenuItem(
                         Icons.logout,
-                        'Logout',
+                        loc.logout, // localized
                         isLogout: true,
                         onTap: () {
                           showDialog(
                             context: context,
-                            builder:
-                                (_) => AlertDialog(
-                                  title: const Text("Logout"),
-                                  content: const Text(
-                                    "Are you sure you want to logout?",
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(context),
-                                      child: const Text("Cancel"),
-                                    ),
-                                    TextButton(
-                                      onPressed: () {
-                                        Navigator.popUntil(
-                                          context,
-                                          (route) => route.isFirst,
-                                        );
-                                      },
-                                      child: const Text(
-                                        "Logout",
-                                        style: TextStyle(color: Colors.red),
-                                      ),
-                                    ),
-                                  ],
+                            builder: (_) => AlertDialog(
+                              title: Text(loc.logout),
+                              content: Text(loc.logoutConfirmation),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: Text(loc.cancel),
                                 ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.popUntil(
+                                      context,
+                                      (route) => route.isFirst,
+                                    );
+                                  },
+                                  child: Text(
+                                    loc.logout,
+                                    style: const TextStyle(color: Colors.red),
+                                  ),
+                                ),
+                              ],
+                            ),
                           );
                         },
                       ),
@@ -204,7 +478,7 @@ class _ProfileState extends State<Profile> {
             ),
           ),
 
-          // Bottom Navigation Bar positioned above other content
+          // Bottom Navigation Bar
           Positioned(
             bottom: 20.h,
             left: 20.w,
@@ -221,6 +495,41 @@ class _ProfileState extends State<Profile> {
         ],
       ),
     );
+  }
+
+  /// Language Switcher Dialog
+  void _showLanguageDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(AppLocalizations.of(context)!.chooseLanguage),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: const Text("English"),
+              onTap: () {
+                _setLocale(const Locale("en"));
+              },
+            ),
+            ListTile(
+              title: const Text("العربية"),
+              onTap: () {
+                _setLocale(const Locale("ar"));
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _setLocale(Locale locale) {
+    Navigator.pop(context); // close dialog
+    setState(() {
+      // update locale globally
+      MyApp.setLocale(context, locale);
+    });
   }
 
   Widget _buildMenuItem(

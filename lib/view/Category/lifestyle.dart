@@ -134,7 +134,8 @@ class _LifeStyleState extends State<LifeStyle> with TickerProviderStateMixin {
           MaterialPageRoute(
             builder:
                 (context) => ProductDetail(
-                  product: product,
+                  productReference: product.reference,
+                  shopId: '4',
                   toggleFavorite:
                       () => productController.toggleFavorite(product.id),
                   isFavorite: product.isFavorite,

@@ -1,33 +1,36 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tawasul_application/model/category_model.dart';
 import 'package:tawasul_application/model/product_model.dart';
 
 class ApiService {
   static const String baseUrl = "http://t-api.dotit-corp.com/api";
   static const int timeoutSeconds = 30;
 
-  // Helper method to get auth token
   static Future<String?> _getAuthToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('auth_token');
   }
 
-  // Helper method for authorized requests
   static Future<Map<String, String>> _getAuthHeaders() async {
     try {
       final token = await _getAuthToken();
+      final prefs = await SharedPreferences.getInstance();
+      final language = prefs.getString('language') ?? 'en';
+
+      Map<String, String> headers = {
+        'Content-Type': 'application/json',
+        'Accept-Language': language,
+      };
+
       if (token != null && token.isNotEmpty) {
-        return {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        };
-      } else {
-        print("⚠️ No auth token found, making public request");
-        return {'Content-Type': 'application/json'};
+        headers['Authorization'] = 'Bearer $token';
       }
+
+      return headers;
     } catch (e) {
-      print("❌ Error getting auth headers: $e");
       return {'Content-Type': 'application/json'};
     }
   }
@@ -69,74 +72,62 @@ class ApiService {
     await prefs.remove('auth_token');
   }
 
-  // GET PRODUCT DETAILS BY ID
-  static Future<Product?> getProductDetails(int productId) async {
-    try {
-      final response = await http
-          .get(
-            Uri.parse('$baseUrl/public/getProduct?id=$productId'),
-            headers: await _getAuthHeaders(),
-          )
-          .timeout(Duration(seconds: timeoutSeconds));
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['response'] != null && data['response']['product'] != null) {
-          return Product.fromJson(data['response']['product']);
-        }
-      }
-      return null;
-    } catch (e) {
-      print("Error fetching product details: $e");
-      return null;
-    }
-  }
-
-  // GET PRODUCT DETAILS BY CODE AND SHOP ID
+  //Product detail
   static Future<Product?> getProductDetail({
     required String code,
     required String shopId,
   }) async {
     try {
-      final url = '$baseUrl/public/getProduct?code=$code&shopId=$shopId';
-      print("🌐 Request URL: $url");
+      final url = '$baseUrl/public/getProduct?code=$code&id-shop=$shopId';
+      print(" Request URL: $url");
 
       final response = await http
-          .get(Uri.parse(url), headers: {'Content-Type': 'application/json'})
+          .get(Uri.parse(url), headers: await _getAuthHeaders())
           .timeout(Duration(seconds: timeoutSeconds));
 
-      // Log the raw response
-      print("📥 Raw API Response: ${response.body}");
-      print("🛡️ Status Code: ${response.statusCode}");
+      print(" Raw API Response: ${response.body}");
+      final data = jsonDecode(response.body);
+      print(" DEBUG - Full response structure:");
+      _printJsonStructure(data, 0);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        print("📦 Parsed Response Data: $data");
 
-        if (data['response'] != null &&
-            data['response'] is List &&
-            data['response'].isNotEmpty) {
-          final productData = data['response'][0];
-          print("🛍️ Product Data: $productData");
-
-          return Product(
-            id: int.tryParse(productData['id']?.toString() ?? '0') ?? 0,
-            name: productData['name'] ?? '',
-            brand: productData['manufacturer_name'] ?? '',
-            price: productData['price']?.toString() ?? '0',
-            image: productData['image'] ?? '',
-            description: productData['description_short'] ?? '',
-          );
-        } else {
-          print("⚠️ Empty or invalid response structure");
+        if (data['response'] != null) {
+          if (data['response'] is List && data['response'].isNotEmpty) {
+            return Product.fromJson(data['response'][0]);
+          } else if (data['response']['product'] != null) {
+            return Product.fromJson(data['response']['product']);
+          }
         }
+
+        print(" No valid product found in response");
+        return null;
       } else {
-        print("❌ API Error: ${response.statusCode} - ${response.reasonPhrase}");
+        print(" API Error: ${response.statusCode}");
+        return null;
       }
-      return null;
     } catch (e) {
-      print("‼️ Exception in getProductDetail: $e");
+      print(" Exception in getProductDetail: $e");
       return null;
+    }
+  }
+
+  static void _printJsonStructure(dynamic json, int indent) {
+    if (json is Map) {
+      json.forEach((key, value) {
+        print('${'  ' * indent}$key: ${value.runtimeType}');
+        if (value is Map || value is List) {
+          _printJsonStructure(value, indent + 1);
+        }
+      });
+    } else if (json is List) {
+      if (json.isNotEmpty) {
+        print('${'  ' * indent}List[0]: ${json[0].runtimeType}');
+        if (json[0] is Map || json[0] is List) {
+          _printJsonStructure(json[0], indent + 1);
+        }
+      }
     }
   }
 
@@ -161,9 +152,11 @@ class ApiService {
               price: productJson['price']?.toString() ?? '0',
               image: productJson['image'] ?? '',
               description: productJson['description'] ?? 'No Description',
+
               oldPrice: productJson['oldPrice']?.toString(),
               discount: productJson['discount']?.toString(),
               isFavorite: true,
+              reference: productJson['reference'] ?? 'N/A',
             );
           }).toList();
         }
@@ -230,23 +223,23 @@ class ApiService {
     try {
       final url =
           '$baseUrl/public/getCategoryProducts?code=$categoryCode&id-shop=$shopId';
-      print("🌐 API URL: $url");
+      print(" API URL: $url");
 
       final response = await http
           .get(Uri.parse(url), headers: await _getAuthHeaders())
           .timeout(Duration(seconds: timeoutSeconds));
 
-      print("📊 Status Code: ${response.statusCode}");
-      print("📦 Response Body: ${response.body}");
+      print(" Status Code: ${response.statusCode}");
+      print(" Response Body: ${response.body}");
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        print("✅ Parsed Data: $data");
+        print(" Parsed Data: $data");
 
         if (data['response'] != null && data['response']['products'] != null) {
           final products = data['response']['products'];
 
-          print("🛍️ Products found: ${products.length}");
+          print(" Products found: ${products.length}");
 
           // Debug: Check dates of first few products
           for (
@@ -256,7 +249,7 @@ class ApiService {
           ) {
             final product = products[i];
             print(
-              "📅 Product ${i + 1}: ${product['name']} - Added: ${product['date_add']}",
+              "Product ${i + 1}: ${product['name']} - Added: ${product['date_add']}",
             );
           }
 
@@ -265,6 +258,8 @@ class ApiService {
               id:
                   int.tryParse(productJson['id_product']?.toString() ?? '0') ??
                   0,
+              reference: productJson['reference'] ?? 'N/A',
+
               name: productJson['name'] ?? 'No Name',
               brand: productJson['manufacturer_name'] ?? 'No Brand',
               price: productJson['price']?.toString() ?? '0',
@@ -279,14 +274,14 @@ class ApiService {
             );
           }).toList();
         }
-        print("⚠️ No products found in response structure");
+        print(" No products found in response structure");
         return [];
       } else {
-        print("❌ API Error: ${response.statusCode}");
+        print(" API Error: ${response.statusCode}");
         return [];
       }
     } catch (e) {
-      print("‼️ Exception in getCategoryProducts: $e");
+      print(" Exception in getCategoryProducts: $e");
       return [];
     }
   }
@@ -301,7 +296,7 @@ class ApiService {
         // Fallback to simple parsing without T
         return DateTime.parse(dateString);
       } catch (e) {
-        print("❌ Error parsing date: $dateString, error: $e");
+        print(" Error parsing date: $dateString, error: $e");
         return null;
       }
     }
@@ -347,19 +342,19 @@ class ApiService {
           )
           .timeout(Duration(seconds: 10));
 
-      print("🔗 API Connection Test:");
-      print("📊 Status Code: ${response.statusCode}");
-      print("📦 Response: ${response.body}");
+      print(" API Connection Test:");
+      print(" Status Code: ${response.statusCode}");
+      print(" Response: ${response.body}");
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        print("✅ API Connection Successful!");
-        print("📋 Response Structure: ${data.keys.toList()}");
+        print(" API Connection Successful!");
+        print(" Response Structure: ${data.keys.toList()}");
       } else {
-        print("❌ API Connection Failed!");
+        print(" API Connection Failed!");
       }
     } catch (e) {
-      print("‼️ API Connection Error: $e");
+      print(" API Connection Error: $e");
     }
   }
 
@@ -388,20 +383,19 @@ class ApiService {
     String categoryName,
   ) async {
     try {
-      print("🔄 Getting products for category: $categoryName");
+      print("Getting products for category: $categoryName");
 
       // First get the category code
       final categoryCode = await getCategoryCodeByName(categoryName);
 
       if (categoryCode.isEmpty) {
-        print("❌ Could not find category code for $categoryName");
+        print(" Could not find category code for $categoryName");
         return [];
       }
 
-      print("✅ Using category code: $categoryCode");
+      print(" Using category code: $categoryCode");
 
-
-      // For now, let's try to extract products from the category structure
+      //Extract products from the category structure
       final categoryData = await getCategoryStructure();
 
       if (categoryData['response'] != null &&
@@ -416,9 +410,7 @@ class ApiService {
           categoryCode,
         );
 
-        print(
-          "📦 Extracted ${products.length} products from category structure",
-        );
+        print(" Extracted ${products.length} products from category structure");
         return products;
       }
 
@@ -439,7 +431,7 @@ class ApiService {
     for (var category in categories) {
       // Check if this is the target category
       if (category['code']?.toString() == targetCode) {
-        print("🎯 Found target category: ${category['name']}");
+        print(" Found target category: ${category['name']}");
 
         // If this category has products directly, extract them
         if (category['products'] != null && category['products'] is List) {
@@ -517,29 +509,21 @@ class ApiService {
     }
 
     extractFromSubcategories(category);
-    print("📦 Extracted ${products.length} products from ${category['name']}");
+    print(" Extracted ${products.length} products from ${category['name']}");
     return products;
   }
 
-  // Alternative: If the API doesn't have products in the category structure,
-  // we might need to use the category code with a different approach
   static Future<List<Product>> getProductsUsingCategoryCode(
     String categoryName,
   ) async {
     try {
-      // First get the category code
       final categoryCode = await getCategoryCodeByName(categoryName);
-
       if (categoryCode.isEmpty) {
-        print("❌ Could not find category code for $categoryName");
+        print(" Could not find category code for $categoryName");
         return [];
       }
 
-      print("✅ Using category code: $categoryCode for $categoryName");
-
-      // Based on your API structure, we might need to use a different endpoint
-      // or parse the category structure differently
-      // For now, let's return an empty list as we need to understand the API better
+      print(" Using category code: $categoryCode for $categoryName");
       return [];
     } catch (e) {
       print("Error getting products using category code: $e");
@@ -547,11 +531,11 @@ class ApiService {
     }
   }
 
-  // In ApiService.dart - Add these methods
+  //
   static Future<Map<String, dynamic>> getCategoryStructure() async {
     try {
       final url = '$baseUrl/public/getCategories';
-      print("🌐 Fetching category structure from: $url");
+      print(" Fetching category structure from: $url");
 
       final response = await http
           .get(Uri.parse(url), headers: await _getAuthHeaders())
@@ -561,64 +545,116 @@ class ApiService {
         final data = jsonDecode(response.body);
         return data;
       } else {
-        print("❌ Failed to fetch category structure: ${response.statusCode}");
+        print(" Failed to fetch category structure: ${response.statusCode}");
         return {};
       }
     } catch (e) {
-      print("‼️ Exception in getCategoryStructure: $e");
+      print(" Exception in getCategoryStructure: $e");
       return {};
     }
   }
-  // In ApiService.dart - Add a method to debug the API response
-static Future<void> debugApiResponse() async {
-  try {
-    final response = await http.get(
-      Uri.parse('$baseUrl/public/getCategories'),
-      headers: await _getAuthHeaders(),
-    );
-    
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      print("=== API RESPONSE DEBUG ===");
-      print("Full response: $data");
-      
-      if (data['response'] != null && data['response'] is List) {
-        final categories = List<Map<String, dynamic>>.from(data['response']);
-        print("Root categories count: ${categories.length}");
-        
-        for (var i = 0; i < categories.length; i++) {
-          final category = categories[i];
-          print("${i + 1}. ${category['name']} (ID: ${category['id']}, Code: ${category['code']})");
-          
-          if (category['childs'] != null && category['childs'] is List) {
-            final childs = List<Map<String, dynamic>>.from(category['childs']);
-            print("   Childs: ${childs.length}");
-            
-            for (var j = 0; j < childs.length; j++) {
-              final child = childs[j];
-              print("   └─ ${j + 1}. ${child['name']} (ID: ${child['id']}, Code: ${child['code']})");
+  // Similar product part
+
+  static Future<String?> getProductCategoryCode(int productId) async {
+    try {
+      final url = '$baseUrl/public/getProductCategory?product_id=$productId';
+      final response = await http
+          .get(Uri.parse(url), headers: await _getAuthHeaders())
+          .timeout(Duration(seconds: timeoutSeconds));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['category_code']?.toString();
+      }
+
+      final productDetail = await getProductDetail(
+        code: productId.toString(),
+        shopId: '4',
+      );
+
+      return productDetail?.categoryCode;
+    } catch (e) {
+      print("Error fetching product category: $e");
+      return null;
+    }
+  }
+
+  static Future<List<Category>> getAllCategories() async {
+    try {
+      final url = '$baseUrl/public/getCategories';
+      final response = await http
+          .get(Uri.parse(url), headers: await _getAuthHeaders())
+          .timeout(Duration(seconds: timeoutSeconds));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['response'] != null && data['response'] is List) {
+          return (data['response'] as List)
+              .map<Category>((categoryJson) => Category.fromJson(categoryJson))
+              .toList();
+        }
+      }
+      return [];
+    } catch (e) {
+      print("Error fetching categories: $e");
+      return [];
+    }
+  }
+
+  //debug api response
+  static Future<void> debugApiResponse() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/public/getCategories'),
+        headers: await _getAuthHeaders(),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print("=== API RESPONSE DEBUG ===");
+        print("Full response: $data");
+
+        if (data['response'] != null && data['response'] is List) {
+          final categories = List<Map<String, dynamic>>.from(data['response']);
+          print("Root categories count: ${categories.length}");
+
+          for (var i = 0; i < categories.length; i++) {
+            final category = categories[i];
+            print(
+              "${i + 1}. ${category['name']} (ID: ${category['id']}, Code: ${category['code']})",
+            );
+
+            if (category['childs'] != null && category['childs'] is List) {
+              final childs = List<Map<String, dynamic>>.from(
+                category['childs'],
+              );
+              print("   Childs: ${childs.length}");
+
+              for (var j = 0; j < childs.length; j++) {
+                final child = childs[j];
+                print(
+                  "   └─ ${j + 1}. ${child['name']} (ID: ${child['id']}, Code: ${child['code']})",
+                );
+              }
             }
           }
         }
+        print("=== END DEBUG ===");
+      } else {
+        print(" API request failed: ${response.statusCode}");
       }
-      print("=== END DEBUG ===");
-    } else {
-      print("❌ API request failed: ${response.statusCode}");
+    } catch (e) {
+      print(" Debug API error: $e");
     }
-  } catch (e) {
-    print("❌ Debug API error: $e");
   }
-}
 
-
-
-  // In ApiService.dart - Update the getCategoryCodeByName method
+  // Get Category Code By Name method
   static Future<String> getCategoryCodeByName(String categoryName) async {
     try {
       final categoryData = await getCategoryStructure();
 
-      print("🔍 Parsing category structure for: $categoryName");
-      print("📦 Full response: $categoryData");
+      print(" Parsing category structure for: $categoryName");
+      print("Full response: $categoryData");
 
       if (categoryData['response'] != null &&
           categoryData['response'] is List) {
@@ -626,7 +662,7 @@ static Future<void> debugApiResponse() async {
           categoryData['response'],
         );
 
-        print("🌳 Root categories found: ${rootCategories.length}");
+        print(" Root categories found: ${rootCategories.length}");
 
         // Print all root categories for debugging
         for (var i = 0; i < rootCategories.length; i++) {
@@ -635,7 +671,7 @@ static Future<void> debugApiResponse() async {
 
           // Check if this is the "Accueil" category
           if (category['name'] == 'Accueil' || category['id'] == '2') {
-            print("✅ Found Accueil category!");
+            print(" Found Accueil category!");
 
             if (category['childs'] != null && category['childs'] is List) {
               final childCategories = List<Map<String, dynamic>>.from(
@@ -657,7 +693,7 @@ static Future<void> debugApiResponse() async {
                 if (child['name']?.toLowerCase() ==
                     categoryName.toLowerCase()) {
                   print(
-                    "🎯 Found $categoryName category! Code: ${child['code']}",
+                    " Found $categoryName category! Code: ${child['code']}",
                   );
                   return child['code']?.toString() ?? '';
                 }
@@ -671,19 +707,19 @@ static Future<void> debugApiResponse() async {
                     ) ==
                     true) {
                   print(
-                    "🎯 Found similar category: ${child['name']} with code: ${child['code']}",
+                    " Found similar category: ${child['name']} with code: ${child['code']}",
                   );
                   return child['code']?.toString() ?? '';
                 }
               }
             } else {
-              print("❌ Accueil category has no childs");
+              print("Accueil category has no childs");
             }
           }
         }
 
         // Alternative approach: Search through all categories recursively
-        print("🔍 Searching through all categories recursively...");
+        print(" Searching through all categories recursively...");
         final foundCode = _findCategoryCodeRecursive(
           rootCategories,
           categoryName,
@@ -692,7 +728,7 @@ static Future<void> debugApiResponse() async {
           return foundCode;
         }
       } else {
-        print("❌ No response data found in API response");
+        print("No response data found in API response");
       }
 
       return '';
@@ -710,7 +746,7 @@ static Future<void> debugApiResponse() async {
     for (var category in categories) {
       // Check if current category matches
       if (category['name']?.toLowerCase() == targetName.toLowerCase()) {
-        print("🎯 Found $targetName recursively! Code: ${category['code']}");
+        print(" Found $targetName recursively! Code: ${category['code']}");
         return category['code']?.toString() ?? '';
       }
 
@@ -718,7 +754,7 @@ static Future<void> debugApiResponse() async {
       if (category['name']?.toLowerCase().contains(targetName.toLowerCase()) ==
           true) {
         print(
-          "🎯 Found similar category recursively: ${category['name']} with code: ${category['code']}",
+          " Found similar category recursively: ${category['name']} with code: ${category['code']}",
         );
         return category['code']?.toString() ?? '';
       }
@@ -741,7 +777,7 @@ static Future<void> debugApiResponse() async {
     return '';
   }
 
-  // In ApiService.dart - Add a method with hardcoded category codes
+  // method with hardcoded category codes
   static Map<String, String> getHardcodedCategoryCodes() {
     return {
       'HighTech': '10',
@@ -752,7 +788,6 @@ static Future<void> debugApiResponse() async {
       'high tech': '10',
       'smart home': '11',
       'smart-home': '11',
-      'smart home': '11',
       'smart office': '12',
       'smart-office': '12',
       'lifestyle': '13',
@@ -778,7 +813,12 @@ static Future<void> debugApiResponse() async {
     return '';
   }
 
-  // In ApiService.dart - Add a debug method
+  //getAuthHeadersForDebug
+  static Future<Map<String, String>> getAuthHeadersForDebug() async {
+    return await _getAuthHeaders();
+  }
+
+  //  debug method
   static Future<void> debugCategoryStructure() async {
     try {
       final categoryData = await getCategoryStructure();
@@ -825,32 +865,150 @@ static Future<void> debugApiResponse() async {
       print("Error debugging category structure: $e");
     }
   }
-//Categories
-static Future<List<Product>> getProductsByCategoryName(String categoryName) async {
-  try {
-    // Get the category code
-    String categoryCode = await getCategoryCodeByName(categoryName);
-    
-    // Fallback to hardcoded codes if API fails
-    if (categoryCode.isEmpty) {
-      categoryCode = getHardcodedCategoryCode(categoryName);
-    }
-    
-    if (categoryCode.isEmpty) {
-      print("❌ Could not find category code for $categoryName");
+
+  //Categories
+  static Future<List<Product>> getProductsByCategoryName(
+    String categoryName,
+  ) async {
+    try {
+      String categoryCode = await getCategoryCodeByName(categoryName);
+
+      if (categoryCode.isEmpty) {
+        categoryCode = getHardcodedCategoryCode(categoryName);
+      }
+
+      if (categoryCode.isEmpty) {
+        print("Could not find category code for $categoryName");
+        return [];
+      }
+
+      print(" Fetching products for $categoryName with code: $categoryCode");
+
+      return await getCategoryProducts(categoryCode: categoryCode, shopId: '4');
+    } catch (e) {
+      print("Error fetching products for $categoryName: $e");
       return [];
     }
+  }
+
+  //Shopping cart : Get Cart
+  // Récupérer le panier - FIXED
+  static Future<List<dynamic>> getCart() async {
+    try {
+      final response = await http
+          .get(
+            Uri.parse("$baseUrl/user/cart"), // Changed endpoint
+            headers: await _getAuthHeaders(), // Added auth headers
+          )
+          .timeout(Duration(seconds: timeoutSeconds));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data["response"] ?? [];
+      } else {
+        throw Exception(
+          "Erreur lors du chargement du panier: ${response.statusCode}",
+        );
+      }
+    } catch (e) {
+      print("Error fetching cart: $e");
+      throw Exception("Failed to fetch cart: $e");
+    }
+  }
+
+  // Supprimer un produit du panier - FIXED
+  static Future<void> removeFromCart(dynamic productId) async {
+    // Changed to dynamic
+    try {
+      final response = await http
+          .delete(
+            Uri.parse(
+              "$baseUrl/user/cart/remove/$productId",
+            ), 
+            headers: await _getAuthHeaders(),
+          )
+          .timeout(Duration(seconds: timeoutSeconds));
+
+      if (response.statusCode != 200) {
+        throw Exception(
+          "Erreur lors de la suppression du produit: ${response.statusCode}",
+        );
+      }
+    } catch (e) {
+      print("Error removing from cart: $e");
+      throw Exception("Failed to remove item: $e");
+    }
+  }
+
+  // Mettre à jour la quantité d'un produit 
+  static Future<void> updateCartQty(dynamic productId, int qty) async {
+    try {
+      final response = await http
+          .put(
+            Uri.parse("$baseUrl/user/cart/update"), // Changed endpoint
+            headers: await _getAuthHeaders(), // Added auth headers
+            body: json.encode({"product_id": productId, "qty": qty}),
+          )
+          .timeout(Duration(seconds: timeoutSeconds));
+
+      if (response.statusCode != 200) {
+        throw Exception(
+          "Erreur lors de la mise à jour de la quantité: ${response.statusCode}",
+        );
+      }
+    } catch (e) {
+      print("Error updating cart quantity: $e");
+      throw Exception("Failed to update quantity: $e");
+    }
+  }
+
+  // Vider le panier 
+  static Future<void> clearCart() async {
+    try {
+      final response = await http
+          .delete(
+            Uri.parse("$baseUrl/user/cart/clear"), // Changed endpoint
+            headers: await _getAuthHeaders(), // Added auth headers
+          )
+          .timeout(Duration(seconds: timeoutSeconds));
+
+      if (response.statusCode != 200) {
+        throw Exception(
+          "Erreur lors du vidage du panier: ${response.statusCode}",
+        );
+      }
+    } catch (e) {
+      print("Error clearing cart: $e");
+      throw Exception("Failed to clear cart: $e");
+    }
+  }
+  //Add To Cart Methode 
+static Future<bool> addToCart(dynamic productId, int quantity, {String? color}) async {
+  try {
+    final Map<String, dynamic> body = {
+      "product_id": productId,
+      "qty": quantity,
+    };
     
-    print("✅ Fetching products for $categoryName with code: $categoryCode");
-    
-    // Use getCategoryProducts which seems to work correctly
-    return await getCategoryProducts(
-      categoryCode: categoryCode,
-      shopId: '4', // Your shop ID
-    );
+    if (color != null && color.isNotEmpty) {
+      body["color"] = color;
+    }
+
+    final response = await http.post(
+      Uri.parse("$baseUrl/user/cart/add"),
+      headers: await _getAuthHeaders(),
+      body: json.encode(body),
+    ).timeout(Duration(seconds: timeoutSeconds));
+
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      print("Add to cart failed: ${response.statusCode} - ${response.body}");
+      return false;
+    }
   } catch (e) {
-    print("❌ Error fetching products for $categoryName: $e");
-    return [];
+    print("Error adding to cart: $e");
+    return false;
   }
 }
 }

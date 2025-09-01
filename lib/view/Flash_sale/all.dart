@@ -154,7 +154,6 @@ class _AllState extends State<All> {
       ),
     );
   }
-
 }
 
 Widget _buildProductCard(BuildContext context, Product product) {
@@ -170,7 +169,8 @@ Widget _buildProductCard(BuildContext context, Product product) {
         MaterialPageRoute(
           builder:
               (context) => ProductDetail(
-                product: product,
+                productReference: product.reference,
+                shopId: '4',
                 toggleFavorite:
                     () => productController.toggleFavorite(product.id),
                 isFavorite: product.isFavorite,

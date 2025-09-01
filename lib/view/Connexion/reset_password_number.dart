@@ -3,14 +3,14 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:tawasul_application/view/Connexion/forgot_password_number.dart';
 import 'package:tawasul_application/view/home_page.dart';
 
-class CodeNumber extends StatefulWidget {
-  const CodeNumber({Key? key}) : super(key: key);
+class ResetPasswordNumber extends StatefulWidget {
+  const ResetPasswordNumber({Key? key}) : super(key: key);
 
   @override
-  State<CodeNumber> createState() => _CodeNumberState();
+  State<ResetPasswordNumber> createState() => _ResetPasswordNumberState();
 }
 
-class _CodeNumberState extends State<CodeNumber> {
+class _ResetPasswordNumberState extends State<ResetPasswordNumber> {
   bool isChecked = false;
   String? selectedCountry;
   final TextEditingController _phoneController = TextEditingController();
@@ -222,7 +222,7 @@ class _CodeNumberState extends State<CodeNumber> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => CodeNumber()),
+                      MaterialPageRoute(builder: (context) => ResetPasswordNumber()),
                     );
                   },
                   child: RichText(

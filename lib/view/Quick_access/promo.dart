@@ -1,3 +1,4 @@
+//don't remove it until we fix the 500 error
 // import 'dart:async';
 // import 'dart:convert';
 // import 'package:flutter/material.dart';
@@ -14,7 +15,6 @@
 // import 'package:tawasul_application/view/shopping_cart.dart';
 // //
 // import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-
 
 // class PromoPage extends StatefulWidget {
 //   const PromoPage({super.key});
@@ -497,8 +497,6 @@
 //   }
 // }
 
-
-
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -634,13 +632,15 @@ class _PromoPageState extends State<PromoPage> with TickerProviderStateMixin {
           });
         } else {
           setState(() {
-            _errorMessage = '${AppLocalizations.of(context)!.apiError}: ${responseData['message']}';
+            _errorMessage =
+                '${AppLocalizations.of(context)!.apiError}: ${responseData['message']}';
             _isLoading = false;
           });
         }
       } else {
         setState(() {
-          _errorMessage = '${AppLocalizations.of(context)!.failedToLoad}: ${response.statusCode}';
+          _errorMessage =
+              '${AppLocalizations.of(context)!.failedToLoad}: ${response.statusCode}';
           _isLoading = false;
         });
       }
@@ -666,7 +666,8 @@ class _PromoPageState extends State<PromoPage> with TickerProviderStateMixin {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = '${AppLocalizations.of(context)!.anErrorOccurred}: ${e.toString()}';
+        _errorMessage =
+            '${AppLocalizations.of(context)!.anErrorOccurred}: ${e.toString()}';
         _isLoading = false;
       });
     }
@@ -692,7 +693,8 @@ class _PromoPageState extends State<PromoPage> with TickerProviderStateMixin {
           MaterialPageRoute(
             builder:
                 (context) => ProductDetail(
-                  product: product,
+                  productReference: product.reference,
+                  shopId: '4',
                   toggleFavorite:
                       () => productController.toggleFavorite(product.id),
                   isFavorite: product.isFavorite,

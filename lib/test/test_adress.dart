@@ -4,5 +4,5 @@ import 'package:tawasul_application/view/Checkout/checkout_.dart';
 
 void main() {
   debugPaintBaselinesEnabled = false;
-  runApp(MaterialApp(debugShowCheckedModeBanner: false, home: Address()));
+  runApp(MaterialApp(debugShowCheckedModeBanner: false, home: Checkout()));
 }

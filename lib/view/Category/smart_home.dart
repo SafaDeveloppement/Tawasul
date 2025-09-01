@@ -135,7 +135,8 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
           MaterialPageRoute(
             builder:
                 (context) => ProductDetail(
-                  product: product,
+                  productReference:  product.reference,
+                  shopId: '1',
                   toggleFavorite:
                       () => productController.toggleFavorite(product.id),
                   isFavorite: product.isFavorite,
@@ -231,7 +232,7 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
               ),
             ),
             Positioned(
-              top: 8.h,
+              top: 8.h,   
               right: 8.w,
               child: GestureDetector(
                 onTap: () => productController.toggleFavorite(product.id),
@@ -360,7 +361,7 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
   }
 
   Widget _buildTabContent(BuildContext context, int tabIndex) {
-            final t = AppLocalizations.of(context)!;
+    final t = AppLocalizations.of(context)!;
 
     final productController = Provider.of<ProductController>(context);
     List<Product> sortedProducts = List.from(productController.allProducts);

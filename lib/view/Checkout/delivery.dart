@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:tawasul_application/view/Checkout/address_selection.dart';
-import 'package:tawasul_application/view/Checkout/checkout.dart';
+import 'package:tawasul_application/view/Checkout/checkout_.dart';
 import 'package:tawasul_application/view/store_location.dart';
 
 class Delivery extends StatefulWidget {
@@ -227,7 +227,7 @@ class _DeliveryState extends State<Delivery> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const Checkout(),
+                            builder: (context) =>Checkout(),
                           ),
                         );
                       },

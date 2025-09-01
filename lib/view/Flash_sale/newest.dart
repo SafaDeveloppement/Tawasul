@@ -145,7 +145,8 @@ class _NewestState extends State<Newest> {
           MaterialPageRoute(
             builder:
                 (context) => ProductDetail(
-                  product: product,
+                  productReference: product.reference,
+                  shopId: '4',
                   toggleFavorite:
                       () => productController.toggleFavorite(product.id),
                   isFavorite: product.isFavorite,

@@ -90,7 +90,8 @@ class _SearchingResultState extends State<SearchingResult> {
           MaterialPageRoute(
             builder:
                 (context) => ProductDetail(
-                  product: product,
+                  productReference: product.reference,
+                  shopId: '4',
                   toggleFavorite: () => {},
                   isFavorite: false,
                 ),
@@ -210,7 +211,7 @@ class _SearchingResultState extends State<SearchingResult> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white, 
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Container(
           height: 40.h,
@@ -231,7 +232,7 @@ class _SearchingResultState extends State<SearchingResult> {
                     hintStyle: TextStyle(fontSize: 14.sp),
                   ),
                   onSubmitted: _performSearch,
-                ), 
+                ),
               ),
               IconButton(
                 icon: const Icon(Icons.search),

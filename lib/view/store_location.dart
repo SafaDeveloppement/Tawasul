@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:tawasul_application/view/Quick_access/shops.dart';
-import 'voice_search.dart';
 
 class StoreLocation extends StatefulWidget {
   const StoreLocation({super.key});
@@ -98,20 +97,6 @@ class _StoreLocationState extends State<StoreLocation> {
                         border: InputBorder.none,
                       ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.mic, color: Colors.grey),
-                    onPressed: () async {
-                      final searchQuery = await Navigator.push<String>(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const VoiceSearchScreen(),
-                        ),
-                      );
-                      if (searchQuery != null && searchQuery.isNotEmpty) {
-                        _handleVoiceSearchResult(searchQuery);
-                      }
-                    },
                   ),
                 ],
               ),

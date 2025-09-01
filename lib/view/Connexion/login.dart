@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:tawasul_application/view/Connexion/forgot_password_number.dart';
 import 'package:tawasul_application/view/Connexion/signup.dart';
 import 'package:tawasul_application/view/home_page.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class Login extends StatefulWidget {
   const Login({Key? key}) : super(key: key);
@@ -33,9 +34,11 @@ class _LoginState extends State<Login> {
   }
 
   Future<void> _login() async {
+    final t = AppLocalizations.of(context)!;
+
     if (_usernameController.text.trim().isEmpty ||
         _passwordController.text.trim().isEmpty) {
-      _showError("Please enter username and password");
+      _showError(t.pleaseEnterUsernameAndPassword);
       return;
     }
 
@@ -48,9 +51,9 @@ class _LoginState extends State<Login> {
         url,
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
-          "username":
+          t.username:
               _usernameController.text.trim(), // FIXED: must be 'username'
-          "password": _passwordController.text.trim(),
+          t.password: _passwordController.text.trim(),
         }),
       );
 
@@ -83,6 +86,7 @@ class _LoginState extends State<Login> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -117,7 +121,7 @@ class _LoginState extends State<Login> {
           ),
         ),
         title: Text(
-          "Login",
+          t.login,
           style: TextStyle(
             fontFamily: "Inter",
             fontSize: 18.sp,
@@ -144,18 +148,18 @@ class _LoginState extends State<Login> {
                           Icon(Icons.account_circle, size: 80),
                 ),
               ),
-              const Center(
+              Center(
                 child: Column(
                   children: [
                     Text(
-                      "Connexion",
+                      t.connexion,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.normal,
                       ),
                     ),
                     Text(
-                      "Please enter your informations to connect \nto your account",
+                      t.pleaseEnterYourInformationsToConnectToYourAccount,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 14,
@@ -168,14 +172,14 @@ class _LoginState extends State<Login> {
               ),
               SizedBox(height: 50),
               _buildTextField(
-                "Username *",
+                t.username,
                 Icons.person,
                 controller: _usernameController,
                 keyboardType: TextInputType.emailAddress,
               ),
               SizedBox(height: 25),
               _buildTextField(
-                "Password *",
+                t.password,
                 Icons.lock,
                 controller: _passwordController,
                 isPassword: true,
@@ -199,9 +203,9 @@ class _LoginState extends State<Login> {
                             ? const CircularProgressIndicator(
                               color: Colors.white,
                             )
-                            : const Text(
-                              "Login",
-                              style: TextStyle(
+                            : Text(
+                              t.login,
+                              style: const TextStyle(
                                 fontSize: 16,
                                 color: Colors.white,
                               ),
@@ -220,8 +224,8 @@ class _LoginState extends State<Login> {
                       ),
                     );
                   },
-                  child: const Text(
-                    "Forgot password?",
+                  child: Text(
+                    t.forgotPassword,
                     style: TextStyle(
                       color: Colors.black87,
                       decoration: TextDecoration.underline,
@@ -243,15 +247,15 @@ class _LoginState extends State<Login> {
                     );
                   },
                   child: RichText(
-                    text: const TextSpan(
-                      text: "New client? ",
+                    text: TextSpan(
+                      text: t.newClient,
                       style: TextStyle(
                         color: Colors.black87,
                         fontWeight: FontWeight.w500,
                       ),
                       children: [
                         TextSpan(
-                          text: "Create your account",
+                          text: t.createYourAccount,
                           style: TextStyle(
                             color: Color(0xFFF39C12),
                             fontWeight: FontWeight.w500,
