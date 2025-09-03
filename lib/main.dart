@@ -106,7 +106,6 @@
 //   }
 // }
 
-
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -114,6 +113,7 @@ import 'package:provider/provider.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tawasul_application/Provider/cart_provider.dart';
+import 'package:tawasul_application/Provider/product_provider.dart';
 import 'package:tawasul_application/controller/product_controller.dart';
 import 'package:tawasul_application/view/home_page.dart';
 import 'package:tawasul_application/view/splash_screen.dart';
@@ -123,8 +123,10 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
   String? langCode = prefs.getString("language_code");
-  
-  runApp(MyApp(initialLocale: langCode != null ? Locale(langCode) : Locale("en")));
+
+  runApp(
+    MyApp(initialLocale: langCode != null ? Locale(langCode) : Locale("en")),
+  );
 }
 
 class MyApp extends StatefulWidget {
@@ -172,9 +174,10 @@ class _MyAppState extends State<MyApp> {
               create: (context) => ProductController()..initialize(),
               lazy: false,
             ),
+            ChangeNotifierProvider(create: (context) => CartProvider()),
             ChangeNotifierProvider(
-              create: (context) => CartProvider(),
-            ),
+              create: (_) => ProductProvider(),
+            ), 
           ],
           child: MaterialApp(
             debugShowCheckedModeBanner: false,
@@ -189,18 +192,23 @@ class _MyAppState extends State<MyApp> {
             supportedLocales: AppLocalizations.supportedLocales,
             initialRoute: '/',
             routes: {
-              '/': (context) => const SplashScreen(),
-              '/home': (context) => const HomePage(),
+              '/': (context) =>  SplashScreen(),
+              '/home': (context) =>  HomePage(),
             },
-            builder: (context, child) => ResponsiveBreakpoints.builder(
-              child: BouncingScrollWrapper.builder(context, child!),
-              breakpoints: [
-                const Breakpoint(start: 0, end: 450, name: MOBILE),
-                const Breakpoint(start: 451, end: 800, name: TABLET),
-                const Breakpoint(start: 801, end: 1200, name: DESKTOP),
-                const Breakpoint(start: 1201, end: double.infinity, name: '4K'),
-              ],
-            ),
+            builder:
+                (context, child) => ResponsiveBreakpoints.builder(
+                  child: BouncingScrollWrapper.builder(context, child!),
+                  breakpoints: [
+                    const Breakpoint(start: 0, end: 450, name: MOBILE),
+                    const Breakpoint(start: 451, end: 800, name: TABLET),
+                    const Breakpoint(start: 801, end: 1200, name: DESKTOP),
+                    const Breakpoint(
+                      start: 1201,
+                      end: double.infinity,
+                      name: '4K',
+                    ),
+                  ],
+                ),
           ),
         );
       },

@@ -52,6 +52,9 @@ class Product {
     if (categoryCode == null || categoryCode.isEmpty) {
       categoryCode = json['id_category_default']?.toString();
     }
+    if (categoryCode == null || categoryCode.isEmpty) {
+      categoryCode = '10'; // Default fallback category code
+    }
 
     // Parse colors from variants if available
     List<Color>? parsedColors;

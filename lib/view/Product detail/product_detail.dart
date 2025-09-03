@@ -492,9 +492,9 @@ import 'package:flutter_html/flutter_html.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:tawasul_application/Provider/cart_provider.dart';
+import 'package:tawasul_application/Provider/product_provider.dart';
 import 'package:tawasul_application/model/product_model.dart';
 import 'package:tawasul_application/view/Checkout/checkout_.dart';
-import 'package:tawasul_application/controller/product_controller.dart';
 import 'package:tawasul_application/view/Product%20detail/similar_product.dart';
 import 'package:tawasul_application/view/shopping_cart.dart';
 
@@ -940,12 +940,11 @@ class _ProductDetailState extends State<ProductDetail> {
                       child: const Text("Buy now"),
                     ),
                     const SizedBox(height: 30),
-                    Consumer<ProductController>(
-                      builder: (context, productController, child) {
+                    Consumer<ProductProvider>(
+                      builder: (context, productProvider, child) {
                         return SimilarProducts(
                           currentProduct: product!,
                           shopId: widget.shopId,
-                          allProducts: [],
                         );
                       },
                     ),

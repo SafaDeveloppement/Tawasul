@@ -293,6 +293,7 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        // print("Category Products API Response: $data");
         print(" Parsed Data: $data");
 
         if (data['response'] != null && data['response']['products'] != null) {
@@ -300,7 +301,6 @@ class ApiService {
 
           print(" Products found: ${products.length}");
 
-          // Debug: Check dates of first few products
           for (
             var i = 0;
             i < (products.length > 3 ? 3 : products.length);
