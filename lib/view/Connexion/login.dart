@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:tawasul_application/Services/api_service.dart';
 import 'package:tawasul_application/view/Connexion/forgot_password_number.dart';
 import 'package:tawasul_application/view/Connexion/signup.dart';
 import 'package:tawasul_application/view/home_page.dart';
@@ -33,6 +34,50 @@ class _LoginState extends State<Login> {
     super.dispose();
   }
 
+  // Future<void> _login() async {
+  //   final t = AppLocalizations.of(context)!;
+
+  //   if (_usernameController.text.trim().isEmpty ||
+  //       _passwordController.text.trim().isEmpty) {
+  //     _showError(t.pleaseEnterUsernameAndPassword);
+  //     return;
+  //   }
+
+  //   setState(() => isLoading = true);
+
+  //   final url = Uri.parse("http://t-api.dotit-corp.com/api/public/login");
+
+  //   try {
+  //     final response = await http.post(
+  //       url,
+  //       headers: {"Content-Type": "application/json"},
+  //       body: jsonEncode({
+  //         t.username:
+  //             _usernameController.text.trim(), // FIXED: must be 'username'
+  //         t.password: _passwordController.text.trim(),
+  //       }),
+  //     );
+
+  //     final data = jsonDecode(response.body);
+
+  //     if (response.statusCode == 200 && data["token"] != null) {
+  //       // Store token
+  //       await _storage.write(key: "auth_token", value: data["token"]);
+
+  //       // Navigate to home
+  //       Navigator.pushReplacement(
+  //         context,
+  //         MaterialPageRoute(builder: (_) => HomePage()),
+  //       );
+  //     } else {
+  //       _showError(data["ResponseMsg"] ?? "Login failed");
+  //     }
+  //   } catch (e) {
+  //     _showError("Error: $e");
+  //   }
+
+  //   setState(() => isLoading = false);
+  // }
   Future<void> _login() async {
     final t = AppLocalizations.of(context)!;
 
@@ -44,24 +89,18 @@ class _LoginState extends State<Login> {
 
     setState(() => isLoading = true);
 
-    final url = Uri.parse("http://t-api.dotit-corp.com/api/public/login");
-
     try {
-      final response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          t.username:
-              _usernameController.text.trim(), // FIXED: must be 'username'
-          t.password: _passwordController.text.trim(),
-        }),
+      final result = await ApiService.login(
+        _usernameController.text.trim(),
+        _passwordController.text.trim(),
       );
 
-      final data = jsonDecode(response.body);
-
-      if (response.statusCode == 200 && data["token"] != null) {
+      if (result['success'] == true) {
         // Store token
-        await _storage.write(key: "auth_token", value: data["token"]);
+        await _storage.write(key: "auth_token", value: result['token']);
+
+        // Show success message with response body
+        _showSuccess("Login successful! Token: ${result['token']}");
 
         // Navigate to home
         Navigator.pushReplacement(
@@ -69,13 +108,19 @@ class _LoginState extends State<Login> {
           MaterialPageRoute(builder: (_) => HomePage()),
         );
       } else {
-        _showError(data["ResponseMsg"] ?? "Login failed");
+        _showError(result['message'] ?? "Login failed");
       }
     } catch (e) {
       _showError("Error: $e");
     }
 
     setState(() => isLoading = false);
+  }
+
+  void _showSuccess(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.green),
+    );
   }
 
   void _showError(String message) {
@@ -87,6 +132,7 @@ class _LoginState extends State<Login> {
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
+    //final List<String> _consoleOutput = [];
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(

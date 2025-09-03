@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:tawasul_application/Services/api_service.dart';
 import 'package:tawasul_application/model/product_model.dart';
-import 'package:tawasul_application/view/product_detail.dart';
+import 'package:tawasul_application/view/Product%20detail/product_detail.dart';
 
 class SearchingResult extends StatefulWidget {
   final String searchQuery;

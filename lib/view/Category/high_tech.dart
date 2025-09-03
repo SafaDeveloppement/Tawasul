@@ -6,7 +6,7 @@ import 'package:tawasul_application/controller/product_controller.dart';
 import 'package:tawasul_application/model/product_model.dart';
 import 'package:tawasul_application/view/filter.dart';
 import 'package:tawasul_application/view/navbar.dart';
-import 'package:tawasul_application/view/product_detail.dart';
+import 'package:tawasul_application/view/Product%20detail/product_detail.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class HighTech extends StatefulWidget {
