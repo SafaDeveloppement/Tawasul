@@ -33,7 +33,7 @@ class _ResetPasswordNumberState extends State<ResetPasswordNumber> {
         toolbarHeight: 56.h,
         leadingWidth: 48.w,
         leading: Padding(
-          padding: EdgeInsets.only(left: 12.w),
+          padding: EdgeInsetsDirectional.only(start: 12.w),
           child: GestureDetector(
             onTap: () {
               Navigator.push(
@@ -75,6 +75,7 @@ class _ResetPasswordNumberState extends State<ResetPasswordNumber> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(height: 25.h),
+
               /// LOGO
               Center(
                 child: Image.asset(
@@ -222,7 +223,9 @@ class _ResetPasswordNumberState extends State<ResetPasswordNumber> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => ResetPasswordNumber()),
+                      MaterialPageRoute(
+                        builder: (context) => ResetPasswordNumber(),
+                      ),
                     );
                   },
                   child: RichText(

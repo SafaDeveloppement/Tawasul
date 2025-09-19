@@ -1,197 +1,406 @@
-import 'package:flutter/material.dart';
-import 'package:tawasul_application/view/Profile/profile.dart';
+// import 'package:flutter/material.dart';
+// import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class OrderHistory extends StatelessWidget {
+// class OrderHistory extends StatelessWidget {
+//   const OrderHistory({super.key});
+
+//   @override
+//   Widget build(BuildContext context) {
+//     final orders = [
+//       {
+//         "id": "#1001",
+//         "product": "Apple iPhone 14 Plus",
+//         "price": "3190 LYD",
+//         "date": "12 Sept 2025",
+//         "status": "Delivered",
+//         "image": "https://tawasul-shop.com/storage/iphone14.png",
+//       },
+//       {
+//         "id": "#1002",
+//         "product": "Smart Watch",
+//         "price": "1450 LYD",
+//         "date": "9 Sept 2025",
+//         "status": "On the way",
+//         "image": "https://tawasul-shop.com/storage/watch.png",
+//       },
+//       {
+//         "id": "#1003",
+//         "product": "Apple AirPods",
+//         "price": "120 LYD",
+//         "date": "5 Sept 2025",
+//         "status": "Cancelled",
+//         "image": "https://tawasul-shop.com/storage/airpods.png",
+//       },
+//     ];
+
+//     return Scaffold(
+//       backgroundColor: Colors.white,
+//       appBar: AppBar(
+//         backgroundColor: Colors.white,
+//         elevation: 0,
+//         centerTitle: true,
+//         title: Text(
+//           "My Orders",
+//           style: TextStyle(
+//             color: Colors.black,
+//             fontWeight: FontWeight.bold,
+//             fontSize: 18.sp,
+//           ),
+//         ),
+//       ),
+//       body: Padding(
+//         padding: EdgeInsets.all(12.w),
+//         child: ListView.separated(
+//           itemCount: orders.length,
+//           separatorBuilder: (_, __) => SizedBox(height: 12.h),
+//           itemBuilder: (context, index) {
+//             final order = orders[index];
+//             return Container(
+//               padding: EdgeInsets.all(12.w),
+//               decoration: BoxDecoration(
+//                 color: Colors.white,
+//                 borderRadius: BorderRadius.circular(16.r),
+//                 boxShadow: [
+//                   BoxShadow(
+//                     color: Colors.grey.shade200,
+//                     blurRadius: 8,
+//                     spreadRadius: 2,
+//                     offset: const Offset(0, 3),
+//                   ),
+//                 ],
+//               ),
+//               child: Row(
+//                 crossAxisAlignment: CrossAxisAlignment.center,
+//                 children: [
+//                   ClipRRect(
+//                     borderRadius: BorderRadius.circular(12.r),
+//                     child: Image.network(
+//                       order["image"]!,
+//                       width: 70.w,
+//                       height: 70.w,
+//                       fit: BoxFit.cover,
+//                     ),
+//                   ),
+//                   SizedBox(width: 12.w),
+
+//                   Expanded(
+//                     child: Column(
+//                       crossAxisAlignment: CrossAxisAlignment.start,
+//                       children: [
+//                         Text(
+//                           order["product"]!,
+//                           style: TextStyle(
+//                             fontWeight: FontWeight.bold,
+//                             fontSize: 14.sp,
+//                           ),
+//                           maxLines: 1,
+//                           overflow: TextOverflow.ellipsis,
+//                         ),
+//                         SizedBox(height: 4.h),
+//                         Text(
+//                           "Order ID: ${order["id"]}",
+//                           style: TextStyle(
+//                             fontSize: 12.sp,
+//                             color: Colors.grey[600],
+//                           ),
+//                         ),
+//                         SizedBox(height: 2.h),
+//                         Text(
+//                           "Date: ${order["date"]}",
+//                           style: TextStyle(
+//                             fontSize: 12.sp,
+//                             color: Colors.grey[600],
+//                           ),
+//                         ),
+//                         SizedBox(height: 4.h),
+//                         Text(
+//                           order["price"]!,
+//                           style: TextStyle(
+//                             fontWeight: FontWeight.bold,
+//                             fontSize: 13.sp,
+//                             color: Colors.blue,
+//                           ),
+//                         ),
+//                       ],
+//                     ),
+//                   ),
+
+//                   // Order status badge
+//                   Container(
+//                     padding: EdgeInsets.symmetric(
+//                       horizontal: 10.w,
+//                       vertical: 6.h,
+//                     ),
+//                     decoration: BoxDecoration(
+//                       color: _getStatusColor(order["status"]!),
+//                       borderRadius: BorderRadius.circular(12.r),
+//                     ),
+//                     child: Text(
+//                       order["status"]!,
+//                       style: TextStyle(
+//                         color: Colors.white,
+//                         fontSize: 11.sp,
+//                         fontWeight: FontWeight.w600,
+//                       ),
+//                     ),
+//                   ),
+//                 ],
+//               ),
+//             );
+//           },
+//         ),
+//       ),
+
+//       bottomNavigationBar: BottomNavigationBar(
+//         type: BottomNavigationBarType.fixed,
+//         selectedItemColor: Colors.blue,
+//         unselectedItemColor: Colors.grey,
+//         items: const [
+//           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
+//           BottomNavigationBarItem(
+//             icon: Icon(Icons.shopping_cart),
+//             label: "Cart",
+//           ),
+//           BottomNavigationBarItem(
+//             icon: Icon(Icons.favorite),
+//             label: "Wishlist",
+//           ),
+//           BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
+//         ],
+//       ),
+//     );
+//   }
+
+//   Color _getStatusColor(String status) {
+//     switch (status) {
+//       case "Delivered":
+//         return Colors.green;
+//       case "On the way":
+//         return Colors.orange;
+//       case "Cancelled":
+//         return Colors.red;
+//       default:
+//         return Colors.grey;
+//     }
+//   }
+// }
+
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
+import 'package:tawasul_application/controller/product_controller.dart';
+import 'package:tawasul_application/view/Profile/profile.dart';
+import 'package:tawasul_application/view/navbar.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
+class OrderHistory extends StatefulWidget {
   const OrderHistory({super.key});
 
-  final List<Map<String, dynamic>> orders = const [
-    {
-      "title": "MacBook Air I3 pouces Puce Apple M1 SSD 256 Go",
-      "price": "4 499 LYD",
-      "color": "Black",
-      "qty": 1,
-      "status": "Delivered",
-      "date": "23rd March 2025",
-      "image": "assets/images/macbook.png",
-    },
-    {
-      "title": "Smartphone Xiaomi",
-      "price": "1700 LYD",
-      "color": "Blue",
-      "qty": 1,
-      "status": "Cancelled",
-      "date": "23rd March 2025",
-      "image": "assets/images/xiaomi_iphone.png",
-    },
-    {
-      "title": "Tablet Samsung",
-      "price": "1870 LYD",
-      "color": "Black",
-      "qty": 1,
-      "status": "Delivered",
-      "date": "23rd March 2025",
-      "image": "assets/images/xiaomi_tablette.png",
-    },
-    {
-      "title": "MacBook Air I3 pouces Puce Apple M1 SSD 256 Go",
-      "price": "4 499 LYD",
-      "color": "Black",
-      "qty": 1,
-      "status": "Delivered",
-      "date": "23rd March 2025",
-      "image": "assets/images/macbook.png",
-    },
-    {
-      "title": "Tablet Samsung",
-      "price": "1870 LYD",
-      "color": "Black",
-      "qty": 1,
-      "status": "Delivered",
-      "date": "23rd March 2025",
-      "image": "assets/images/xiaomi_tablette.png",
-    },
-    {
-      "title": "MacBook Air I3 pouces Puce Apple M1 SSD 256 Go",
-      "price": "4 499 LYD",
-      "color": "Black",
-      "qty": 1,
-      "status": "Delivered",
-      "date": "23rd March 2025",
-      "image": "assets/images/macbook.png",
-    },
-  ];
+  @override
+  State<OrderHistory> createState() => _OrderHistoryState();
+}
 
-  Color getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case "delivered":
+class _OrderHistoryState extends State<OrderHistory> {
+  int _currentNavIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
+    final orders = [
+      {
+        "id": "#1001",
+        "product": "Apple iPhone 14 Plus",
+        "price": "3190 LYD",
+        "date": "12 Sept 2025",
+        "status": "Delivered",
+        "image": "assets/images/iphone.png",
+      },
+      {
+        "id": "#1002",
+        "product": "Smart Watch",
+        "price": "1450 LYD",
+        "date": "9 Sept 2025",
+        "status": "On the way",
+        "image": "assets/images/smart_watch.png",
+      },
+      {
+        "id": "#1003",
+        "product": "Apple AirPods",
+        "price": "120 LYD",
+        "date": "5 Sept 2025",
+        "status": "Cancelled",
+        "image": "assets/images/airpods.png",
+      },
+    ];
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        toolbarHeight: 56.h,
+        leadingWidth: 48.w,
+        leading: Padding(
+          padding: EdgeInsets.only(left: 12.w),
+          child: GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const Profile()),
+              );
+            },
+            child: Container(
+              width: 36.w,
+              height: 36.w,
+              decoration: const BoxDecoration(
+                color: Color(0xFF008AD2),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Icon(
+                  Icons.arrow_back_ios_new,
+                  color: Colors.white,
+                  size: 18.sp,
+                ),
+              ),
+            ),
+          ),
+        ),
+        title: Text(
+          t.myOrders,
+          style: TextStyle(
+            fontSize: 18.sp,
+            fontWeight: FontWeight.w500,
+            color: Colors.black,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: Padding(
+        padding: EdgeInsets.all(12.w),
+        child: ListView.separated(
+          itemCount: orders.length,
+          separatorBuilder: (_, __) => SizedBox(height: 12.h),
+          itemBuilder: (context, index) {
+            final order = orders[index];
+            return Container(
+              padding: EdgeInsets.all(12.w),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16.r),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.shade200,
+                    blurRadius: 8,
+                    spreadRadius: 2,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12.r),
+                    child: Image.asset(
+                      order["image"]!,
+                      width: 70.w,
+                      height: 70.w,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  SizedBox(width: 12.w),
+
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          order["product"]!,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14.sp,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        SizedBox(height: 4.h),
+                        Text(
+                          "Order ID: ${order["id"]}",
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        SizedBox(height: 2.h),
+                        Text(
+                          "Date: ${order["date"]}",
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        SizedBox(height: 4.h),
+                        Text(
+                          order["price"]!,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13.sp,
+                            color: Colors.blue,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Status badge
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 10.w,
+                      vertical: 6.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _getStatusColor(order["status"]!),
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                    child: Text(
+                      order["status"]!,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+
+      bottomNavigationBar: Consumer<ProductController>(
+        builder: (context, productController, child) {
+          return CustomBottomNavBar(
+            currentIndex: _currentNavIndex,
+            context: context,
+          );
+        },
+      ),
+    );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case "Delivered":
         return Colors.green;
-      case "cancelled":
+      case "On the way":
+        return Colors.orange;
+      case "Cancelled":
         return Colors.red;
       default:
         return Colors.grey;
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF008AD2),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(context),
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: orders.length,
-                itemBuilder: (context, index) {
-                  final order = orders[index];
-                  return _buildOrderCard(order, context);
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          Image.asset('assets/images/logo_tawasul.png', height: 40),
-          const Spacer(),
-          const Text(
-            "Order History",
-            style: TextStyle(
-              fontSize: 20,
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const Spacer(),
-          GestureDetector(
-            onTap:
-                () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => Profile()),
-                ),
-            child: const CircleAvatar(
-              backgroundColor: Colors.white,
-              child: Icon(Icons.arrow_back, color: Color(0xFF008AD2)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOrderCard(Map<String, dynamic> order, BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 2)),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Image.asset(
-            order['image'],
-            width: 70,
-            height: 70,
-            fit: BoxFit.contain,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  order['title'],
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 6),
-                Text("Price : ${order['price']}"),
-                Row(
-                  children: [
-                    const Text("Status "),
-                    Text(
-                      order['status'],
-                      style: TextStyle(
-                        color: getStatusColor(order['status']),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  "Delivered expected by : ${order['date']}",
-                  style: const TextStyle(fontSize: 12),
-                ),
-                const SizedBox(height: 6),
-                Text("Color : ${order['color']}    Qty : ${order['qty']}"),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: () {
-              // Implement delete action if needed
-            },
-            child: const Icon(Icons.close, color: Colors.black),
-          ),
-        ],
-      ),
-    );
   }
 }

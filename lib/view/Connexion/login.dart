@@ -1,8 +1,8 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:http/http.dart' as http;
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tawasul_application/Services/api_service.dart';
 import 'package:tawasul_application/view/Connexion/forgot_password_number.dart';
 import 'package:tawasul_application/view/Connexion/signup.dart';
@@ -34,50 +34,6 @@ class _LoginState extends State<Login> {
     super.dispose();
   }
 
-  // Future<void> _login() async {
-  //   final t = AppLocalizations.of(context)!;
-
-  //   if (_usernameController.text.trim().isEmpty ||
-  //       _passwordController.text.trim().isEmpty) {
-  //     _showError(t.pleaseEnterUsernameAndPassword);
-  //     return;
-  //   }
-
-  //   setState(() => isLoading = true);
-
-  //   final url = Uri.parse("http://t-api.dotit-corp.com/api/public/login");
-
-  //   try {
-  //     final response = await http.post(
-  //       url,
-  //       headers: {"Content-Type": "application/json"},
-  //       body: jsonEncode({
-  //         t.username:
-  //             _usernameController.text.trim(), // FIXED: must be 'username'
-  //         t.password: _passwordController.text.trim(),
-  //       }),
-  //     );
-
-  //     final data = jsonDecode(response.body);
-
-  //     if (response.statusCode == 200 && data["token"] != null) {
-  //       // Store token
-  //       await _storage.write(key: "auth_token", value: data["token"]);
-
-  //       // Navigate to home
-  //       Navigator.pushReplacement(
-  //         context,
-  //         MaterialPageRoute(builder: (_) => HomePage()),
-  //       );
-  //     } else {
-  //       _showError(data["ResponseMsg"] ?? "Login failed");
-  //     }
-  //   } catch (e) {
-  //     _showError("Error: $e");
-  //   }
-
-  //   setState(() => isLoading = false);
-  // }
   Future<void> _login() async {
     final t = AppLocalizations.of(context)!;
 
@@ -96,8 +52,18 @@ class _LoginState extends State<Login> {
       );
 
       if (result['success'] == true) {
-        // Store token
         await _storage.write(key: "auth_token", value: result['token']);
+        final prefs = await SharedPreferences.getInstance();
+
+        await prefs.setInt(
+          'user_id',
+          result['user']?['id'] ?? 1,
+        ); // Adjust based on your API
+        await prefs.setString(
+          'user_email',
+          result['user']?['email'] ?? _usernameController.text.trim(),
+        );
+        await _storeUserDataFromLogin();
 
         // Show success message with response body
         _showSuccess("Login successful! Token: ${result['token']}");
@@ -129,10 +95,24 @@ class _LoginState extends State<Login> {
     );
   }
 
+  Future<void> _storeUserDataFromLogin() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      // You might need to adjust this based on what your login API returns
+      // If the API returns user data, store it here
+      // For now, we'll just store the email
+      await prefs.setString('user_email', _usernameController.text.trim());
+
+      print("User email stored from login");
+    } catch (e) {
+      print("Error storing user data from login: $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
-    //final List<String> _consoleOutput = [];
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -141,7 +121,10 @@ class _LoginState extends State<Login> {
         toolbarHeight: 56.h,
         leadingWidth: 48.w,
         leading: Padding(
-          padding: EdgeInsets.only(left: 12.w),
+          padding: EdgeInsets.only(
+            left: Directionality.of(context) == TextDirection.rtl ? 0 : 12.w,
+            right: Directionality.of(context) == TextDirection.rtl ? 12.w : 0,
+          ),
           child: GestureDetector(
             onTap: () {
               Navigator.push(
@@ -183,7 +166,6 @@ class _LoginState extends State<Login> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(height: 15.h),
               Center(
                 child: Image.asset(
                   "assets/images/tawasul_logo.png",
@@ -216,14 +198,14 @@ class _LoginState extends State<Login> {
                   ],
                 ),
               ),
-              SizedBox(height: 50),
+              SizedBox(height: 30),
               _buildTextField(
                 t.username,
                 Icons.person,
                 controller: _usernameController,
                 keyboardType: TextInputType.emailAddress,
               ),
-              SizedBox(height: 25),
+              SizedBox(height: 15),
               _buildTextField(
                 t.password,
                 Icons.lock,
@@ -259,31 +241,99 @@ class _LoginState extends State<Login> {
                   ),
                 ),
               ),
-              SizedBox(height: 35),
-              Center(
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ForgotPasswordNumber(),
-                      ),
-                    );
-                  },
-                  child: Text(
-                    t.forgotPassword,
-                    style: TextStyle(
-                      color: Colors.black87,
-                      decoration: TextDecoration.underline,
-                      decorationColor: Colors.black,
-                      decorationThickness: 0.7,
+              SizedBox(height: 5),
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ForgotPasswordNumber(),
                     ),
+                  );
+                },
+                child: Text(
+                  t.forgotPassword,
+                  style: TextStyle(
+                    color: Colors.black87,
+                    decoration: TextDecoration.underline,
+                    decorationColor: Colors.black,
+                    decorationThickness: 0.7,
                   ),
                 ),
               ),
-              SizedBox(height: 120.h),
+              SizedBox(height: 25.h),
+
+              // Social signup section
+              Column(
+                children: [
+                  Text(
+                    t.orLoginWith,
+                    style: TextStyle(fontSize: 14.sp, color: Colors.grey),
+                  ),
+                  SizedBox(height: 15.h),
+
+                  // Google Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        side: const BorderSide(color: Colors.grey),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.r),
+                        ),
+                        padding: EdgeInsets.symmetric(vertical: 12.h),
+                      ),
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(t.googleLoginComingSoon)),
+                        );
+                      },
+                      icon: const FaIcon(
+                        FontAwesomeIcons.google,
+                        color: Color(0xFF7A1912),
+                      ),
+                      label: Text(
+                        t.loginWithGoogle,
+                        style: TextStyle(color: Colors.black, fontSize: 14.sp),
+                      ),
+                    ),
+                  ),
+
+                  SizedBox(height: 12.h),
+
+                  // Facebook Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1877F2),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.r),
+                        ),
+                        padding: EdgeInsets.symmetric(vertical: 12.h),
+                      ),
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(t.facebookLoginComingSoon)),
+                        );
+                      },
+                      icon: const FaIcon(
+                        FontAwesomeIcons.facebook,
+                        color: Colors.white,
+                      ),
+                      label: Text(
+                        t.loginWithFacebook,
+                        style: TextStyle(color: Colors.white, fontSize: 14.sp),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              SizedBox(height: 40.h),
               Divider(color: const Color(0xFFE2E3E8)),
-              SizedBox(height: 10),
+              SizedBox(height: 5),
               Center(
                 child: GestureDetector(
                   onTap: () {

@@ -285,7 +285,7 @@ class _AccountValidationState extends State<AccountValidation> {
         toolbarHeight: 56.h,
         leadingWidth: 48.w,
         leading: Padding(
-          padding: EdgeInsets.only(left: 12.w),
+          padding: EdgeInsetsDirectional.only(start: 12.w),
           child: GestureDetector(
             onTap: () {
               Navigator.push(
@@ -327,6 +327,7 @@ class _AccountValidationState extends State<AccountValidation> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(height: 20.h),
+
               /// LOGO
               Center(
                 child: Image.asset(
@@ -375,10 +376,7 @@ class _AccountValidationState extends State<AccountValidation> {
                 ),
               ),
               Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: 20.w,
-                  vertical: 10.h,
-                ),
+                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [

@@ -18,18 +18,18 @@ class ProductProvider with ChangeNotifier {
   }) async {
     try {
       final url = 'http://t-api.dotit-corp.com/api/public/getCategoryProducts?code=$categoryCode&id-shop=$shopId';
-      print("🟢 API URL: $url");
+      print(" API URL: $url");
 
       final response = await http.get(Uri.parse(url));
-      print("🟢 Status Code: ${response.statusCode}");
+      print(" Status Code: ${response.statusCode}");
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        print("🟢 Parsed Data: $data");
+        print(" Parsed Data: $data");
 
         if (data['response'] != null && data['response']['products'] != null) {
           final products = data['response']['products'];
-          print("🟢 Products found: ${products.length}");
+          print(" Products found: ${products.length}");
 
           return (products as List).map<Product>((productJson) {
             return Product(
@@ -47,14 +47,14 @@ class ProductProvider with ChangeNotifier {
             );
           }).toList();
         }
-        print("🔴 No products found in response structure");
+        print(" No products found in response structure");
         return [];
       } else {
-        print("🔴 API Error: ${response.statusCode}");
+        print(" API Error: ${response.statusCode}");
         return [];
       }
     } catch (e) {
-      print("🔴 Exception in _getCategoryProducts: $e");
+      print(" Exception in _getCategoryProducts: $e");
       return [];
     }
   }
@@ -65,7 +65,7 @@ class ProductProvider with ChangeNotifier {
     int limit = 6,
     String? excludeProductId,
   }) async {
-    print("🟢 fetchSimilarProducts called with:");
+    print(" fetchSimilarProducts called with:");
     print("- categoryCode: $categoryCode");
     print("- shopId: $shopId");
     print("- excludeProductId: $excludeProductId");
@@ -81,7 +81,7 @@ class ProductProvider with ChangeNotifier {
         shopId: shopId,
       );
 
-      print("🟢 API returned ${products.length} products");
+      print(" API returned ${products.length} products");
 
       // Filter out the current product if excludeProductId is provided
       if (excludeProductId != null) {
@@ -89,16 +89,16 @@ class ProductProvider with ChangeNotifier {
             .where((product) => product.id.toString() != excludeProductId)
             .take(limit)
             .toList();
-        print("🟢 After filtering, ${_similarProducts.length} products remain");
+        print(" After filtering, ${_similarProducts.length} products remain");
       } else {
         _similarProducts = products.take(limit).toList();
-        print("🟢 No filtering, ${_similarProducts.length} products shown");
+        print(" No filtering, ${_similarProducts.length} products shown");
       }
 
       _isLoading = false;
       notifyListeners();
     } catch (e) {
-      print("🔴 Error in fetchSimilarProducts: $e");
+      print(" Error in fetchSimilarProducts: $e");
       _error = 'Failed to load similar products: $e';
       _isLoading = false;
       notifyListeners();

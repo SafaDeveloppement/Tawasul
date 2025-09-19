@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:tawasul_application/view/Checkout/address_selection.dart';
-import 'package:tawasul_application/view/Checkout/checkout_.dart';
+import 'package:tawasul_application/view/Checkout/checkout.dart';
 import 'package:tawasul_application/view/store_location.dart';
 
 class Delivery extends StatefulWidget {
@@ -66,6 +66,7 @@ class _DeliveryState extends State<Delivery> {
         title: const Text("Delivery", style: TextStyle(color: Colors.black)),
         centerTitle: true,
         elevation: 0.5,
+        
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Color(0xFF008AD2)),
           onPressed:

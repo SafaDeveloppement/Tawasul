@@ -1,5 +1,6 @@
 // import 'package:flutter/material.dart';
 // import 'package:tawasul_application/view/home_page.dart';
+// import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 // class FilterPage extends StatefulWidget {
 //   const FilterPage({super.key});
@@ -46,16 +47,9 @@
 //     });
 //   }
 
-//   // void _applyFilters() {
-//   //   print("Price: ${_priceRange.start} - ${_priceRange.end}");
-//   //   print("Categories: $selectedCategories");
-//   //   print("Colors: $selectedColors");
-//   //   print("Brands: $selectedBrands");
-
-//   // }
-
 //   @override
 //   Widget build(BuildContext context) {
+//     final t = AppLocalizations.of(context)!;
 //     return Scaffold(
 //       backgroundColor: Colors.transparent,
 //       body: SafeArea(
@@ -64,90 +58,114 @@
 //           child: Container(
 //             color: Colors.white,
 //             padding: const EdgeInsets.all(20),
-//             child: SingleChildScrollView(
-//               child: Column(
-//                 crossAxisAlignment: CrossAxisAlignment.start,
-//                 children: [
-//                   Center(
-//                     child: Text(
-//                       'Filtres',
+//             child: Column(
+//               children: [
+//                 Row(
+//                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//                   children: [
+//                     const SizedBox(width: 40),
+//                     Text(
+//                       t.filter,
 //                       style: TextStyle(
 //                         fontSize: 22,
 //                         fontWeight: FontWeight.bold,
 //                       ),
 //                     ),
-//                   ),
-//                   const SizedBox(height: 20),
-//                   Row(
-//                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//                     children: [
-//                       Text(
-//                         'Refine Your Search',
-//                         style: TextStyle(
-//                           fontSize: 16,
-//                           fontWeight: FontWeight.w600,
-//                         ),
-//                       ),
-//                       IconButton(
-//                         onPressed: _resetFilters,
-//                         icon: const Icon(Icons.refresh),
-//                       ),
-//                     ],
-//                   ),
-//                   const SizedBox(height: 12),
-//                   const Text('Price Range', style: TextStyle(fontSize: 16)),
-//                   RangeSlider(
-//                     values: _priceRange,
-//                     min: 0,
-//                     max: 10000,
-//                     activeColor: Colors.blue,
-//                     inactiveColor: Colors.grey[300],
-//                     onChanged: (values) {
-//                       setState(() {
-//                         _priceRange = values;
-//                       });
-//                     },
-//                   ),
-//                   Row(
-//                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//                     children: [
-//                       Text('${_priceRange.start.toInt()}LYD'),
-//                       Text('${_priceRange.end.toInt()}LYD'),
-//                     ],
-//                   ),
-//                   const SizedBox(height: 24),
+//                     IconButton(
+//                       icon: const Icon(Icons.close),
+//                       onPressed: () => Navigator.pop(context),
+//                     ),
+//                   ],
+//                 ),
+//                 const SizedBox(height: 20),
 
-//                   _buildSection('Category', categories, selectedCategories),
-//                   const SizedBox(height: 24),
-//                   _buildColorSection(),
-//                   const SizedBox(height: 24),
-//                   _buildSection('Brand', brands, selectedBrands),
-//                   const SizedBox(height: 30),
-
-//                   SizedBox(
-//                     width: double.infinity,
-//                     height: 50,
-//                     child: ElevatedButton(
-//                       onPressed: () {
-//                         Navigator.push(
-//                           context,
-//                           MaterialPageRoute(builder: (context) => HomePage()),
-//                         );
-//                       },
-//                       style: ElevatedButton.styleFrom(
-//                         backgroundColor: Colors.blue,
-//                         shape: RoundedRectangleBorder(
-//                           borderRadius: BorderRadius.circular(12),
+//                 // Scrollable content
+//                 Expanded(
+//                   child: SingleChildScrollView(
+//                     child: Column(
+//                       crossAxisAlignment: CrossAxisAlignment.start,
+//                       children: [
+//                         Row(
+//                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//                           children: [
+//                             Text(
+//                               'Refine Your Search',
+//                               style: TextStyle(
+//                                 fontSize: 16,
+//                                 fontWeight: FontWeight.w600,
+//                               ),
+//                             ),
+//                             IconButton(
+//                               onPressed: _resetFilters,
+//                               icon: const Icon(Icons.refresh),
+//                             ),
+//                           ],
 //                         ),
-//                       ),
-//                       child: const Text(
-//                         'Apply filters',
-//                         style: TextStyle(color: Colors.white, fontSize: 16),
-//                       ),
+//                         const SizedBox(height: 12),
+//                         const Text(
+//                           'Price Range',
+//                           style: TextStyle(fontSize: 16),
+//                         ),
+//                         RangeSlider(
+//                           values: _priceRange,
+//                           min: 0,
+//                           max: 10000,
+//                           activeColor: Colors.blue,
+//                           inactiveColor: Colors.grey[300],
+//                           onChanged: (values) {
+//                             setState(() {
+//                               _priceRange = values;
+//                             });
+//                           },
+//                         ),
+//                         Row(
+//                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//                           children: [
+//                             Text('${_priceRange.start.toInt()}LYD'),
+//                             Text('${_priceRange.end.toInt()}LYD'),
+//                           ],
+//                         ),
+//                         const SizedBox(height: 24),
+
+//                         _buildSection(
+//                           'Category',
+//                           categories,
+//                           selectedCategories,
+//                         ),
+//                         const SizedBox(height: 24),
+//                         _buildColorSection(),
+//                         const SizedBox(height: 24),
+//                         _buildSection('Brand', brands, selectedBrands),
+//                         const SizedBox(height: 30),
+//                       ],
 //                     ),
 //                   ),
-//                 ],
-//               ),
+//                 ),
+
+//                 // Apply button
+//                 SizedBox(
+//                   width: double.infinity,
+//                   height: 50,
+//                   child: ElevatedButton(
+//                     onPressed: () {
+//                       Navigator.push(
+//                         context,
+//                         MaterialPageRoute(builder: (context) => HomePage()),
+//                       );
+//                     },
+//                     style: ElevatedButton.styleFrom(
+//                       backgroundColor: Colors.blue,
+//                       shape: RoundedRectangleBorder(
+//                         borderRadius: BorderRadius.circular(12),
+//                       ),
+//                     ),
+//                     child: const Text(
+//                       'Apply filters',
+//                       style: TextStyle(color: Colors.white, fontSize: 16),
+//                     ),
+//                   ),
+//                 ),
+//               ],
 //             ),
 //           ),
 //         ),
@@ -268,6 +286,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:tawasul_application/view/home_page.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class FilterPage extends StatefulWidget {
   const FilterPage({super.key});
@@ -316,6 +335,7 @@ class _FilterPageState extends State<FilterPage> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: SafeArea(
@@ -326,13 +346,12 @@ class _FilterPageState extends State<FilterPage> {
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
-                // Header with close button
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const SizedBox(width: 40), // For balance
+                    const SizedBox(width: 40),
                     Text(
-                      'Filtres',
+                      t.filter,
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -356,7 +375,7 @@ class _FilterPageState extends State<FilterPage> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Refine Your Search',
+                              t.refineYourSearch,
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -369,10 +388,7 @@ class _FilterPageState extends State<FilterPage> {
                           ],
                         ),
                         const SizedBox(height: 12),
-                        const Text(
-                          'Price Range',
-                          style: TextStyle(fontSize: 16),
-                        ),
+                        Text(t.priceRange, style: TextStyle(fontSize: 16)),
                         RangeSlider(
                           values: _priceRange,
                           min: 0,
@@ -388,21 +404,21 @@ class _FilterPageState extends State<FilterPage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('${_priceRange.start.toInt()}LYD'),
-                            Text('${_priceRange.end.toInt()}LYD'),
+                            Text('${_priceRange.start.toInt()}${t.lyd}'),
+                            Text('${_priceRange.end.toInt()}${t.lyd}'),
                           ],
                         ),
                         const SizedBox(height: 24),
 
                         _buildSection(
-                          'Category',
+                          t.categories,
                           categories,
                           selectedCategories,
                         ),
                         const SizedBox(height: 24),
-                        _buildColorSection(),
+                        _buildColorSection(t),
                         const SizedBox(height: 24),
-                        _buildSection('Brand', brands, selectedBrands),
+                        _buildSection(t.brands, brands, selectedBrands),
                         const SizedBox(height: 30),
                       ],
                     ),
@@ -426,8 +442,8 @@ class _FilterPageState extends State<FilterPage> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text(
-                      'Apply filters',
+                    child: Text(
+                      t.applyFilters,
                       style: TextStyle(color: Colors.white, fontSize: 16),
                     ),
                   ),
@@ -496,11 +512,11 @@ class _FilterPageState extends State<FilterPage> {
     );
   }
 
-  Widget _buildColorSection() {
+  Widget _buildColorSection(AppLocalizations t) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('Color'),
+        _buildSectionHeader(t.color),
         const SizedBox(height: 12),
         Wrap(
           spacing: 16,
@@ -535,6 +551,7 @@ class _FilterPageState extends State<FilterPage> {
   }
 
   Widget _buildSectionHeader(String title) {
+    final t = AppLocalizations.of(context)!;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -542,10 +559,7 @@ class _FilterPageState extends State<FilterPage> {
           title,
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
-        const Text(
-          'Select',
-          style: TextStyle(fontSize: 14, color: Colors.blue),
-        ),
+        Text(t.select, style: TextStyle(fontSize: 14, color: Colors.blue)),
       ],
     );
   }

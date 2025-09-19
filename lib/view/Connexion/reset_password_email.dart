@@ -283,7 +283,7 @@ class _ResetPasswordEmailState extends State<ResetPasswordEmail> {
         toolbarHeight: 56.h,
         leadingWidth: 48.w,
         leading: Padding(
-          padding: EdgeInsets.only(left: 12.w),
+          padding: EdgeInsetsDirectional.only(start: 12.w),
           child: GestureDetector(
             onTap: () {
               Navigator.push(

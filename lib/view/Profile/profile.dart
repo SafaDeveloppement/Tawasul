@@ -1,7 +1,9 @@
 // import 'package:flutter/material.dart';
 // import 'package:flutter_screenutil/flutter_screenutil.dart';
 // import 'package:provider/provider.dart';
+// import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 // import 'package:tawasul_application/controller/product_controller.dart';
+// import 'package:tawasul_application/main.dart';
 // import 'package:tawasul_application/view/Connexion/change_password.dart';
 // import 'package:tawasul_application/view/Profile/edit_profile.dart';
 // import 'package:tawasul_application/view/Profile/order_history.dart';
@@ -21,6 +23,8 @@
 
 //   @override
 //   Widget build(BuildContext context) {
+//     final loc = AppLocalizations.of(context)!;
+
 //     return Scaffold(
 //       backgroundColor: Colors.white,
 //       appBar: AppBar(
@@ -55,7 +59,7 @@
 //           ),
 //         ),
 //         title: Text(
-//           "Profile",
+//           loc.profile, // localized
 //           style: TextStyle(
 //             fontSize: 18.sp,
 //             fontWeight: FontWeight.w500,
@@ -83,9 +87,7 @@
 //                         children: [
 //                           const CircleAvatar(
 //                             radius: 75,
-//                             backgroundImage: AssetImage(
-//                               'assets/images/homme.jpg',
-//                             ),
+//                             backgroundColor: Colors.black,
 //                           ),
 //                           Positioned(
 //                             bottom: 7,
@@ -116,7 +118,7 @@
 //                       // Navigation Menu Items
 //                       _buildMenuItem(
 //                         Icons.person,
-//                         'Edit Profile Name',
+//                         loc.editProfile, // localized
 //                         onTap: () {
 //                           Navigator.push(
 //                             context,
@@ -128,7 +130,7 @@
 //                       ),
 //                       _buildMenuItem(
 //                         Icons.favorite_border,
-//                         'Favourites',
+//                         loc.favorites, // localized
 //                         onTap: () {
 //                           Navigator.push(
 //                             context,
@@ -140,7 +142,7 @@
 //                       ),
 //                       _buildMenuItem(
 //                         Icons.shopping_bag_outlined,
-//                         'Order History',
+//                         loc.orderHistory, // localized
 //                         onTap: () {
 //                           Navigator.push(
 //                             context,
@@ -152,7 +154,7 @@
 //                       ),
 //                       _buildMenuItem(
 //                         Icons.lock_outline,
-//                         'Change Password',
+//                         loc.changePassword, // localized
 //                         onTap: () {
 //                           Navigator.push(
 //                             context,
@@ -162,38 +164,45 @@
 //                           );
 //                         },
 //                       ),
+
+//                       // 🔥 Language Switcher
+//                       _buildMenuItem(
+//                         Icons.language,
+//                         loc.language,
+//                         onTap: () {
+//                           _showLanguageDialog(context);
+//                         },
+//                       ),
+
 //                       _buildMenuItem(
 //                         Icons.logout,
-//                         'Logout',
+//                         loc.logout, // localized
 //                         isLogout: true,
 //                         onTap: () {
 //                           showDialog(
 //                             context: context,
-//                             builder:
-//                                 (_) => AlertDialog(
-//                                   title: const Text("Logout"),
-//                                   content: const Text(
-//                                     "Are you sure you want to logout?",
-//                                   ),
-//                                   actions: [
-//                                     TextButton(
-//                                       onPressed: () => Navigator.pop(context),
-//                                       child: const Text("Cancel"),
-//                                     ),
-//                                     TextButton(
-//                                       onPressed: () {
-//                                         Navigator.popUntil(
-//                                           context,
-//                                           (route) => route.isFirst,
-//                                         );
-//                                       },
-//                                       child: const Text(
-//                                         "Logout",
-//                                         style: TextStyle(color: Colors.red),
-//                                       ),
-//                                     ),
-//                                   ],
+//                             builder: (_) => AlertDialog(
+//                               title: Text(loc.logout),
+//                               content: Text(loc.logoutConfirmation),
+//                               actions: [
+//                                 TextButton(
+//                                   onPressed: () => Navigator.pop(context),
+//                                   child: Text(loc.cancel),
 //                                 ),
+//                                 TextButton(
+//                                   onPressed: () {
+//                                     Navigator.popUntil(
+//                                       context,
+//                                       (route) => route.isFirst,
+//                                     );
+//                                   },
+//                                   child: Text(
+//                                     loc.logout,
+//                                     style: const TextStyle(color: Colors.red),
+//                                   ),
+//                                 ),
+//                               ],
+//                             ),
 //                           );
 //                         },
 //                       ),
@@ -204,7 +213,7 @@
 //             ),
 //           ),
 
-//           // Bottom Navigation Bar positioned above other content
+//           // Bottom Navigation Bar
 //           Positioned(
 //             bottom: 20.h,
 //             left: 20.w,
@@ -221,6 +230,41 @@
 //         ],
 //       ),
 //     );
+//   }
+
+//   /// Language Switcher Dialog
+//   void _showLanguageDialog(BuildContext context) {
+//     showDialog(
+//       context: context,
+//       builder: (_) => AlertDialog(
+//         title: Text(AppLocalizations.of(context)!.chooseLanguage),
+//         content: Column(
+//           mainAxisSize: MainAxisSize.min,
+//           children: [
+//             ListTile(
+//               title: const Text("English"),
+//               onTap: () {
+//                 _setLocale(const Locale("en"));
+//               },
+//             ),
+//             ListTile(
+//               title: const Text("العربية"),
+//               onTap: () {
+//                 _setLocale(const Locale("ar"));
+//               },
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+
+//   void _setLocale(Locale locale) {
+//     Navigator.pop(context); // close dialog
+//     setState(() {
+//       // update locale globally
+//       MyApp.setLocale(context, locale);
+//     });
 //   }
 
 //   Widget _buildMenuItem(
@@ -260,11 +304,11 @@
 //   }
 // }
 
-
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:tawasul_application/Services/api_service.dart';
 import 'package:tawasul_application/controller/product_controller.dart';
 import 'package:tawasul_application/main.dart';
 import 'package:tawasul_application/view/Connexion/change_password.dart';
@@ -283,6 +327,61 @@ class Profile extends StatefulWidget {
 
 class _ProfileState extends State<Profile> {
   int _currentNavIndex = 4;
+  String _firstName = "Loading...";
+  String _lastName = "";
+  bool _isLoading = true;
+  bool _hasError = false;
+  Map<String, dynamic>? _customerData;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCustomerDetails();
+  }
+
+  Future<void> _loadCustomerDetails() async {
+    setState(() {
+      _isLoading = true;
+      _hasError = false;
+    });
+
+    try {
+      final customerDetails = await ApiService.getCustomerDetails();
+
+      if (customerDetails != null && mounted) {
+        setState(() {
+          _customerData = customerDetails;
+          // Extract first name and last name from the API response
+          // Based on signup.dart, the API uses "firstName" and "lastName" (lowercase with capital F and L)
+          _firstName =
+              customerDetails['firstName'] ??
+              customerDetails['first_name'] ??
+              'Customer';
+          _lastName =
+              customerDetails['lastName'] ?? customerDetails['last_name'] ?? '';
+        });
+      } else {
+        setState(() {
+          _hasError = true;
+          _firstName = "Unknown";
+          _lastName = "User";
+        });
+      }
+    } catch (e) {
+      print("Error loading customer details: $e");
+      setState(() {
+        _hasError = true;
+        _firstName = "Error";
+        _lastName = "Loading";
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -322,7 +421,7 @@ class _ProfileState extends State<Profile> {
           ),
         ),
         title: Text(
-          loc.profile, // localized
+          loc.profile,
           style: TextStyle(
             fontSize: 18.sp,
             fontWeight: FontWeight.w500,
@@ -333,7 +432,6 @@ class _ProfileState extends State<Profile> {
       ),
       body: Stack(
         children: [
-          // Main Content
           SafeArea(
             child: SingleChildScrollView(
               child: Center(
@@ -346,44 +444,21 @@ class _ProfileState extends State<Profile> {
                   ),
                   child: Column(
                     children: [
-                      Stack(
-                        children: [
-                          const CircleAvatar(
-                            radius: 75,
-                            backgroundImage: AssetImage(
-                              'assets/images/homme.jpg',
-                            ),
-                          ),
-                          Positioned(
-                            bottom: 7,
-                            right: 6,
-                            child: CircleAvatar(
-                              radius: 16,
-                              backgroundColor: Colors.blue,
-                              child: const Icon(
-                                Icons.edit,
-                                size: 16,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        "Med Bechikh",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: "Montserrat",
-                        ),
-                      ),
+                      // Text(
+                      //   '$_firstName $_lastName',
+                      //   style: TextStyle(
+                      //     fontSize: 18,
+                      //     fontWeight: FontWeight.bold,
+                      //     fontFamily: "Montserrat",
+                      //   ),
+                      //   textAlign: TextAlign.center,
+                      // ),
                       const SizedBox(height: 24),
 
                       // Navigation Menu Items
                       _buildMenuItem(
                         Icons.person,
-                        loc.editProfile, // localized
+                        loc.editProfile,
                         onTap: () {
                           Navigator.push(
                             context,
@@ -395,7 +470,7 @@ class _ProfileState extends State<Profile> {
                       ),
                       _buildMenuItem(
                         Icons.favorite_border,
-                        loc.favorites, // localized
+                        loc.favorites,
                         onTap: () {
                           Navigator.push(
                             context,
@@ -407,7 +482,7 @@ class _ProfileState extends State<Profile> {
                       ),
                       _buildMenuItem(
                         Icons.shopping_bag_outlined,
-                        loc.orderHistory, // localized
+                        loc.orderHistory,
                         onTap: () {
                           Navigator.push(
                             context,
@@ -419,7 +494,7 @@ class _ProfileState extends State<Profile> {
                       ),
                       _buildMenuItem(
                         Icons.lock_outline,
-                        loc.changePassword, // localized
+                        loc.changePassword,
                         onTap: () {
                           Navigator.push(
                             context,
@@ -430,7 +505,6 @@ class _ProfileState extends State<Profile> {
                         },
                       ),
 
-                      // 🔥 Language Switcher
                       _buildMenuItem(
                         Icons.language,
                         loc.language,
@@ -441,33 +515,36 @@ class _ProfileState extends State<Profile> {
 
                       _buildMenuItem(
                         Icons.logout,
-                        loc.logout, // localized
+                        loc.logout,
                         isLogout: true,
                         onTap: () {
                           showDialog(
                             context: context,
-                            builder: (_) => AlertDialog(
-                              title: Text(loc.logout),
-                              content: Text(loc.logoutConfirmation),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: Text(loc.cancel),
+                            builder:
+                                (_) => AlertDialog(
+                                  title: Text(loc.logout),
+                                  content: Text(loc.logoutConfirmation),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: Text(loc.cancel),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.popUntil(
+                                          context,
+                                          (route) => route.isFirst,
+                                        );
+                                      },
+                                      child: Text(
+                                        loc.logout,
+                                        style: const TextStyle(
+                                          color: Colors.red,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.popUntil(
-                                      context,
-                                      (route) => route.isFirst,
-                                    );
-                                  },
-                                  child: Text(
-                                    loc.logout,
-                                    style: const TextStyle(color: Colors.red),
-                                  ),
-                                ),
-                              ],
-                            ),
                           );
                         },
                       ),
@@ -478,9 +555,8 @@ class _ProfileState extends State<Profile> {
             ),
           ),
 
-          // Bottom Navigation Bar
           Positioned(
-            bottom: 20.h,
+            bottom: 2.h,
             left: 20.w,
             right: 20.w,
             child: Consumer<ProductController>(
@@ -501,26 +577,27 @@ class _ProfileState extends State<Profile> {
   void _showLanguageDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.chooseLanguage),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              title: const Text("English"),
-              onTap: () {
-                _setLocale(const Locale("en"));
-              },
+      builder:
+          (_) => AlertDialog(
+            title: Text(AppLocalizations.of(context)!.chooseLanguage),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  title: const Text("English"),
+                  onTap: () {
+                    _setLocale(const Locale("en"));
+                  },
+                ),
+                ListTile(
+                  title: const Text("العربية"),
+                  onTap: () {
+                    _setLocale(const Locale("ar"));
+                  },
+                ),
+              ],
             ),
-            ListTile(
-              title: const Text("العربية"),
-              onTap: () {
-                _setLocale(const Locale("ar"));
-              },
-            ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 

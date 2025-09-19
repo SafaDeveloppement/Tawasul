@@ -66,10 +66,7 @@ class _NewestState extends State<Newest> {
               ElevatedButton(
                 onPressed: () {
                   productController.clearError();
-                  productController.fetchCategoryProducts(
-                    widget.categoryCode,
-                    widget.shopId,
-                  );
+                  productController.fetchNewestProducts(widget.shopId);
                 },
                 child: Text('Retry'),
               ),
@@ -172,7 +169,6 @@ class _NewestState extends State<Newest> {
         ),
         child: Stack(
           children: [
-            // Discount badge (only show if product is not new and has discount)
             if (product.discount != null)
               Positioned(
                 top: 8.h,
