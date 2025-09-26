@@ -43,6 +43,7 @@ dependencies:
   shared_preferences: ^2.5.3
   flutter_secure_storage: ^9.2.4
   cached_network_image: ^3.3.0
+  pdf: ^3.10.4
   
 
   # Communication
@@ -51,7 +52,7 @@ dependencies:
   flutter_html: ^3.0.0
   qr_flutter: ^4.1.0
   path_provider: ^2.1.5
-  device_info_plus: ^12.1.0
+  flutter_staggered_animations: ^1.1.1
 
 dev_dependencies:
   flutter_test:

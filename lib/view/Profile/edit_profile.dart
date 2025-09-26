@@ -476,7 +476,10 @@ class _EditProfileState extends State<EditProfile> {
         toolbarHeight: 56.h,
         leadingWidth: 48.w,
         leading: Padding(
-          padding: EdgeInsets.only(left: 12.w),
+          padding: EdgeInsets.only(
+            left: Directionality.of(context) == TextDirection.rtl ? 0 : 12.w,
+            right: Directionality.of(context) == TextDirection.rtl ? 12.w : 0,
+          ),
           child: GestureDetector(
             onTap: () {
               Navigator.push(

@@ -20,7 +20,7 @@
 //         "product": "Smart Watch",
 //         "price": "1450 LYD",
 //         "date": "9 Sept 2025",
-//         "status": "On the way",
+//         "status": "Delivered",
 //         "image": "https://tawasul-shop.com/storage/watch.png",
 //       },
 //       {
@@ -175,7 +175,7 @@
 //     switch (status) {
 //       case "Delivered":
 //         return Colors.green;
-//       case "On the way":
+//       case "Delivered":
 //         return Colors.orange;
 //       case "Cancelled":
 //         return Colors.red;
@@ -189,6 +189,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:tawasul_application/controller/product_controller.dart';
+import 'package:tawasul_application/l10n/app_localizations_ar.dart';
 import 'package:tawasul_application/view/Profile/profile.dart';
 import 'package:tawasul_application/view/navbar.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -213,7 +214,7 @@ class _OrderHistoryState extends State<OrderHistory> {
         "product": "Apple iPhone 14 Plus",
         "price": "3190 LYD",
         "date": "12 Sept 2025",
-        "status": "Delivered",
+        "status": t.delivered,
         "image": "assets/images/iphone.png",
       },
       {
@@ -221,7 +222,7 @@ class _OrderHistoryState extends State<OrderHistory> {
         "product": "Smart Watch",
         "price": "1450 LYD",
         "date": "9 Sept 2025",
-        "status": "On the way",
+        "status": t.delivered,
         "image": "assets/images/smart_watch.png",
       },
       {
@@ -229,7 +230,7 @@ class _OrderHistoryState extends State<OrderHistory> {
         "product": "Apple AirPods",
         "price": "120 LYD",
         "date": "5 Sept 2025",
-        "status": "Cancelled",
+        "status": t.cancelled,
         "image": "assets/images/airpods.png",
       },
     ];
@@ -242,7 +243,10 @@ class _OrderHistoryState extends State<OrderHistory> {
         toolbarHeight: 56.h,
         leadingWidth: 48.w,
         leading: Padding(
-          padding: EdgeInsets.only(left: 12.w),
+          padding: EdgeInsets.only(
+            left: Directionality.of(context) == TextDirection.rtl ? 0 : 12.w,
+            right: Directionality.of(context) == TextDirection.rtl ? 12.w : 0,
+          ),
           child: GestureDetector(
             onTap: () {
               Navigator.push(
@@ -277,126 +281,135 @@ class _OrderHistoryState extends State<OrderHistory> {
         ),
         centerTitle: true,
       ),
-      body: Padding(
-        padding: EdgeInsets.all(12.w),
-        child: ListView.separated(
-          itemCount: orders.length,
-          separatorBuilder: (_, __) => SizedBox(height: 12.h),
-          itemBuilder: (context, index) {
-            final order = orders[index];
-            return Container(
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Padding(
               padding: EdgeInsets.all(12.w),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16.r),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.shade200,
-                    blurRadius: 8,
-                    spreadRadius: 2,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12.r),
-                    child: Image.asset(
-                      order["image"]!,
-                      width: 70.w,
-                      height: 70.w,
-                      fit: BoxFit.cover,
+              child: ListView.separated(
+                itemCount: orders.length,
+                separatorBuilder: (_, __) => SizedBox(height: 12.h),
+                itemBuilder: (context, index) {
+                  final order = orders[index];
+                  return Container(
+                    padding: EdgeInsets.all(12.w),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16.r),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.shade200,
+                          blurRadius: 8,
+                          spreadRadius: 2,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
-                  ),
-                  SizedBox(width: 12.w),
-
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text(
-                          order["product"]!,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14.sp,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        SizedBox(height: 4.h),
-                        Text(
-                          "Order ID: ${order["id"]}",
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            color: Colors.grey[600],
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12.r),
+                          child: Image.asset(
+                            order["image"]!,
+                            width: 70.w,
+                            height: 70.w,
+                            fit: BoxFit.cover,
                           ),
                         ),
-                        SizedBox(height: 2.h),
-                        Text(
-                          "Date: ${order["date"]}",
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            color: Colors.grey[600],
+                        SizedBox(width: 12.w),
+
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                order["product"]!,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14.sp,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              SizedBox(height: 4.h),
+                              Text(
+                                "Order ID: ${order["id"]}",
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              SizedBox(height: 2.h),
+                              Text(
+                                "Date: ${order["date"]}",
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              SizedBox(height: 4.h),
+                              Text(
+                                order["price"]!,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13.sp,
+                                  color: Colors.blue,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        SizedBox(height: 4.h),
-                        Text(
-                          order["price"]!,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13.sp,
-                            color: Colors.blue,
+
+                        // Status badge
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 10.w,
+                            vertical: 6.h,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _getStatusColor(order["status"]!),
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                          child: Text(
+                            order["status"]!,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ],
                     ),
-                  ),
-
-                  // Status badge
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 10.w,
-                      vertical: 6.h,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _getStatusColor(order["status"]!),
-                      borderRadius: BorderRadius.circular(12.r),
-                    ),
-                    child: Text(
-                      order["status"]!,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 11.sp,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
+                  );
+                },
               ),
-            );
-          },
-        ),
-      ),
-
-      bottomNavigationBar: Consumer<ProductController>(
-        builder: (context, productController, child) {
-          return CustomBottomNavBar(
-            currentIndex: _currentNavIndex,
-            context: context,
-          );
-        },
+            ),
+          ),
+          Positioned(
+            bottom: 45.h,
+            left: 20.w,
+            right: 20.w,
+            child: Consumer<ProductController>(
+              builder: (context, productController, child) {
+                return CustomBottomNavBar(
+                  currentIndex: _currentNavIndex,
+                  context: context,
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Color _getStatusColor(String status) {
+    final t = AppLocalizations.of(context)!;
     switch (status) {
-      case "Delivered":
+      case "Delivered": 
         return Colors.green;
-      case "On the way":
-        return Colors.orange;
       case "Cancelled":
         return Colors.red;
       default:

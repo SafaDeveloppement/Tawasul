@@ -1,43 +1,56 @@
-// class Category {
-//   final int id;
-//   final String name;
-//   final String code;
-
-//   Category({required this.id, required this.name, required this.code});
-
-//   factory Category.fromJson(Map<String, dynamic> json) {
-//     return Category(
-//       id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
-//       name: json['name'] ?? 'No Name',
-//       code: json['code'] ?? '',
-//     );
-//   }
-
-//   static Category findCategoryByName(
-//     List<Category> categories,
-//     String namePattern,
-//   ) {
-//     return categories.firstWhere(
-//       (category) =>
-//           category.name.toLowerCase().contains(namePattern.toLowerCase()),
-//       orElse: () => Category(id: 0, name: '', code: ''),
-//     );
-//   }
-// }
 
 
 class Category {
   final int id;
   final String name;
-  final String code;
+  final String? link;
+  final String? imageUrl;
+  final List<Category> children;
 
-  Category({required this.id, required this.name, required this.code});
+  Category({
+    required this.id,
+    required this.name,
+    this.link,
+    this.imageUrl,
+    required this.children,
+  });
 
   factory Category.fromJson(Map<String, dynamic> json) {
     return Category(
-      id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
-      name: json['name'] ?? 'No Name',
-      code: json['code'] ?? '',
+      id: json['id_category'] ?? 0,
+      name: json['name'] ?? '',
+      link: json['link'],
+      imageUrl: json['image_url'],
+      children: (json['children'] as List<dynamic>?)
+          ?.map((child) => Category.fromJson(child))
+          .toList() ?? [],
     );
   }
+
+  // Helper method to get all subcategory IDs including self
+  List<int> getAllCategoryIds() {
+    List<int> ids = [id];
+    for (var child in children) {
+      ids.addAll(child.getAllCategoryIds());
+    }
+    return ids;
+  }
+   List<int> getLeafCategoryIds() {
+    List<int> ids = [];
+    
+    if (children.isEmpty) {
+      // This is a leaf category
+      ids.add(id);
+    } else {
+      // Recursively get leaf IDs from children
+      for (var child in children) {
+        ids.addAll(child.getLeafCategoryIds());
+      }
+    }
+    
+    return ids;
+  }
+
+
+
 }

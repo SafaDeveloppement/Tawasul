@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:tawasul_application/view/Chat/chat.dart';
 import 'package:tawasul_application/view/Connexion/login.dart';
-import 'package:tawasul_application/view/favorites_page.dart';
+import 'package:tawasul_application/view/favorites.dart';
 import 'package:tawasul_application/view/home_page.dart';
 import 'package:tawasul_application/view/shopping_cart.dart';
 import 'package:tawasul_application/model/product_model.dart';

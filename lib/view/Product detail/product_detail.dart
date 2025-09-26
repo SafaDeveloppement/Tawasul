@@ -95,14 +95,16 @@
 
 //   // Add to cart:
 //   void _addToCart() {
+//     final t = AppLocalizations.of(context)!;
+
 //     if (product == null) return;
 
 //     final cartProvider = Provider.of<CartProvider>(context, listen: false);
 //     cartProvider.addToCart(product!, quantity: quantity, color: selectedColor);
 
-//     ScaffoldMessenger.of(context).showSnackBar(
-//       const SnackBar(content: Text("Product added to cart successfully!")),
-//     );
+//     ScaffoldMessenger.of(
+//       context,
+//     ).showSnackBar(SnackBar(content: Text(t.productAddedToCart)));
 
 //     // Navigate to shopping cart after successful addition
 //     Navigator.push(context, MaterialPageRoute(builder: (_) => ShoppingCart()));
@@ -110,7 +112,7 @@
 
 //   @override
 //   Widget build(BuildContext context) {
-//         final t = AppLocalizations.of(context)!;
+//     final t = AppLocalizations.of(context)!;
 
 //     if (isLoading) {
 //       return Scaffold(
@@ -121,9 +123,9 @@
 //             children: [
 //               const CircularProgressIndicator(color: Colors.white),
 //               const SizedBox(height: 20),
-//               const Text(
-//                 'Loading product...',
-//                 style: TextStyle(color: Colors.white),
+//               Text(
+//                 t.loadingProduct,
+//                 style: const TextStyle(color: Colors.white),
 //               ),
 //             ],
 //           ),
@@ -141,14 +143,14 @@
 //               const Icon(Icons.error_outline, size: 64, color: Colors.white),
 //               const SizedBox(height: 20),
 //               Text(
-//                 errorMessage.isEmpty ? 'Product not found' : errorMessage,
+//                 errorMessage.isEmpty ? t.productNotFound : errorMessage,
 //                 style: const TextStyle(color: Colors.white),
 //                 textAlign: TextAlign.center,
 //               ),
 //               const SizedBox(height: 20),
 //               ElevatedButton(
 //                 onPressed: _fetchProductData,
-//                 child: const Text('Retry'),
+//                 child: Text(t.retry),
 //               ),
 //             ],
 //           ),
@@ -241,7 +243,11 @@
 //                     ),
 //                     if (product!.colors != null && product!.colors!.isNotEmpty)
 //                       Padding(
-//                         padding: const EdgeInsets.only(right: 30.0, top: 10),
+//                         padding: const EdgeInsets.only(
+//                           left: 30.0,
+//                           right: 30.0,
+//                           top: 10,
+//                         ),
 //                         child: Row(
 //                           mainAxisAlignment: MainAxisAlignment.end,
 //                           children:
@@ -300,7 +306,7 @@
 //                           crossAxisAlignment: CrossAxisAlignment.end,
 //                           children: [
 //                             Text(
-//                               '${product!.price} LYD',
+//                               '${product!.price} ${t.lyd}',
 //                               style: const TextStyle(
 //                                 fontSize: 22,
 //                                 fontWeight: FontWeight.bold,
@@ -309,7 +315,7 @@
 //                             ),
 //                             if (product!.oldPrice != null)
 //                               Text(
-//                                 '${product!.oldPrice!} LYD',
+//                                 '${product!.oldPrice!} ${t.lyd}',
 //                                 style: const TextStyle(
 //                                   decoration: TextDecoration.lineThrough,
 //                                   fontSize: 16,
@@ -322,7 +328,7 @@
 //                     ),
 //                     const SizedBox(height: 5),
 //                     Html(
-//                       data: product?.description ?? 'No Description',
+//                       data: product?.description ?? t.noDescription,
 //                       style: {
 //                         "body": Style(
 //                           fontSize: FontSize(15.0),
@@ -417,7 +423,7 @@
 //                             child: TextButton(
 //                               onPressed: _addToCart,
 //                               child: Text(
-//                                 "Add to Cart",
+//                                 t.addToCart,
 //                                 style: TextStyle(
 //                                   color: Colors.black,
 //                                   fontWeight: FontWeight.bold,
@@ -453,7 +459,7 @@
 //                           borderRadius: BorderRadius.circular(30),
 //                         ),
 //                       ),
-//                       child: const Text("Buy now"),
+//                       child: Text(t.buyNow),
 //                     ),
 //                     const SizedBox(height: 30),
 //                     Consumer<ProductProvider>(
@@ -594,7 +600,6 @@ class _ProductDetailState extends State<ProductDetail> {
             jsonResponse['response'] != null &&
             jsonResponse['response'].isNotEmpty) {
           final apiProductData = jsonResponse['response'][0];
-
           product = Product.fromJson(apiProductData);
           setState(() {
             isLoading = false;
@@ -614,7 +619,6 @@ class _ProductDetailState extends State<ProductDetail> {
     }
   }
 
-  // Add to cart:
   void _addToCart() {
     final t = AppLocalizations.of(context)!;
 
@@ -623,17 +627,20 @@ class _ProductDetailState extends State<ProductDetail> {
     final cartProvider = Provider.of<CartProvider>(context, listen: false);
     cartProvider.addToCart(product!, quantity: quantity, color: selectedColor);
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(t.productAddedToCart)));
-
-    // Navigate to shopping cart after successful addition
-    Navigator.push(context, MaterialPageRoute(builder: (_) => ShoppingCart()));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(t.productAddedToCart),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        backgroundColor: Colors.green,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
 
     if (isLoading) {
       return Scaffold(
@@ -642,11 +649,18 @@ class _ProductDetailState extends State<ProductDetail> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const CircularProgressIndicator(color: Colors.white),
+              const CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 3,
+              ),
               const SizedBox(height: 20),
               Text(
                 t.loadingProduct,
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),
@@ -658,22 +672,39 @@ class _ProductDetailState extends State<ProductDetail> {
       return Scaffold(
         backgroundColor: const Color(0xFF008AD2),
         body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 64, color: Colors.white),
-              const SizedBox(height: 20),
-              Text(
-                errorMessage.isEmpty ? t.productNotFound : errorMessage,
-                style: const TextStyle(color: Colors.white),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _fetchProductData,
-                child: Text(t.retry),
-              ),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 64, color: Colors.white),
+                const SizedBox(height: 20),
+                Text(
+                  errorMessage.isEmpty ? t.productNotFound : errorMessage,
+                  style: const TextStyle(color: Colors.white, fontSize: 16),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 30),
+                ElevatedButton(
+                  onPressed: _fetchProductData,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFF008AD2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 30,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                  ),
+                  child: Text(
+                    t.retry,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -682,320 +713,484 @@ class _ProductDetailState extends State<ProductDetail> {
     return Scaffold(
       backgroundColor: const Color(0xFF008AD2),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              Container(
-                width: double.infinity,
-                height: 270.h,
+        child: Column(
+          children: [
+            // Header Section
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 20,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    t.productDetails,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 20,
+                      color: Colors.white,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      widget.toggleFavorite();
+                      setState(() {
+                        isFavorite = !isFavorite;
+                      });
+                    },
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        isFavorite ? Icons.favorite : Icons.favorite_border,
+                        size: 24,
+                        color: isFavorite ? Colors.red : Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            Expanded(
+              child: Container(
+                margin: const EdgeInsets.only(top: 10),
                 decoration: const BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(90),
-                    bottomRight: Radius.circular(90),
+                    topLeft: Radius.circular(40),
+                    topRight: Radius.circular(40),
                   ),
                 ),
-                child: Column(
-                  children: [
-                    SizedBox(height: 10.h),
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 20.w,
-                        vertical: 10.h,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          GestureDetector(
-                            onTap: () => Navigator.pop(context),
-                            child: Container(
-                              width: 41,
-                              height: 41,
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Color(0xFF008AD2),
-                              ),
-                              child: const Icon(
-                                Icons.arrow_back_ios_new_sharp,
-                                size: 20,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            t.productDetails,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 20,
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () {
-                              widget.toggleFavorite();
-                              setState(() {
-                                isFavorite = !isFavorite;
-                              });
-                            },
-                            child: Icon(
-                              isFavorite
-                                  ? Icons.favorite
-                                  : Icons.favorite_border,
-                              size: 38,
-                              color: const Color(0xFF008AD2),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Hero(
-                      tag: 'product-image-${product!.name}',
-                      child:
-                          product!.image.isNotEmpty
-                              ? Image.network(
-                                product!.image,
-                                height: 175,
-                                width: 200,
-                                fit: BoxFit.contain,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return const Icon(Icons.error, size: 100);
-                                },
-                              )
-                              : const Icon(Icons.image, size: 100),
-                    ),
-                    if (product!.colors != null && product!.colors!.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(
-                          left: 30.0,
-                          right: 30.0,
-                          top: 10,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children:
-                              product!.colors!.map((color) {
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 4,
-                                  ),
-                                  child: ColorDot(
-                                    color: color,
-                                    isSelected:
-                                        selectedColor == color.value.toString(),
-                                    onTap: () {
-                                      setState(() {
-                                        selectedColor = color.value.toString();
-                                      });
-                                    },
-                                  ),
-                                );
-                              }).toList(),
-                        ),
-                      )
-                    else
-                      const Padding(
-                        padding: EdgeInsets.only(right: 30.0, top: 10),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [ColorDot(color: Colors.grey)],
-                        ),
-                      ),
-                    const SizedBox(height: 16),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 6),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 15.0),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            product!.name,
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    children: [
+                      // Product Image Section
+                      Container(
+                        height: 250.h,
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        child: Stack(
                           children: [
-                            Text(
-                              '${product!.price} ${t.lyd}',
-                              style: const TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                            Center(
+                              child: Hero(
+                                tag: 'product-image-${product!.name}',
+                                child:
+                                    product!.image.isNotEmpty
+                                        ? Image.network(
+                                          product!.image,
+                                          height: 200,
+                                          width: 200,
+                                          fit: BoxFit.contain,
+                                          errorBuilder: (
+                                            context,
+                                            error,
+                                            stackTrace,
+                                          ) {
+                                            return Container(
+                                              width: 200,
+                                              height: 200,
+                                              decoration: BoxDecoration(
+                                                color: Colors.grey[200],
+                                                borderRadius:
+                                                    BorderRadius.circular(20),
+                                              ),
+                                              child: const Icon(
+                                                Icons.image,
+                                                size: 60,
+                                                color: Colors.grey,
+                                              ),
+                                            );
+                                          },
+                                        )
+                                        : Container(
+                                          width: 200,
+                                          height: 200,
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey[200],
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                          ),
+                                          child: const Icon(
+                                            Icons.image,
+                                            size: 60,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
                               ),
                             ),
-                            if (product!.oldPrice != null)
-                              Text(
-                                '${product!.oldPrice!} ${t.lyd}',
-                                style: const TextStyle(
-                                  decoration: TextDecoration.lineThrough,
-                                  fontSize: 16,
-                                  color: Colors.white70,
+
+                            // Color Selection Dots
+                            if (product!.colors != null &&
+                                product!.colors!.isNotEmpty)
+                              Positioned(
+                                bottom: 10,
+                                right: 20,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(20),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.1),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    children:
+                                        product!.colors!.map((color) {
+                                          return Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 4,
+                                            ),
+                                            child: ColorDot(
+                                              color: color,
+                                              isSelected:
+                                                  selectedColor ==
+                                                  color.value.toString(),
+                                              onTap: () {
+                                                setState(() {
+                                                  selectedColor =
+                                                      color.value.toString();
+                                                });
+                                              },
+                                            ),
+                                          );
+                                        }).toList(),
+                                  ),
                                 ),
                               ),
                           ],
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 5),
-                    Html(
-                      data: product?.description ?? t.noDescription,
-                      style: {
-                        "body": Style(
-                          fontSize: FontSize(15.0),
-                          color: Colors.white,
-                          textAlign: TextAlign.justify,
-                        ),
-                        "p": Style(
-                          margin: Margins.only(bottom: 10),
-                          color: Colors.white,
-                        ),
-                        "ul": Style(
-                          color: Colors.white,
-                          margin: Margins.only(bottom: 10),
-                        ),
-                        "li": Style(color: Colors.white),
-                      },
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        Container(
-                          width: 160,
-                          height: 50,
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.white, width: 1.5),
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    if (quantity > 1) quantity--;
-                                  });
-                                },
-                                child: Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: const BoxDecoration(
-                                    color: Colors.black,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.remove,
-                                    color: Colors.white,
-                                    size: 18,
+                      ),
+
+                      // Product Details Section
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Product Name and Price
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  flex: 2,
+                                  child: Text(
+                                    product!.name,
+                                    style: const TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black87,
+                                      height: 1.3,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                              ),
-                              Text(
-                                '$quantity',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                                const SizedBox(width: 10),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      '${product!.price} ${t.lyd}',
+                                      style: const TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF008AD2),
+                                      ),
+                                    ),
+                                    if (product!.oldPrice != null)
+                                      Text(
+                                        '${product!.oldPrice!} ${t.lyd}',
+                                        style: const TextStyle(
+                                          decoration:
+                                              TextDecoration.lineThrough,
+                                          fontSize: 16,
+                                          color: Colors.grey,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                  ],
                                 ),
-                              ),
-                              GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    quantity++;
-                                  });
-                                },
-                                child: Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: const BoxDecoration(
-                                    color: Colors.black,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.add,
-                                    color: Colors.white,
-                                    size: 18,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Container(
-                            width: 203,
-                            height: 50,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(30),
+                              ],
                             ),
-                            child: TextButton(
-                              onPressed: _addToCart,
-                              child: Text(
-                                t.addToCart,
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.bold,
-                                ),
+
+                            SizedBox(height: 20),
+
+                            Text(
+                              t.description,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
                               ),
                             ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 25),
-                    ElevatedButton(
-                      onPressed: () {
-                        final cartProvider = Provider.of<CartProvider>(
-                          context,
-                          listen: false,
-                        );
-                        cartProvider.addToCart(
-                          product!,
-                          quantity: quantity,
-                          color: selectedColor,
-                        );
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => Checkout()),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black,
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size.fromHeight(45),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[50],
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.grey[200]!),
+                              ),
+                              child: Html(
+                                data: product?.description ?? t.noDescription,
+                                style: {
+                                  "body": Style(
+                                    fontSize: FontSize(15.0),
+                                    color: Colors.black87,
+                                    textAlign: TextAlign.justify,
+                                    margin: Margins.zero,
+                                  ),
+                                  "p": Style(
+                                    margin: Margins.only(bottom: 12),
+                                    color: Colors.black87,
+                                  ),
+                                  "ul": Style(
+                                    color: Colors.black87,
+                                    margin: Margins.only(bottom: 12),
+                                  ),
+                                  "li": Style(
+                                    color: Colors.black87,
+                                    margin: Margins.only(bottom: 4),
+                                  ),
+                                },
+                              ),
+                            ),
+
+                            const SizedBox(height: 30),
+
+                            // Quantity and Add to Cart
+                            Row(
+                              children: [
+                                // Quantity Selector
+                                Container(
+                                  width: 140,
+                                  height: 50,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[50],
+                                    border: Border.all(
+                                      color: Colors.grey[300]!,
+                                    ),
+                                    borderRadius: BorderRadius.circular(25),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            if (quantity > 1) quantity--;
+                                          });
+                                        },
+                                        child: Container(
+                                          width: 36,
+                                          height: 36,
+                                          decoration: const BoxDecoration(
+                                            color: Color(0xFF008AD2),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.remove,
+                                            color: Colors.white,
+                                            size: 18,
+                                          ),
+                                        ),
+                                      ),
+                                      Text(
+                                        '$quantity',
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                      GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            quantity++;
+                                          });
+                                        },
+                                        child: Container(
+                                          width: 36,
+                                          height: 36,
+                                          decoration: const BoxDecoration(
+                                            color: Color(0xFF008AD2),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.add,
+                                            color: Colors.white,
+                                            size: 18,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+
+                                // Add to Cart Button
+                                Expanded(
+                                  child: Container(
+                                    height: 50,
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        colors: [
+                                          Color(0xFF008AD2),
+                                          Color(0xFF006DA9),
+                                        ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                      borderRadius: BorderRadius.circular(25),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: const Color(
+                                            0xFF008AD2,
+                                          ).withOpacity(0.3),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    child: TextButton(
+                                      onPressed: _addToCart,
+                                      style: TextButton.styleFrom(
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            25,
+                                          ),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        t.addToCart,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            // Buy Now Button
+                            Container(
+                              width: double.infinity,
+                              height: 50,
+                              decoration: BoxDecoration(
+                                color: Colors.black,
+                                borderRadius: BorderRadius.circular(25),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: TextButton(
+                                onPressed: () {
+                                  final cartProvider =
+                                      Provider.of<CartProvider>(
+                                        context,
+                                        listen: false,
+                                      );
+                                  cartProvider.addToCart(
+                                    product!,
+                                    quantity: quantity,
+                                    color: selectedColor,
+                                  );
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => Checkout(),
+                                    ),
+                                  );
+                                },
+                                style: TextButton.styleFrom(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(25),
+                                  ),
+                                ),
+                                child: Text(
+                                  t.buyNow,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 30),
+
+                            // Similar Products
+                            Text(
+                              t.youMightAlsoLike,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 15),
+                            Consumer<ProductProvider>(
+                              builder: (context, productProvider, child) {
+                                return SimilarProducts(
+                                  currentProduct: product!,
+                                  shopId: widget.shopId,
+                                );
+                              },
+                            ),
+
+                            const SizedBox(height: 40),
+                          ],
                         ),
                       ),
-                      child: Text(t.buyNow),
-                    ),
-                    const SizedBox(height: 30),
-                    Consumer<ProductProvider>(
-                      builder: (context, productProvider, child) {
-                        return SimilarProducts(
-                          currentProduct: product!,
-                          shopId: widget.shopId,
-                        );
-                      },
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -1018,10 +1213,11 @@ class ColorDot extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 5),
-        width: 28,
-        height: 28,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        width: isSelected ? 32 : 28,
+        height: isSelected ? 32 : 28,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: color,
@@ -1029,12 +1225,19 @@ class ColorDot extends StatelessWidget {
             color: isSelected ? Colors.black : Colors.white,
             width: isSelected ? 3 : 2,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 5,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child:
             isSelected
                 ? Icon(
                   Icons.check,
-                  size: 14,
+                  size: 16,
                   color:
                       color.computeLuminance() > 0.5
                           ? Colors.black

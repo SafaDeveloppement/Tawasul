@@ -1,5 +1,3 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:tawasul_application/Services/api_service.dart';
 import 'package:tawasul_application/model/product_model.dart';
@@ -9,37 +7,38 @@ class ProductController with ChangeNotifier {
   List<Product> _allProducts = [];
   List<Product> _newestProducts = [];
   List<Product> _favoriteProducts = [];
-  List<Product> _currentCategoryProducts = []; // ADD THIS LINE
+  List<Product> _currentCategoryProducts = [];
   bool _isLoading = false;
   String _errorMessage = '';
   bool _isInitialized = false;
 
+  // Favorite states tracking
+  final Map<int, bool> _favoriteStates = {};
+
+  // Getters
   List<Product> get allProducts => _allProducts;
   List<Product> get newestProducts => _newestProducts;
   List<Product> get favoriteProducts => _favoriteProducts;
-  List<Product> get currentCategoryProducts =>
-      _currentCategoryProducts; // ADD THIS GETTER
+  List<Product> get currentCategoryProducts => _currentCategoryProducts;
   bool get isLoading => _isLoading;
   String get errorMessage => _errorMessage;
   bool get isInitialized => _isInitialized;
 
-  // Initialize the controller - called from main.dart
+  // Initialize the controller
   Future<void> initialize() async {
     if (_isInitialized) return;
 
     try {
       _isLoading = true;
       notifyListeners();
+
       await ApiService.testApiConnection();
 
-      // Check if user is logged in (has token)
       final prefs = await SharedPreferences.getInstance();
       final hasToken = prefs.containsKey('auth_token');
 
       if (hasToken) {
         await fetchFavoriteProducts();
-      } else {
-        _initializeWithDummyData();
       }
 
       _isInitialized = true;
@@ -48,58 +47,33 @@ class ProductController with ChangeNotifier {
     } catch (e) {
       _isLoading = false;
       _errorMessage = 'Initialization failed: $e';
-      _initializeWithDummyData(); // Fallback to dummy data
       _isInitialized = true;
       notifyListeners();
-      print("Error initializing ProductController: $e");
+      print(" Error initializing ProductController: $e");
     }
   }
 
-  // Fallback to dummy data if API fails or user not logged in
-  void _initializeWithDummyData() {
-    _allProducts = [
-      Product(
-        id: 1,
-        name: "Smart TV",
-        brand: "Samsung",
-        price: "999",
-        image: "assets/images/tv1.jpg",
-        description: "55-inch 4K Smart TV with HDR",
-        isBestSeller: false,
-      ),
-      Product(
-        id: 2,
-        name: "LED 50\"",
-        brand: "LG",
-        price: "899",
-        image: "assets/images/tv3.jpg",
-        description: "50-inch LED TV with webOS",
-        isBestSeller: false,
-      ),
-    ];
-
-    _favoriteProducts = _allProducts.where((p) => p.isFavorite).toList();
-  }
-
-  Future<void> fetchCategoryProducts(String categoryCode, String shopId) async {
+  // Fetch products by category name
+  Future<void> fetchProductsByCategoryName(String categoryName) async {
     try {
-      _isLoading = true;
-      _errorMessage = '';
+      // Find category ID dynamically
+      final categoryId = await ApiService.getCategoryIdByName(categoryName);
+
+      if (categoryId == null) {
+        throw Exception('Category "$categoryName" not found');
+      }
+
+      // Fetch products using the dynamic category ID
+      final products = await ApiService.getProductsByCategoryCode(categoryId);
+      _currentCategoryProducts = products;
       notifyListeners();
 
-      final products = await ApiService.getCategoryProducts(
-        categoryCode: categoryCode,
-        shopId: shopId,
+      print(
+        "✓ Loaded ${products.length} products for '$categoryName' (ID: $categoryId)",
       );
-
-      _allProducts = products;
-      _isLoading = false;
-      notifyListeners();
     } catch (e) {
-      _isLoading = false;
-      _errorMessage = 'Failed to load products: $e';
-      notifyListeners();
-      print("Error fetching category products: $e");
+      print("✗ Error fetching products for '$categoryName': $e");
+      throw e;
     }
   }
 
@@ -112,125 +86,222 @@ class ProductController with ChangeNotifier {
 
       final products = await ApiService.getFavoriteProducts();
 
+      // Update favorite states
+      for (var product in products) {
+        _favoriteStates[product.id] = true;
+      }
+
       _favoriteProducts = products;
       _isLoading = false;
       notifyListeners();
+      print(" Loaded ${products.length} favorite products");
     } catch (e) {
       _isLoading = false;
       _errorMessage = 'Failed to load favorites: $e';
       notifyListeners();
-      print("Error fetching favorite products: $e");
+      print(" Error fetching favorite products: $e");
     }
   }
 
+  // Set category products
   void setCategoryProducts(List<Product> products) {
-    _currentCategoryProducts = products;
+    _currentCategoryProducts = _syncProductsWithFavorites(products);
     notifyListeners();
   }
 
+  // Set all products
   void setAllProducts(List<Product> products) {
-    _allProducts = products;
+    _allProducts = _syncProductsWithFavorites(products);
     notifyListeners();
   }
 
+  // Fetch newest products
   Future<void> fetchNewestProducts(String shopId) async {
-  try {
-    _isLoading = true;
-    _errorMessage = '';
-    notifyListeners();
-
-    final products = await ApiService.getCategoryProducts(
-      categoryCode: '10', // Use the actual category code from your Postman test
-      shopId: shopId,
-    );
-
-    // Sort products by date_add (newest first) if date is available in response
-    products.sort((a, b) {
-      // You'll need to add date parsing logic if the API returns date_add
-      return 0; // Temporary - implement actual date sorting
-    });
-
-    _newestProducts = products;
-    _allProducts = products;
-
-    print("🆕 Fetched ${_newestProducts.length} newest products");
-
-    _isLoading = false;
-    notifyListeners();
-  } catch (e) {
-    _isLoading = false;
-    _errorMessage = 'Failed to load newest products: $e';
-    notifyListeners();
-    print("❌ Error fetching newest products: $e");
-  }
-}
-
-  // Toggle favorite status with API call
-  Future<void> toggleFavorite(int productId) async {
     try {
-      // Find the product in all products
-      final productIndex = _allProducts.indexWhere((p) => p.id == productId);
-      if (productIndex == -1) return;
+      _isLoading = true;
+      _errorMessage = '';
+      notifyListeners();
 
-      final currentStatus = _allProducts[productIndex].isFavorite;
-
-      // Optimistically update UI
-      _allProducts[productIndex].isFavorite = !currentStatus;
-
-      // Also update in newest products if it exists there
-      final newestIndex = _newestProducts.indexWhere((p) => p.id == productId);
-      if (newestIndex != -1) {
-        _newestProducts[newestIndex].isFavorite = !currentStatus;
-      }
-
-      // Also update in current category products if it exists there
-      final categoryIndex = _currentCategoryProducts.indexWhere(
-        (p) => p.id == productId,
+      final products = await ApiService.getCategoryProducts(
+        categoryCode: '10',
+        shopId: shopId,
       );
-      if (categoryIndex != -1) {
-        _currentCategoryProducts[categoryIndex].isFavorite = !currentStatus;
-      }
 
-      if (_allProducts[productIndex].isFavorite) {
-        _favoriteProducts.add(_allProducts[productIndex]);
+      _newestProducts = _syncProductsWithFavorites(products);
+      _allProducts = _syncProductsWithFavorites(products);
+
+      print(" Fetched ${_newestProducts.length} newest products");
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = 'Failed to load newest products: $e';
+      notifyListeners();
+      print(" Error fetching newest products: $e");
+    }
+  }
+
+  // Toggle favorite with proper state management
+  Future<void> toggleFavorite(int productId) async {
+    print(" toggleFavorite called for productId: $productId");
+
+    try {
+      final currentStatus = _favoriteStates[productId] ?? false;
+      final newStatus = !currentStatus;
+
+      print(" Current status: $currentStatus, New status: $newStatus");
+
+      // Update tracking map immediately
+      _favoriteStates[productId] = newStatus;
+
+      // Update all product lists
+      _updateProductInList(_allProducts, productId, newStatus);
+      _updateProductInList(_newestProducts, productId, newStatus);
+      _updateProductInList(_currentCategoryProducts, productId, newStatus);
+
+      // Update favorite products list
+      if (newStatus) {
+        final product = _findProductById(productId);
+        if (product != null &&
+            !_favoriteProducts.any((p) => p.id == productId)) {
+          _favoriteProducts.add(product..isFavorite = true);
+        }
       } else {
         _favoriteProducts.removeWhere((p) => p.id == productId);
       }
 
+      print(" Updated favorite status to: $newStatus");
+      print(" Favorite products count: ${_favoriteProducts.length}");
+
       notifyListeners();
 
-      // Call API to update server
-      final success = await ApiService.toggleFavorite(
-        productId,
-        !currentStatus,
-      );
-
-      // If API call failed, revert the change
-      if (!success) {
-        _allProducts[productIndex].isFavorite = currentStatus;
-
-        if (newestIndex != -1) {
-          _newestProducts[newestIndex].isFavorite = currentStatus;
-        }
-
-        if (categoryIndex != -1) {
-          _currentCategoryProducts[categoryIndex].isFavorite = currentStatus;
-        }
-
-        if (currentStatus) {
-          _favoriteProducts.add(_allProducts[productIndex]);
-        } else {
-          _favoriteProducts.removeWhere((p) => p.id == productId);
-        }
-
-        _errorMessage = 'Failed to update favorite status';
-        notifyListeners();
-      }
+      // Update server in background
+      _updateFavoriteOnServer(productId, newStatus);
     } catch (e) {
+      print(" Error in toggleFavorite: $e");
       _errorMessage = 'Error toggling favorite: $e';
       notifyListeners();
-      print("Error toggling favorite: $e");
     }
+  }
+
+  // Helper method to update product in list
+  void _updateProductInList(
+    List<Product> products,
+    int productId,
+    bool isFavorite,
+  ) {
+    final index = products.indexWhere((p) => p.id == productId);
+    if (index != -1) {
+      products[index] = products[index].copyWith(isFavorite: isFavorite);
+    }
+  }
+
+  // Sync products with favorite states
+  List<Product> _syncProductsWithFavorites(List<Product> products) {
+    return products.map((product) {
+      if (_favoriteStates.containsKey(product.id)) {
+        return product.copyWith(isFavorite: _favoriteStates[product.id]!);
+      } else {
+        _favoriteStates[product.id] = product.isFavorite;
+        return product;
+      }
+    }).toList();
+  }
+
+  // Update favorite on server
+  Future<void> _updateFavoriteOnServer(int productId, bool isFavorite) async {
+    try {
+      final success = await ApiService.toggleFavorite(productId, isFavorite);
+      if (!success) {
+        print(" API call failed for productId: $productId");
+        // Revert on failure
+        _revertFavoriteChange(productId, isFavorite);
+        _errorMessage = 'Failed to update favorite status on server';
+        notifyListeners();
+      } else {
+        print(" API call successful for productId: $productId");
+      }
+    } catch (e) {
+      print(" Error in server update for productId: $productId: $e");
+      _revertFavoriteChange(productId, isFavorite);
+      notifyListeners();
+    }
+  }
+
+  // Revert favorite change
+  void _revertFavoriteChange(int productId, bool attemptedStatus) {
+    final originalStatus = !attemptedStatus;
+    _favoriteStates[productId] = originalStatus;
+
+    _updateProductInList(_allProducts, productId, originalStatus);
+    _updateProductInList(_newestProducts, productId, originalStatus);
+    _updateProductInList(_currentCategoryProducts, productId, originalStatus);
+
+    if (originalStatus) {
+      final product = _findProductById(productId);
+      if (product != null) {
+        _favoriteProducts.add(product..isFavorite = true);
+      }
+    } else {
+      _favoriteProducts.removeWhere((p) => p.id == productId);
+    }
+  }
+
+  // Find product by ID
+  Product? _findProductById(int productId) {
+    // Check current category products first
+    final currentCategoryProduct = _currentCategoryProducts.firstWhere(
+      (p) => p.id == productId,
+      orElse:
+          () => Product(
+            id: 0,
+            name: '',
+            brand: '',
+            price: 0,
+            image: '',
+            description: '',
+            reference: '',
+          ),
+    );
+
+    if (currentCategoryProduct.id != 0) return currentCategoryProduct;
+
+    // Check all products
+    final allProductsItem = _allProducts.firstWhere(
+      (p) => p.id == productId,
+      orElse:
+          () => Product(
+            id: 0,
+            name: '',
+            brand: '',
+            price: 0,
+            image: '',
+            description: '',
+            reference: '',
+          ),
+    );
+
+    if (allProductsItem.id != 0) return allProductsItem;
+
+    // Check newest products
+    return _newestProducts.firstWhere(
+      (p) => p.id == productId,
+      orElse:
+          () => Product(
+            id: 0,
+            name: '',
+            brand: '',
+            price: 0,
+            image: '',
+            description: '',
+            reference: '',
+          ),
+    );
+  }
+
+  // Check if product is favorite
+  bool isProductFavorite(int productId) {
+    return _favoriteStates[productId] ?? false;
   }
 
   // Clear error message
@@ -243,5 +314,13 @@ class ProductController with ChangeNotifier {
   void clearCategoryProducts() {
     _currentCategoryProducts = [];
     notifyListeners();
+  }
+
+  // Get products for search
+  List<Product> getProductsForSearch() {
+    if (_currentCategoryProducts.isNotEmpty) {
+      return _currentCategoryProducts;
+    }
+    return _allProducts;
   }
 }

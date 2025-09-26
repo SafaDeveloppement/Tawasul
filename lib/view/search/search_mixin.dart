@@ -39,7 +39,7 @@ mixin SearchMixin {
     _filteredProducts =
         _allProducts.where((product) {
           return product.name.toLowerCase().contains(lowerCaseQuery) ||
-              product.brand.toLowerCase().contains(lowerCaseQuery) ||
+              product.brand!.toLowerCase().contains(lowerCaseQuery) ||
               product.description.toLowerCase().contains(lowerCaseQuery);
         }).toList();
     _showSearchResults = true;

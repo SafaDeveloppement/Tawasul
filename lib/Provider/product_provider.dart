@@ -17,7 +17,8 @@ class ProductProvider with ChangeNotifier {
     required String shopId,
   }) async {
     try {
-      final url = 'http://t-api.dotit-corp.com/api/public/getCategoryProducts?code=$categoryCode&id-shop=$shopId';
+      final url =
+          'http://t-api.dotit-corp.com/api/public/getCategoryProducts?code=$categoryCode&id-shop=$shopId';
       print(" API URL: $url");
 
       final response = await http.get(Uri.parse(url));
@@ -33,17 +34,21 @@ class ProductProvider with ChangeNotifier {
 
           return (products as List).map<Product>((productJson) {
             return Product(
-              id: int.tryParse(productJson['id_product']?.toString() ?? '0') ?? 0,
+              id:
+                  int.tryParse(productJson['id_product']?.toString() ?? '0') ??
+                  0,
               reference: productJson['reference'] ?? 'N/A',
               name: productJson['name'] ?? 'No Name',
               brand: productJson['manufacturer_name'] ?? 'No Brand',
-              price: productJson['price']?.toString() ?? '0',
+              price: productJson['price'],
               image: productJson['image'] ?? '',
               description: productJson['description_short'] ?? 'No Description',
-              oldPrice: productJson['price_without_reduction']?.toString(),
-              discount: productJson['reduction'] != null && productJson['reduction'] > 0
-                  ? '${(productJson['reduction'] * 100).toStringAsFixed(0)}% OFF'
-                  : null,
+              oldPrice: productJson['price_without_reduction'],
+              discount:
+                  productJson['reduction'] != null &&
+                          productJson['reduction'] > 0
+                      ? '${(productJson['reduction'] * 100).toStringAsFixed(0)}% OFF'
+                      : null,
             );
           }).toList();
         }
@@ -69,7 +74,7 @@ class ProductProvider with ChangeNotifier {
     print("- categoryCode: $categoryCode");
     print("- shopId: $shopId");
     print("- excludeProductId: $excludeProductId");
-    
+
     _isLoading = true;
     _error = '';
     notifyListeners();
@@ -85,10 +90,11 @@ class ProductProvider with ChangeNotifier {
 
       // Filter out the current product if excludeProductId is provided
       if (excludeProductId != null) {
-        _similarProducts = products
-            .where((product) => product.id.toString() != excludeProductId)
-            .take(limit)
-            .toList();
+        _similarProducts =
+            products
+                .where((product) => product.id.toString() != excludeProductId)
+                .take(limit)
+                .toList();
         print(" After filtering, ${_similarProducts.length} products remain");
       } else {
         _similarProducts = products.take(limit).toList();

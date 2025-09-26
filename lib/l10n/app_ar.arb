@@ -39,7 +39,7 @@
   "all": "الكل",
   "newest": "الأحدث",
   "brands": "العلامات التجارية",
-  "lyd": "دينار",
+  "lyd": ".د.ل",
   "categories": "الفئات",
   "seeAll": "عرض الكل",
   "highTech": "التقنية المتقدمة",
@@ -135,7 +135,7 @@
   "resendTheCode": "إعادة إرسال الرمز",
   "profile": "الملف الشخصي",
   "editProfile": "تعديل الملف الشخصي",
-  "favorites": "المفضلة",
+  "favorites": "منتجاتي المفضلة",
   "orderHistory": "سجل الطلبات",
   "changePassword": "تغيير كلمة المرور",
   "logout": "تسجيل الخروج",
@@ -351,7 +351,7 @@
   "download": "تحميل",
   "failedToLoadProfileData": "فشل في تحميل بيانات الملف الشخصي",
   "profileSavedSuccessfully": "تم حفظ الملف الشخصي بنجاح",
-  "noFavoritesYet": "لا توجد مفضلات بعد",
+  "noFavoritesYet": "لا توجد منتجات مفضلة بعد",
   "myOrders": "طلباتي",
   "homePage": "الصفحة الرئيسية",
   "backToHomePage": "العودة إلى الصفحة الرئيسية",
@@ -365,7 +365,7 @@
   "applyFilters": "تطبيق الفلتر",
   "resultsFoundFor": "ننتائج وجدت لـ",
   "tryDifferentKeywords": "جرب كلمات مختلفة أو تحقق من الهجاء",
-  "notification": "الإشعارات",
+  "notifications": "الإشعارات",
   "orders": "الطلبات",
   "alerts": "التنبيهات",
   "orLoginWith": "أو سجل الدخول باستخدام",
@@ -377,5 +377,11 @@
   "googleSignupComingSoon": "التسجيل عبر جوجل قريباً...",
   "signupWithGoogle": "التسجيل باستخدام جوجل",
   "facebookSignupComingSoon": "التسجيل عبر فيسبوك قريباً...",
-  "signupWithFacebook": "التسجيل باستخدام فيسبوك"
+  "signupWithFacebook": "التسجيل باستخدام فيسبوك",
+  "delivered": "تم التوصيل",
+  "cancelled": "تم الإلغاء",
+  "youMightAlsoLike": "قد ترغب أيضا",
+  "description": "وصف",
+  "createdAccountSuccessfully": "تم إنشاء الحساب بنجاح"
+
 }

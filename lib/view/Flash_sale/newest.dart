@@ -229,7 +229,7 @@ class _NewestState extends State<Newest> {
                   ),
                   SizedBox(height: 5.h),
                   Text(
-                    product.brand.toUpperCase(),
+                    product.brand!.toUpperCase(),
                     style: TextStyle(
                       fontSize: 10.sp,
                       color: const Color(0xFF96979A),

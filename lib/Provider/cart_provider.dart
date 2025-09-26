@@ -96,12 +96,7 @@ class CartItem {
   CartItem({required this.product, this.quantity = 1, this.selectedColor});
 
   double get totalPrice {
-    RegExp regex = RegExp(r'(\d+\.?\d*)');
-    Match? match = regex.firstMatch(product.price);
-    if (match != null) {
-      return double.parse(match.group(1)!) * quantity;
-    }
-    return 0.0;
+    return product.price * quantity;
   }
 
   Map<String, dynamic> toApiMap() {

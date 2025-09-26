@@ -9,7 +9,6 @@ import 'dart:io';
 import 'package:intl/intl.dart';
 import 'package:tawasul_application/Services/user_data_services.dart';
 import 'package:tawasul_application/view/Connexion/account_validation.dart';
-import 'package:tawasul_application/view/Connexion/creation_account_success.dart';
 import 'package:tawasul_application/view/Connexion/login.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
@@ -28,6 +27,7 @@ class _SignupState extends State<Signup> {
   String? _errorMessage;
   String? selectedCity;
   String? selectedGender = 'male';
+  bool _isFormatting = false;
 
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
@@ -37,106 +37,7 @@ class _SignupState extends State<Signup> {
   final TextEditingController _cityController = TextEditingController();
   final TextEditingController _birthdateController = TextEditingController();
 
-  List<String> getCities(AppLocalizations t) {
-    return [
-      t.tripoli,
-      t.benghazi,
-      t.misrata,
-      t.bayda,
-      t.zawiya,
-      t.gharyan,
-      t.tobruk,
-      t.ajdabiya,
-      t.zleiten,
-      t.derna,
-      t.sirte,
-      t.sabha,
-      t.khoms,
-      t.bani_walid,
-      t.sabratha,
-      t.zuwara,
-      t.kufra,
-      t.marj,
-      t.tocra,
-      t.tarhuna,
-      t.msallata,
-      t.jumayl,
-      t.sorman,
-      t.al_gseibat,
-      t.shahat,
-      t.ubari,
-      t.asbia,
-      t.jadid,
-      t.waddan,
-      t.el_agheila,
-      t.abyar,
-      t.nofaliya,
-      t.regdalin,
-      t.gasr_akhyar,
-      t.al_qubah,
-      t.tawergha,
-      t.al_maya,
-      t.murzuk,
-      t.brega,
-      t.teghsat,
-      t.hun,
-      t.jalu,
-      t.ajaylat,
-      t.nalut,
-      t.suluq,
-      t.shuhada_al_buerat,
-      t.zaltan,
-      t.mizda,
-      t.ras_lanuf,
-      t.al_urban,
-      t.yafran,
-      t.ar_rayaniya,
-      t.umm_al_rizam,
-      t.taucheira,
-      t.brak,
-      t.abu_ghlasha,
-      t.ad_dawoon,
-      t.teji,
-      t.qaminis,
-      t.qatrun,
-      t.benina,
-      t.kikla,
-      t.al_rheibat,
-      t.sokna,
-      t.massa,
-      t.bin_jawad,
-      t.umm_al_aranib,
-      t.jadu,
-      t.gadames,
-      t.ar_rabta,
-      t.ghat,
-      t.al_abraq,
-      t.sidi_as_said,
-      t.ar_rajban,
-      t.awjila,
-      t.ras_al_hamam,
-      t.tolmeita,
-      t.zella,
-      t.wadi_utba,
-      t.al_barkat,
-      t.martuba,
-      t.traghan,
-      t.al_hashan,
-      t.el_bayyada,
-      t.qayqab,
-      t.mashashita,
-      t.bu_fakhra,
-      t.musaid,
-      t.tacnis,
-      t.susa,
-      t.wadi_zem_zem,
-      t.batta,
-      t.tazirbu,
-      t.farzougha,
-      t.qaryat_umar_al_mukhtar,
-      t.bir_al_ashhab,
-    ];
-  }
+  final FocusNode _phoneFocusNode = FocusNode();
 
   final List<String> countries = ['Libya'];
   final List<String> genders = ['male', 'female'];
@@ -151,20 +52,18 @@ class _SignupState extends State<Signup> {
   void initState() {
     super.initState();
     _phoneController.addListener(_formatPhoneNumber);
-    // Set initial phone value with +216
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_phoneController.text.isEmpty) {
-        _phoneController.text = '+216 ';
-        _phoneController.selection = TextSelection.fromPosition(
-          TextPosition(offset: _phoneController.text.length),
-        );
-      }
-    });
+    _phoneFocusNode.addListener(_onPhoneFocusChange);
+  }
+
+  void _onPhoneFocusChange() {
+    // Handle focus changes if needed
   }
 
   @override
   void dispose() {
     _phoneController.removeListener(_formatPhoneNumber);
+    _phoneFocusNode.removeListener(_onPhoneFocusChange);
+    _phoneFocusNode.dispose();
     _firstNameController.dispose();
     _lastNameController.dispose();
     _emailController.dispose();
@@ -180,62 +79,47 @@ class _SignupState extends State<Signup> {
       await UserDataService.storeUserData(
         firstName: _firstNameController.text.trim(),
         lastName: _lastNameController.text.trim(),
-        phone: _phoneController.text.replaceAll(' ', ''),
+        phone: _cleanPhoneNumber(_phoneController.text),
         email: _emailController.text.trim(),
       );
-
       print("User data stored successfully");
     } catch (e) {
       print("Error storing user data: $e");
     }
   }
 
+  String _cleanPhoneNumber(String phone) {
+    // Remove all non-digit characters and return only digits
+    return phone.replaceAll(RegExp(r'[^\d]'), '');
+  }
+
   void _formatPhoneNumber() {
-    final text = _phoneController.text;
+    if (_isFormatting) return;
+    _isFormatting = true;
 
-    if (text.isEmpty || text == '+216') return;
+    try {
+      String text = _phoneController.text;
+      int cursorPosition = _phoneController.selection.base.offset;
 
-    if (text.length < 5 && text.startsWith('+216')) {
-      _phoneController.text = '+216 ';
-      _phoneController.selection = TextSelection.fromPosition(
-        TextPosition(offset: _phoneController.text.length),
-      );
-      return;
-    }
+      String digits = text.replaceAll(RegExp(r'[^\d]'), '');
 
-    if (!text.startsWith('+216')) {
-      _phoneController.text = '+216 ' + text.replaceAll(RegExp(r'[^0-9]'), '');
-      _phoneController.selection = TextSelection.fromPosition(
-        TextPosition(offset: _phoneController.text.length),
-      );
-      return;
-    }
-
-    final prefix = '+216';
-    String numberPart = text.substring(4).replaceAll(RegExp(r'[^0-9]'), '');
-
-    if (numberPart.length > 8) {
-      numberPart = numberPart.substring(0, 8);
-    }
-
-    String formatted = prefix;
-    if (numberPart.isNotEmpty) {
-      formatted += ' ' + numberPart;
-
-      if (numberPart.length > 2) {
-        formatted = formatted.substring(0, 7) + ' ' + formatted.substring(7);
+      if (digits.length > 8) {
+        digits = digits.substring(0, 8);
       }
 
-      if (numberPart.length > 5) {
-        formatted = formatted.substring(0, 10) + ' ' + formatted.substring(10);
-      }
-    }
+      if (text != digits) {
+        _phoneController.text = digits;
 
-    if (text != formatted) {
-      _phoneController.value = _phoneController.value.copyWith(
-        text: formatted,
-        selection: TextSelection.collapsed(offset: formatted.length),
-      );
+        int newCursorPosition = cursorPosition;
+        if (newCursorPosition > digits.length) {
+          newCursorPosition = digits.length;
+        }
+        _phoneController.selection = TextSelection.collapsed(
+          offset: newCursorPosition,
+        );
+      }
+    } finally {
+      _isFormatting = false;
     }
   }
 
@@ -244,17 +128,10 @@ class _SignupState extends State<Signup> {
       return AppLocalizations.of(context)!.phoneNumberIsRequired;
     }
 
-    final cleanNumber = value.replaceAll(' ', '');
-    if (!cleanNumber.startsWith('+216')) {
-      return 'Libyan number must start with +216';
-    }
+    final digits = value.replaceAll(RegExp(r'[^\d]'), '');
 
-    // Check if we have exactly 8 digits after +216
-    final digitsAfterPrefix = cleanNumber
-        .substring(4)
-        .replaceAll(RegExp(r'[^0-9]'), '');
-    if (digitsAfterPrefix.length != 8) {
-      return 'Phone number must have 8 digits after +216';
+    if (digits.length != 8) {
+      return 'Phone number must be 8 digits';
     }
 
     return null;
@@ -292,111 +169,6 @@ class _SignupState extends State<Signup> {
     return null;
   }
 
-  // Future<void> _registerUser() async {
-  //   if (!_formKey.currentState!.validate()) return;
-  //   if (!_isChecked) {
-  //     setState(() => _errorMessage = 'Please accept terms and conditions');
-  //     return;
-  //   }
-
-  //   setState(() {
-  //     _isLoading = true;
-  //     _errorMessage = null;
-  //   });
-
-  //   try {
-  //     final url = Uri.parse("http://t-api.dotit-corp.com/api/public/register");
-
-  //     String? formattedBirthday;
-  //     if (_birthdateController.text.isNotEmpty) {
-  //       try {
-  //         final parsedDate = DateFormat(
-  //           'dd/MM/yyyy',
-  //         ).parse(_birthdateController.text);
-  //         formattedBirthday = DateFormat('yyyy-MM-dd').format(parsedDate);
-  //       } catch (e) {
-  //         setState(() {
-  //           _isLoading = false;
-  //           _errorMessage = 'Invalid date format. Use DD/MM/YYYY';
-  //         });
-  //         return;
-  //       }
-  //     }
-
-  //     final body = {
-  //       "firstName": _firstNameController.text.trim(),
-  //       "lastName": _lastNameController.text.trim(),
-  //       "email": _emailController.text.trim(),
-  //       "password": _passwordController.text,
-  //       "mobile": _phoneController.text.replaceAll(' ', ''),
-  //       "city": selectedCity ?? "",
-  //       "gender": selectedGender ?? "male",
-  //       "birthday": formattedBirthday,
-  //     };
-
-  //     body.removeWhere(
-  //       (key, value) => value == null || value.toString().isEmpty,
-  //     );
-
-  //     print("Request Body: ${jsonEncode(body)}");
-
-  //     final response = await http
-  //         .post(
-  //           url,
-  //           headers: {"Content-Type": "application/json"},
-  //           body: jsonEncode(body),
-  //         )
-  //         .timeout(const Duration(seconds: 30));
-
-  //     final data = jsonDecode(response.body);
-
-  //     print("Response Status: ${response.statusCode}");
-  //     print("Response Body: $data");
-
-  //     if (response.statusCode == 200 || response.statusCode == 201) {
-  //       if (data["token"] != null) {
-  //         await _storage.write(key: "auth_token", value: data["token"]);
-  //         await _storeUserData();
-
-  //         Navigator.pushReplacement(
-  //           context,
-  //           MaterialPageRoute(builder: (context) => AccountCreatedSuccess()),
-  //         );
-  //       } else if (data["success"] == true || data["status"] == "success") {
-  //         await _loginAfterSignup(
-  //           _emailController.text.trim(),
-  //           _passwordController.text,
-  //         );
-  //       } else {
-  //         setState(() {
-  //           _errorMessage =
-  //               data["message"] ??
-  //               data["ResponseMsg"] ??
-  //               "Registration successful but no token received";
-  //         });
-  //       }
-  //     } else {
-  //       setState(() {
-  //         _errorMessage =
-  //             data["message"] ??
-  //             data["error"] ??
-  //             data["ResponseMsg"] ??
-  //             "Registration failed with status ${response.statusCode}";
-  //       });
-  //     }
-  //   } on SocketException {
-  //     setState(() => _errorMessage = "No internet connection");
-  //   } on HttpException {
-  //     setState(() => _errorMessage = "Couldn't reach the server");
-  //   } on TimeoutException {
-  //     setState(() => _errorMessage = "Request timed out");
-  //   } catch (e) {
-  //     setState(() => _errorMessage = "Unexpected error: $e");
-  //   } finally {
-  //     setState(() => _isLoading = false);
-  //   }
-  // }
-
   Future<void> _registerUser() async {
     if (!_formKey.currentState!.validate()) return;
     if (!_isChecked) {
@@ -410,7 +182,7 @@ class _SignupState extends State<Signup> {
     });
 
     try {
-      final url = Uri.parse("http://t-api.dotit-corp.com/api/public/register");
+      final url = Uri.parse("http://197.13.18.8/public/register-check");
 
       String? formattedBirthday;
       if (_birthdateController.text.isNotEmpty) {
@@ -428,60 +200,132 @@ class _SignupState extends State<Signup> {
         }
       }
 
-      final body = {
-        "firstName": _firstNameController.text.trim(),
-        "lastName": _lastNameController.text.trim(),
-        "email": _emailController.text.trim(),
-        "password": _passwordController.text,
-        "mobile": _phoneController.text.replaceAll(' ', ''),
-        "city": selectedCity ?? "",
-        "gender": selectedGender ?? "male",
-        "birthday": formattedBirthday,
-      };
+      // Convert gender from 'male'/'female' to '1'/'2'
+      String genderValue = '1'; // default to male
+      if (selectedGender == 'female') {
+        genderValue = '2';
+      }
 
-      body.removeWhere(
-        (key, value) => value == null || value.toString().isEmpty,
+      // Extract ONLY the digits
+      String cleanPhone = _phoneController.text.replaceAll(
+        RegExp(r'[^\d]'),
+        '',
       );
 
-      print("Request Body: ${jsonEncode(body)}");
-
-      ///how to print the response
-
-      final response = await http
-          .post(
-            url,
-            headers: {"Content-Type": "application/json"},
-            body: jsonEncode(body),
-          )
-          .timeout(const Duration(seconds: 30));
-
-      final data = jsonDecode(response.body);
-
-      print("Response Status: ${response.statusCode}");
-      print("Response Body: $data");
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        // Navigate to AccountCreatedSuccess on successful registration
-        await _storeUserData();
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => AccountCreatedSuccess()),
-        );
-      } else {
+      // Ensure we have exactly 8 digits
+      if (cleanPhone.length != 8) {
         setState(() {
-          _errorMessage =
-              data["message"] ??
-              data["error"] ??
-              data["ResponseMsg"] ??
-              "Registration failed with status ${response.statusCode}";
+          _isLoading = false;
+          _errorMessage = 'Phone number must be 8 digits';
         });
+        return;
+      }
+
+      print("Phone entered: $cleanPhone");
+      print("Phone length: ${cleanPhone.length}");
+
+      // Create form data
+      var request = http.MultipartRequest('POST', url);
+
+      // Add form fields
+      request.fields['email'] = _emailController.text.trim();
+      request.fields['lastname'] = _lastNameController.text.trim();
+      request.fields['firstname'] = _firstNameController.text.trim();
+      request.fields['password'] = _passwordController.text;
+      request.fields['mobile'] =
+          cleanPhone; // Use ONLY the 8-digit local number
+      request.fields['gender'] = genderValue;
+
+      // Only add birthday if it's not null
+      if (formattedBirthday != null && formattedBirthday.isNotEmpty) {
+        request.fields['birthday'] = formattedBirthday;
+      }
+
+      print("=== API REQUEST ===");
+      print("URL: $url");
+      print("Fields: ${request.fields}");
+
+      // Send the request with timeout
+      final streamedResponse = await request.send().timeout(
+        const Duration(seconds: 30),
+      );
+      final response = await http.Response.fromStream(streamedResponse);
+
+      print("=== API RESPONSE ===");
+      print("Status: ${response.statusCode}");
+      print("Body: ${response.body}");
+
+      // Handle response
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+
+        if (data["success"] == true) {
+          final String verificationCode = data["code"]?.toString().trim() ?? "";
+
+          if (verificationCode.isEmpty) {
+            setState(() {
+              _errorMessage = "No verification code received from server";
+            });
+            return;
+          } 
+
+          // Store user data and verification code
+          await _storeUserData();
+          await _storage.write(
+            key: "verification_code",
+            value: verificationCode,
+          );
+          await _storage.write(
+            key: "user_email",
+            value: _emailController.text.trim(),
+          );
+          await _storage.write(key: "user_phone", value: cleanPhone);
+
+          print(" Verification code received: $verificationCode");
+          print(" Stored email: ${_emailController.text.trim()}");
+          print(" Stored phone: $cleanPhone");
+
+          // Show debug dialog with code (for testing)
+          _showDebugDialog(verificationCode);
+
+          // Navigate to Account Validation screen
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder:
+                  (context) => AccountValidation(
+                    email: _emailController.text.trim(),
+                    phone: cleanPhone,
+                    verificationCode: verificationCode,
+                  ),
+            ),
+          );
+        } else {
+          setState(() {
+            _errorMessage = data["message"] ?? "Registration failed";
+          });
+        }
+      } else {
+        // Try to parse error response
+        try {
+          final data = jsonDecode(response.body);
+          setState(() {
+            _errorMessage =
+                data["message"] ?? "HTTP Error ${response.statusCode}";
+          });
+        } catch (e) {
+          setState(() {
+            _errorMessage =
+                "HTTP Error ${response.statusCode} - Invalid response format";
+          });
+        }
       }
     } on SocketException {
       setState(() => _errorMessage = "No internet connection");
-    } on HttpException {
-      setState(() => _errorMessage = "Couldn't reach the server");
     } on TimeoutException {
-      setState(() => _errorMessage = "Request timed out");
+      setState(() => _errorMessage = "Request timed out. Please try again.");
+    } on FormatException {
+      setState(() => _errorMessage = "Invalid server response format");
     } catch (e) {
       setState(() => _errorMessage = "Unexpected error: $e");
     } finally {
@@ -489,38 +333,33 @@ class _SignupState extends State<Signup> {
     }
   }
 
-  Future<void> _loginAfterSignup(String email, String password) async {
-    final loginUrl = Uri.parse("http://t-api.dotit-corp.com/api/public/login");
-    try {
-      final loginResponse = await http
-          .post(
-            loginUrl,
-            headers: {"Content-Type": "application/json"},
-            body: jsonEncode({"email": email, "password": password}),
-          )
-          .timeout(const Duration(seconds: 30));
-
-      final loginData = jsonDecode(loginResponse.body);
-
-      if (loginResponse.statusCode == 200 && loginData["token"] != null) {
-        await _storage.write(key: "auth_token", value: loginData["token"]);
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => AccountValidation()),
-        );
-      } else {
-        setState(() {
-          _errorMessage =
-              loginData["message"] ??
-              loginData["ResponseMsg"] ??
-              "Registration successful but automatic login failed";
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _errorMessage = "Registration successful but login failed: $e";
-      });
-    }
+  void _showDebugDialog(String verificationCode) {
+    // Show the code in a dialog for debugging purposes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder:
+            (context) => AlertDialog(
+              title: Text("Debug Information"),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("Verification Code: $verificationCode"),
+                  SizedBox(height: 10),
+                  Text("Phone: ${_phoneController.text}"),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text("OK"),
+                ),
+              ],
+            ),
+      );
+    });
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -544,8 +383,8 @@ class _SignupState extends State<Signup> {
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
-    final cities = getCities(t);
     final genderLabels = getGenderLabels(t);
+    final bool isRTL = Directionality.of(context) == TextDirection.RTL;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -587,6 +426,7 @@ class _SignupState extends State<Signup> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
           padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
           child: Form(
             key: _formKey,
@@ -710,9 +550,13 @@ class _SignupState extends State<Signup> {
                   ),
                 ),
                 SizedBox(height: 20.h),
+
+                // Phone Number Field - Now accepts only 8 digits without prefix
                 TextFormField(
                   controller: _phoneController,
+                  focusNode: _phoneFocusNode,
                   keyboardType: TextInputType.phone,
+                  textAlign: isRTL ? TextAlign.right : TextAlign.left,
                   decoration: _buildInputDecoration(
                     "${t.phoneNumber} *",
                     Icons.phone,
@@ -720,14 +564,7 @@ class _SignupState extends State<Signup> {
                   validator: _validatePhoneNumber,
                 ),
                 SizedBox(height: 20.h),
-                _buildDropdown(
-                  label: "${t.city} *",
-                  value: selectedCity,
-                  items: cities,
-                  onChanged: (value) => setState(() => selectedCity = value),
-                ),
 
-                SizedBox(height: 20.h),
                 _buildGenderDropdown(
                   label: "${t.gender} *",
                   value: selectedGender,
@@ -736,17 +573,19 @@ class _SignupState extends State<Signup> {
                   onChanged: (value) => setState(() => selectedGender = value),
                 ),
                 SizedBox(height: 20.h),
+
                 GestureDetector(
                   onTap: () => _selectDate(context),
                   child: AbsorbPointer(
                     child: _buildTextField(
-                      "${t.birthday} (${t.optional})",
+                      "${t.birthday} ",
                       Icons.calendar_today,
                       controller: _birthdateController,
                     ),
                   ),
                 ),
                 SizedBox(height: 20.h),
+
                 Row(
                   children: [
                     Checkbox(
@@ -947,45 +786,6 @@ class _SignupState extends State<Signup> {
       validator: validator,
       decoration: _buildInputDecoration(label, icon),
       enabled: !_isLoading,
-    );
-  }
-
-  Widget _buildDropdown({
-    required String label,
-    required String? value,
-    required List<String> items,
-    required Function(String?) onChanged,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w500),
-        ),
-        SizedBox(height: 6.h),
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: 12.w),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12.r),
-            border: Border.all(color: Colors.black, width: 1.0),
-          ),
-          child: DropdownButton<String>(
-            isExpanded: true,
-            underline: SizedBox(),
-            value: value,
-            items:
-                items.map((String item) {
-                  return DropdownMenuItem<String>(
-                    value: item,
-                    child: Text(item),
-                  );
-                }).toList(),
-            onChanged: _isLoading ? null : onChanged,
-          ),
-        ),
-      ],
     );
   }
 

@@ -398,7 +398,7 @@ class _SearchingResultState extends State<SearchingResult> {
       _filteredProducts =
           _allProducts.where((product) {
             return product.name.toLowerCase().contains(lowerCaseQuery) ||
-                product.brand.toLowerCase().contains(lowerCaseQuery) ||
+                product.brand!.toLowerCase().contains(lowerCaseQuery) ||
                 product.description.toLowerCase().contains(lowerCaseQuery);
           }).toList();
     });
@@ -494,7 +494,7 @@ class _SearchingResultState extends State<SearchingResult> {
                     ),
                     SizedBox(height: 4.h),
                     Text(
-                      product.brand,
+                      product.brand!,
                       style: TextStyle(
                         fontSize: 14.sp,
                         color: Colors.grey[600],

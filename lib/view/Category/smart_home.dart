@@ -1,5 +1,7 @@
+// import 'dart:async';
 // import 'package:flutter/material.dart';
 // import 'package:flutter_screenutil/flutter_screenutil.dart';
+// import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 // import 'package:provider/provider.dart';
 // import 'package:tawasul_application/Services/api_service.dart';
 // import 'package:tawasul_application/controller/product_controller.dart';
@@ -23,6 +25,8 @@
 //   bool _showSearch = false;
 //   final TextEditingController _searchController = TextEditingController();
 //   List<Product> _searchResults = [];
+//   Timer? _debounce;
+//   List<Product> _allProducts = [];
 
 //   List<Category> _categories = [];
 //   bool _isLoadingCategories = true;
@@ -37,27 +41,36 @@
 //     _fetchCategories();
 //   }
 
+//   @override
+//   void dispose() {
+//     _debounce?.cancel();
+//     _searchController.dispose();
+//     _tabController.dispose();
+//     super.dispose();
+//   }
+
 //   Future<void> _fetchCategories() async {
 //     setState(() => _isLoadingCategories = true);
 //     try {
-//       final products = await ApiService.getProductsByCategoryName('Smart Home');
-
-//       final productController = Provider.of<ProductController>(
-//         context,
-//         listen: false,
+//       final smartHomeCode = await ApiService.getCategoryCodeByName(
+//         'Smart Home',
 //       );
-//       productController.setAllProducts(products);
 
-//       setState(() {
-//         _isLoadingCategories = false;
-//         _isLoadingProducts = false;
-//       });
+//       if (smartHomeCode.isNotEmpty) {
+//         setState(() {
+//           _selectedCategoryCode = smartHomeCode;
+//           _isLoadingCategories = false;
+//           _fetchProductsByCategory(smartHomeCode);
+//         });
+//       } else {
+//         setState(() {
+//           _isLoadingCategories = false;
+//           print("Smart Home category not found");
+//         });
+//       }
 //     } catch (e) {
-//       setState(() {
-//         _isLoadingCategories = false;
-//         _isLoadingProducts = false;
-//       });
-//       print("Error fetching Smart Home products: $e");
+//       setState(() => _isLoadingCategories = false);
+//       print("Error fetching Smart Home category: $e");
 //     }
 //   }
 
@@ -67,16 +80,17 @@
 //     setState(() => _isLoadingProducts = true);
 
 //     try {
-//       final productController = Provider.of<ProductController>(
-//         context,
-//         listen: false,
-//       );
-
 //       final products = await ApiService.getCategoryProducts(
 //         categoryCode: categoryCode,
 //         shopId: '4',
 //       );
 
+//       _allProducts = products;
+
+//       final productController = Provider.of<ProductController>(
+//         context,
+//         listen: false,
+//       );
 //       productController.setAllProducts(products);
 
 //       setState(() {
@@ -89,11 +103,31 @@
 //     }
 //   }
 
-//   @override
-//   void dispose() {
-//     _searchController.dispose();
-//     _tabController.dispose();
-//     super.dispose();
+//   void _filterProducts(String query) {
+//     if (query.isEmpty) {
+//       setState(() {
+//         _searchResults = [];
+//       });
+//       return;
+//     }
+
+//     final lowerCaseQuery = query.toLowerCase();
+//     setState(() {
+//       _searchResults =
+//           _allProducts.where((Product product) {
+//             return product.name.toLowerCase().contains(lowerCaseQuery) ||
+//                 product.brand.toLowerCase().contains(lowerCaseQuery) ||
+//                 product.description.toLowerCase().contains(lowerCaseQuery);
+//           }).toList();
+//     });
+//   }
+
+//   void _performRealTimeSearch(String query) {
+//     if (_debounce?.isActive ?? false) _debounce!.cancel();
+
+//     _debounce = Timer(const Duration(milliseconds: 500), () {
+//       _filterProducts(query);
+//     });
 //   }
 
 //   void _toggleSearch() {
@@ -103,22 +137,6 @@
 //         _searchController.clear();
 //         _searchResults.clear();
 //       }
-//     });
-//   }
-
-//   void _performSearch(BuildContext context) {
-//     final query = _searchController.text.toLowerCase();
-//     final productController = Provider.of<ProductController>(
-//       context,
-//       listen: false,
-//     );
-
-//     setState(() {
-//       _searchResults =
-//           productController.allProducts.where((product) {
-//             return product.name.toLowerCase().contains(query) ||
-//                 product.brand.toLowerCase().contains(query);
-//           }).toList();
 //     });
 //   }
 
@@ -208,7 +226,7 @@
 //                   Row(
 //                     children: [
 //                       Text(
-//                         product.price,
+//                         product.price.toString(),
 //                         style: TextStyle(
 //                           fontSize: 14.sp,
 //                           fontWeight: FontWeight.bold,
@@ -218,7 +236,7 @@
 //                       if (product.oldPrice != null) ...[
 //                         SizedBox(width: 3.w),
 //                         Text(
-//                           product.oldPrice!,
+//                           product.oldPrice.toString(),
 //                           style: TextStyle(
 //                             decoration: TextDecoration.lineThrough,
 //                             fontSize: 12.sp,
@@ -270,6 +288,7 @@
 //                 child: TextField(
 //                   controller: _searchController,
 //                   autofocus: true,
+//                   onChanged: _performRealTimeSearch,
 //                   decoration: InputDecoration(
 //                     hintText: t.searchProducts,
 //                     border: OutlineInputBorder(
@@ -288,17 +307,12 @@
 //                               icon: const Icon(Icons.clear),
 //                               onPressed: () {
 //                                 _searchController.clear();
-//                                 _performSearch(context);
+//                                 _filterProducts('');
 //                               },
 //                             )
 //                             : null,
 //                   ),
-//                   onChanged: (value) {
-//                     if (value.isEmpty) {
-//                       _performSearch(context);
-//                     }
-//                   },
-//                   onSubmitted: (_) => _performSearch(context),
+//                   onSubmitted: (_) => _filterProducts(_searchController.text),
 //                 ),
 //               ),
 //               SizedBox(width: 12.w),
@@ -323,7 +337,6 @@
 
 //   Widget _buildProductGrid(BuildContext context, List<Product> products) {
 //     final t = AppLocalizations.of(context)!;
-
 //     if (_isLoading || _isLoadingProducts) {
 //       return const Center(child: CircularProgressIndicator());
 //     }
@@ -366,29 +379,61 @@
 //     final productController = Provider.of<ProductController>(context);
 //     List<Product> sortedProducts = List.from(productController.allProducts);
 
-//     if (tabIndex == 1) {
-//       sortedProducts.sort((a, b) {
-//         double priceA = double.parse(
-//           a.price.replaceAll(t.lyd, '').replaceAll(',', ''),
-//         );
-//         double priceB = double.parse(
-//           b.price.replaceAll(t.lyd, '').replaceAll(',', ''),
-//         );
-//         return priceA.compareTo(priceB);
-//       });
+//      if (tabIndex == 1) {
+//       sortedProducts.sort((a, b) => a.price.compareTo(b.price));
 //     } else if (tabIndex == 2) {
-//       sortedProducts.sort((a, b) {
-//         double priceA = double.parse(
-//           a.price.replaceAll(t.lyd, '').replaceAll(',', ''),
-//         );
-//         double priceB = double.parse(
-//           b.price.replaceAll(t.lyd, '').replaceAll(',', ''),
-//         );
-//         return priceB.compareTo(priceA);
-//       });
+//       sortedProducts.sort((a, b) => b.price.compareTo(a.price));
+//     }
+//     return _buildProductGrid(context, sortedProducts);
+//   }
+
+//   Widget _buildSearchResults(BuildContext context) {
+//     final t = AppLocalizations.of(context)!;
+
+//     if (_searchController.text.isEmpty) {
+//       return Center(
+//         child: Text(
+//           t.typeToSearch,
+//           style: TextStyle(fontSize: 16.sp, color: Colors.grey),
+//         ),
+//       );
 //     }
 
-//     return _buildProductGrid(context, sortedProducts);
+//     if (_searchResults.isEmpty) {
+//       return Center(
+//         child: Column(
+//           mainAxisAlignment: MainAxisAlignment.center,
+//           children: [
+//             Icon(Icons.search_off, size: 64.sp, color: Colors.grey),
+//             SizedBox(height: 16.h),
+//             Text(
+//               '${t.noProductsFoundFor} "${_searchController.text}"',
+//               style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
+//             ),
+//             SizedBox(height: 8.h),
+//             Text(
+//               t.tryDifferentKeywords,
+//               textAlign: TextAlign.center,
+//               style: TextStyle(fontSize: 14.sp, color: Colors.grey),
+//             ),
+//           ],
+//         ),
+//       );
+//     }
+
+//     return Column(
+//       crossAxisAlignment: CrossAxisAlignment.start,
+//       children: [
+//         Padding(
+//           padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+//           child: Text(
+//             '${_searchResults.length} ${t.resultsFoundFor} "${_searchController.text}"',
+//             style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
+//           ),
+//         ),
+//         Expanded(child: _buildProductGrid(context, _searchResults)),
+//       ],
+//     );
 //   }
 
 //   @override
@@ -475,10 +520,10 @@
 //                           shape: BoxShape.circle,
 //                         ),
 //                         child: Center(
-//                           child: Icon(
-//                             Icons.filter_list,
+//                           child: FaIcon(
+//                             FontAwesomeIcons.sliders,
 //                             color: Colors.white,
-//                             size: 20.sp,
+//                             size: 19.sp,
 //                           ),
 //                         ),
 //                       ),
@@ -514,27 +559,7 @@
 //                   padding: const EdgeInsets.all(5.0),
 //                   child:
 //                       _showSearch
-//                           ? _searchController.text.isEmpty
-//                               ? Center(
-//                                 child: Text(
-//                                   t.typeToSearch,
-//                                   style: TextStyle(
-//                                     fontSize: 16.sp,
-//                                     color: Colors.grey,
-//                                   ),
-//                                 ),
-//                               )
-//                               : _searchResults.isEmpty
-//                               ? Center(
-//                                 child: Text(
-//                                   '${t.noProductsFoundFor} "${_searchController.text}"',
-//                                   style: TextStyle(
-//                                     fontSize: 16.sp,
-//                                     color: Colors.grey,
-//                                   ),
-//                                 ),
-//                               )
-//                               : _buildProductGrid(context, _searchResults)
+//                           ? _buildSearchResults(context)
 //                           : TabBarView(
 //                             controller: _tabController,
 //                             children: List.generate(
@@ -564,10 +589,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:tawasul_application/Services/api_service.dart';
 import 'package:tawasul_application/controller/product_controller.dart';
-import 'package:tawasul_application/model/category_model.dart';
 import 'package:tawasul_application/model/product_model.dart';
 import 'package:tawasul_application/view/filter.dart';
 import 'package:tawasul_application/view/navbar.dart';
@@ -588,19 +613,13 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   List<Product> _searchResults = [];
   Timer? _debounce;
-  List<Product> _allProducts = [];
-
-  List<Category> _categories = [];
-  bool _isLoadingCategories = true;
-  String _selectedCategoryCode = '';
-  bool _isLoadingProducts = false;
-  bool _isLoading = false;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _fetchCategories();
+    _loadCategoryProducts();
   }
 
   @override
@@ -611,59 +630,22 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  Future<void> _fetchCategories() async {
-    setState(() => _isLoadingCategories = true);
-    try {
-      final smartHomeCode = await ApiService.getCategoryCodeByName(
-        'Smart Home',
-      );
+  Future<void> _loadCategoryProducts() async {
+  setState(() => _isLoading = true);
 
-      if (smartHomeCode.isNotEmpty) {
-        setState(() {
-          _selectedCategoryCode = smartHomeCode;
-          _isLoadingCategories = false;
-          _fetchProductsByCategory(smartHomeCode);
-        });
-      } else {
-        setState(() {
-          _isLoadingCategories = false;
-          print("Smart Home category not found");
-        });
-      }
-    } catch (e) {
-      setState(() => _isLoadingCategories = false);
-      print("Error fetching Smart Home category: $e");
-    }
+  try {
+    final productController = Provider.of<ProductController>(
+      context, 
+      listen: false
+    );
+    
+    await productController.fetchProductsByCategoryName('Smart Home'); 
+    setState(() => _isLoading = false);
+  } catch (e) {
+    print("Error loading products: $e");
+    setState(() => _isLoading = false);
   }
-
-  Future<void> _fetchProductsByCategory(String categoryCode) async {
-    if (_isLoadingProducts) return;
-
-    setState(() => _isLoadingProducts = true);
-
-    try {
-      final products = await ApiService.getCategoryProducts(
-        categoryCode: categoryCode,
-        shopId: '4',
-      );
-
-      _allProducts = products;
-
-      final productController = Provider.of<ProductController>(
-        context,
-        listen: false,
-      );
-      productController.setAllProducts(products);
-
-      setState(() {
-        _selectedCategoryCode = categoryCode;
-        _isLoadingProducts = false;
-      });
-    } catch (e) {
-      setState(() => _isLoadingProducts = false);
-      print("Error fetching products: $e");
-    }
-  }
+}
 
   void _filterProducts(String query) {
     if (query.isEmpty) {
@@ -673,12 +655,18 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
       return;
     }
 
+    final productController = Provider.of<ProductController>(
+      context,
+      listen: false,
+    );
+    final allProducts = productController.currentCategoryProducts;
+
     final lowerCaseQuery = query.toLowerCase();
     setState(() {
       _searchResults =
-          _allProducts.where((Product product) {
+          allProducts.where((Product product) {
             return product.name.toLowerCase().contains(lowerCaseQuery) ||
-                product.brand.toLowerCase().contains(lowerCaseQuery) ||
+                product.brand!.toLowerCase().contains(lowerCaseQuery) ||
                 product.description.toLowerCase().contains(lowerCaseQuery);
           }).toList();
     });
@@ -716,7 +704,7 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
             builder:
                 (context) => ProductDetail(
                   productReference: product.reference,
-                  shopId: '1',
+                  shopId: '4',
                   toggleFavorite:
                       () => productController.toggleFavorite(product.id),
                   isFavorite: product.isFavorite,
@@ -729,16 +717,10 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
         height: 200.h,
         margin: EdgeInsets.all(6.w),
         decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 254, 254, 254),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(16.r),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey,
-              offset: const Offset(0, 2),
-              blurRadius: 1,
-              spreadRadius: 0,
-              blurStyle: BlurStyle.normal,
-            ),
+          boxShadow: const [
+            BoxShadow(color: Colors.grey, offset: Offset(0, 2), blurRadius: 1),
           ],
         ),
         child: Stack(
@@ -772,8 +754,10 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
                   ),
                   SizedBox(height: 7.h),
                   Text(
-                    product.brand,
+                    product.brand!,
                     style: TextStyle(fontSize: 10.sp, color: Colors.grey),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   SizedBox(height: 2.h),
                   Text(
@@ -783,12 +767,13 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
                       fontSize: 14.sp,
                     ),
                     maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   SizedBox(height: 4.h),
                   Row(
                     children: [
                       Text(
-                        product.price,
+                        '${product.price.toStringAsFixed(2)} TND',
                         style: TextStyle(
                           fontSize: 14.sp,
                           fontWeight: FontWeight.bold,
@@ -798,7 +783,7 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
                       if (product.oldPrice != null) ...[
                         SizedBox(width: 3.w),
                         Text(
-                          product.oldPrice!,
+                          '${product.oldPrice!.toStringAsFixed(2)} TND',
                           style: TextStyle(
                             decoration: TextDecoration.lineThrough,
                             fontSize: 12.sp,
@@ -814,20 +799,28 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
             Positioned(
               top: 8.h,
               right: 8.w,
-              child: GestureDetector(
-                onTap: () => productController.toggleFavorite(product.id),
-                child: CircleAvatar(
-                  backgroundColor: Colors.white,
-                  radius: 14.r,
-                  child: Icon(
-                    product.isFavorite ? Icons.favorite : Icons.favorite_border,
-                    color:
-                        product.isFavorite
-                            ? const Color(0xFF008AD2)
-                            : Colors.blue[700],
-                    size: 20.sp,
-                  ),
-                ),
+              child: Consumer<ProductController>(
+                builder: (context, productController, child) {
+                  final isFavorite = productController.isProductFavorite(
+                    product.id,
+                  );
+
+                  return GestureDetector(
+                    onTap: () => productController.toggleFavorite(product.id),
+                    child: CircleAvatar(
+                      backgroundColor: Colors.white,
+                      radius: 14.r,
+                      child: Icon(
+                        isFavorite ? Icons.favorite : Icons.favorite_border,
+                        color:
+                            isFavorite
+                                ? const Color(0xFF008AD2)
+                                : Colors.blue[700],
+                        size: 20.sp,
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ],
@@ -899,7 +892,8 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
 
   Widget _buildProductGrid(BuildContext context, List<Product> products) {
     final t = AppLocalizations.of(context)!;
-    if (_isLoading || _isLoadingProducts) {
+
+    if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -911,9 +905,14 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
             Icon(Icons.error_outline, size: 50.sp, color: Colors.grey),
             SizedBox(height: 16.h),
             Text(
-              t.noProductsFound,
+              'No Smart Home products found',
               style: TextStyle(fontSize: 16.sp, color: Colors.grey),
               textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 16.h),
+            ElevatedButton(
+              onPressed: _loadCategoryProducts,
+              child: Text(t.retry),
             ),
           ],
         ),
@@ -936,31 +935,15 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
   }
 
   Widget _buildTabContent(BuildContext context, int tabIndex) {
-    final t = AppLocalizations.of(context)!;
-
     final productController = Provider.of<ProductController>(context);
-    List<Product> sortedProducts = List.from(productController.allProducts);
+    List<Product> sortedProducts = List.from(
+      productController.currentCategoryProducts,
+    );
 
     if (tabIndex == 1) {
-      sortedProducts.sort((a, b) {
-        double priceA = double.parse(
-          a.price.replaceAll(t.lyd, '').replaceAll(',', ''),
-        );
-        double priceB = double.parse(
-          b.price.replaceAll(t.lyd, '').replaceAll(',', ''),
-        );
-        return priceA.compareTo(priceB);
-      });
+      sortedProducts.sort((a, b) => a.price.compareTo(b.price));
     } else if (tabIndex == 2) {
-      sortedProducts.sort((a, b) {
-        double priceA = double.parse(
-          a.price.replaceAll(t.lyd, '').replaceAll(',', ''),
-        );
-        double priceB = double.parse(
-          b.price.replaceAll(t.lyd, '').replaceAll(',', ''),
-        );
-        return priceB.compareTo(priceA);
-      });
+      sortedProducts.sort((a, b) => b.price.compareTo(a.price));
     }
 
     return _buildProductGrid(context, sortedProducts);
@@ -1099,10 +1082,10 @@ class _SmartHomeState extends State<SmartHome> with TickerProviderStateMixin {
                           shape: BoxShape.circle,
                         ),
                         child: Center(
-                          child: Icon(
-                            Icons.filter_list,
+                          child: FaIcon(
+                            FontAwesomeIcons.sliders,
                             color: Colors.white,
-                            size: 20.sp,
+                            size: 19.sp,
                           ),
                         ),
                       ),

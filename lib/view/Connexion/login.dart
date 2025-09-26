@@ -4,7 +4,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tawasul_application/Services/api_service.dart';
-import 'package:tawasul_application/view/Connexion/forgot_password_number.dart';
+import 'package:tawasul_application/view/Connexion/creation_account_success.dart';
+import 'package:tawasul_application/view/Connexion/forgot_password_email.dart';
 import 'package:tawasul_application/view/Connexion/signup.dart';
 import 'package:tawasul_application/view/home_page.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -55,26 +56,22 @@ class _LoginState extends State<Login> {
         await _storage.write(key: "auth_token", value: result['token']);
         final prefs = await SharedPreferences.getInstance();
 
-        await prefs.setInt(
-          'user_id',
-          result['user']?['id'] ?? 1,
-        ); // Adjust based on your API
+        await prefs.setInt('user_id', result['user']?['id'] ?? 1);
         await prefs.setString(
           'user_email',
           result['user']?['email'] ?? _usernameController.text.trim(),
         );
         await _storeUserDataFromLogin();
 
-        // Show success message with response body
-        _showSuccess("Login successful! Token: ${result['token']}");
+        _showSuccess("Login successful! ");
 
         // Navigate to home
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => HomePage()),
+          MaterialPageRoute(builder: (_) => AccountCreatedSuccess()),
         );
       } else {
-        _showError(result['message'] ?? "Login failed");
+        _showError("Login failed");
       }
     } catch (e) {
       _showError("Error: $e");
@@ -99,7 +96,6 @@ class _LoginState extends State<Login> {
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      // You might need to adjust this based on what your login API returns
       // If the API returns user data, store it here
       // For now, we'll just store the email
       await prefs.setString('user_email', _usernameController.text.trim());
@@ -216,7 +212,7 @@ class _LoginState extends State<Login> {
               Center(
                 child: SizedBox(
                   width: 320.w,
-                  height: 45.h,
+                  height: 50.h,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF008AD2),
@@ -247,7 +243,7 @@ class _LoginState extends State<Login> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ForgotPasswordNumber(),
+                      builder: (context) => ForgotPasswordEmail(),
                     ),
                   );
                 },

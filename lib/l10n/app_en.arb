@@ -371,7 +371,7 @@
   "color": "Color",
   "select": "Select",
   "applyFilters": "Apply filters",
-  "notification": "Notification",
+  "notifications": "Notifications",
   "orders": "Orders",
   "alerts": "Alerts",
   "orLoginWith": "Or Login with",
@@ -383,5 +383,10 @@
   "googleSignupComingSoon": "Google signup coming soon...",
   "signupWithGoogle": "Sign up with Google",
   "facebookSignupComingSoon": "Facebook signup coming soon...",
-  "signupWithFacebook": "Sign up with Facebook"
+  "signupWithFacebook": "Sign up with Facebook",
+  "delivered": "Delivered",
+  "cancelled": "Cancelled",
+  "youMightAlsoLike": "You may also like",
+  "description": "Description",
+  "createdAccountSuccessfully": "Created account successfully"
 }

@@ -1,0 +1,9 @@
+{
+  "ar": [
+    "errorFetchingProduct",
+    "libya",
+    "mustContainSpecialCharacter",
+    "currency",
+    "noResultsFound"
+  ]
+}
