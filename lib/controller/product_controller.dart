@@ -115,22 +115,34 @@ class ProductController with ChangeNotifier {
     notifyListeners();
   }
 
-  // Fetch newest products
-  Future<void> fetchNewestProducts(String shopId) async {
+  // Fetch newest products sorted by date_add
+  Future<void> fetchNewestProducts({int limit = 10}) async {
     try {
       _isLoading = true;
       _errorMessage = '';
       notifyListeners();
 
-      final products = await ApiService.getCategoryProducts(
-        categoryCode: '10',
-        shopId: shopId,
+      print(" Fetching newest products (limit: $limit)...");
+
+      // Use the new API method that sorts by date_add
+      final products = await ApiService.getNewestProducts(
+        numberOfProducts: limit,
+        orderBy: 'date_add',
+        orderSens: 'desc',
       );
 
-      _newestProducts = _syncProductsWithFavorites(products);
-      _allProducts = _syncProductsWithFavorites(products);
+      if (products.isEmpty) {
+        print(" No newest products returned from API");
+      } else {
+        print(" Loaded ${products.length} newest products");
 
-      print(" Fetched ${_newestProducts.length} newest products");
+        // Debug: Check if products have date information
+        for (var product in products.take(3)) {
+          print(" ${product.name} (ID: ${product.id})");
+        }
+      }
+
+      _newestProducts = _syncProductsWithFavorites(products);
       _isLoading = false;
       notifyListeners();
     } catch (e) {

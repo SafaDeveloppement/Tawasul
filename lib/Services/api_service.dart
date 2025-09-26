@@ -483,6 +483,66 @@ class ApiService {
       print("---");
     }
   }
+
+  /*                           GET NEWEST PRODUCTS (Sorted by date_add)                                          */
+  static Future<List<Product>> getNewestProducts({
+    int numberOfProducts = 10,
+    String orderBy = 'date_add',
+    String orderSens = 'desc',
+  }) async {
+    try {
+      final Map<String, String> queryParams = {
+        'order_by': orderBy,
+        'order_sens': orderSens,
+        'nombre_products': numberOfProducts.toString(),
+      };
+
+      // Remove empty parameters
+      queryParams.removeWhere((key, value) => value.isEmpty);
+
+      final Uri uri = Uri.parse(
+        '$baseUrl/public/getproducts',
+      ).replace(queryParameters: queryParams);
+
+      print("Fetching newest products from: $uri");
+
+      final response = await http
+          .get(uri, headers: await _getHeaders())
+          .timeout(Duration(seconds: timeoutSeconds));
+
+      print("Newest products API response status: ${response.statusCode}");
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+
+        if (data['success'] == true) {
+          final List<dynamic> productsJson = data['products'];
+          print("Found ${productsJson.length} newest products");
+
+          // Debug: Print first product to verify date sorting
+          if (productsJson.isNotEmpty) {
+            print("First product: ${productsJson.first['name']}");
+            if (productsJson.first.containsKey('date_add')) {
+              print("Date added: ${productsJson.first['date_add']}");
+            }
+          }
+
+          return productsJson.map((json) => Product.fromJson(json)).toList();
+        } else {
+          print("API returned success: false for newest products");
+          print("Error message: ${data['error']}");
+        }
+      } else {
+        print(
+          "Newest products API error: ${response.statusCode} - ${response.body}",
+        );
+      }
+      return [];
+    } catch (e) {
+      print('Error fetching newest products: $e');
+      return [];
+    }
+  }
   /*                           TEST ENDPOINT FOR RESET PASSWORD                                             */
   // static Future<void> testApiEndpoint() async {
   //   try {
