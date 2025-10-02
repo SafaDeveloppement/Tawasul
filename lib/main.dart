@@ -4,7 +4,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:tawasul_application/Provider/address_provider.dart';
 import 'package:tawasul_application/Provider/cart_provider.dart';
 import 'package:tawasul_application/Provider/order_provider.dart';  
 import 'package:tawasul_application/Provider/product_provider.dart';
@@ -71,7 +70,7 @@ class _MyAppState extends State<MyApp> {
             ),
             ChangeNotifierProvider(create: (context) => CartProvider()),
             ChangeNotifierProvider(create: (_) => ProductProvider()),
-            ChangeNotifierProvider(create: (_) => AddressProvider()),
+            //ChangeNotifierProvider(create: (_) => AddressProvider()),
             ChangeNotifierProvider(create: (_) => OrderProvider()),
             ChangeNotifierProvider(create: (context) => UserProvider()),
           ],

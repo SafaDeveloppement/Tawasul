@@ -474,7 +474,6 @@
 //   }
 // }
 
-// cart_provider.dart
 import 'package:flutter/material.dart';
 import 'package:tawasul_application/Services/api_service.dart';
 import 'package:tawasul_application/model/product_model.dart';

@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:tawasul_application/Services/api_service.dart';
-import 'package:tawasul_application/model/user_model.dart';
+import 'package:tawasul_application/model/customer_model.dart';
 
 class UserProvider with ChangeNotifier {
   User? _user;

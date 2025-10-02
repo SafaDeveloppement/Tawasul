@@ -388,5 +388,13 @@
   "cancelled": "Cancelled",
   "youMightAlsoLike": "You may also like",
   "description": "Description",
-  "createdAccountSuccessfully": "Created account successfully"
+  "createdAccountSuccessfully": "Created account successfully",
+  "pleaseSelectCityAndState": "Please select both city and state",
+  "state": "State",
+  "addressCreatedSuccessfully": "Address created successfully",
+  "orAddNewAddress": "Or add new address",
+  "selectExistingAddress": "Select existing address",
+  "loginAgain": "Login Again",
+  "backToCart": "Back to Cart",
+  "loading": "Loading..."
 }

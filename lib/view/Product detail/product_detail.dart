@@ -218,8 +218,7 @@ class _ProductDetailState extends State<ProductDetail> {
 
       // Use the corrected addToCart with default quantity handling
       await cartProvider.addToCart(
-        product: product!,
-        quantity: quantity, // This now defaults to 1 in the provider
+        product: product!,// This now defaults to 1 in the provider
         productAttributeId: attributeId,
       );
 

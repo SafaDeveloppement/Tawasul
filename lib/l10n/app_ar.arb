@@ -382,6 +382,13 @@
   "cancelled": "تم الإلغاء",
   "youMightAlsoLike": "قد ترغب أيضا",
   "description": "وصف",
-  "createdAccountSuccessfully": "تم إنشاء الحساب بنجاح"
-
+  "createdAccountSuccessfully": "تم إنشاء الحساب بنجاح",
+  "pleaseSelectCityAndState": "يرجى اختيار كل من المدينة والولاية",
+  "state": "الولاية",
+  "addressCreatedSuccessfully": "تم إنشاء العنوان بنجاح",
+  "orAddNewAddress": "أو أضف عنوانًا جديدًا",
+  "selectExistingAddress": "اختر عنوانًا موجودًا",
+  "loginAgain": "تسجيل الدخول مرة أخرى",
+  "backToCart": "العودة إلى سلة التسوق",
+  "loading": "جارٍ التحميل..."
 }

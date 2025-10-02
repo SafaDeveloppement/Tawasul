@@ -3,6 +3,10 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tawasul_application/Services/auth_services.dart';
+import 'package:tawasul_application/Services/user_data_services.dart';
+import 'package:tawasul_application/controller/address_controller.dart';
+import 'package:tawasul_application/model/address_model.dart';
 import 'package:tawasul_application/model/carrier_model.dart';
 import 'package:tawasul_application/model/cart_model.dart';
 import 'package:tawasul_application/model/product_model.dart';
@@ -981,7 +985,7 @@ class ApiService {
     }
   }
 
-  /*                           GET CART ITEMS API (FIXED)                          */
+  /*                           GET CART ITEMS API                                */
   static Future<Map<String, dynamic>> getCart() async {
     try {
       final response = await http
@@ -1045,7 +1049,308 @@ class ApiService {
     }
   }
 
-  /*                           CREATE ADDRESS API                                       */
+  /*                                       CHECKOUT API                                    */
+
+  /* ------------------------- GET CUSTOMER DETAILS ------------------------- */
+  static Future<Map<String, dynamic>> getCustomerDetails() async {
+    try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      final String? token = prefs.getString('auth_token');
+
+      print(
+        "🔐 Getting customer details with token: ${token != null ? 'exists' : 'null'}",
+      );
+
+      if (token == null || token.isEmpty) {
+        return _getCustomerDetailsFromStorage();
+      }
+
+      // Try multiple authentication methods
+      Map<String, dynamic>? responseData;
+
+      // Method 1: Bearer Token
+      responseData = await _tryAuthMethod(
+        '$baseUrl/public/getcustomerdetails',
+        {'Authorization': 'Bearer $token'},
+      );
+
+      // Method 2: Raw Token
+      if (responseData == null || responseData['success'] != true) {
+        responseData = await _tryAuthMethod(
+          '$baseUrl/public/getcustomerdetails',
+          {'Authorization': token},
+        );
+      }
+
+      // Method 3: Query Parameter
+      if (responseData == null || responseData['success'] != true) {
+        responseData = await _tryAuthMethod(
+          '$baseUrl/public/getcustomerdetails?token=$token',
+          {},
+        );
+      }
+
+      // Method 4: X-Auth-Token Header
+      if (responseData == null || responseData['success'] != true) {
+        responseData = await _tryAuthMethod(
+          '$baseUrl/public/getcustomerdetails',
+          {'X-Auth-Token': token},
+        );
+      }
+
+      // If any method worked, return the data
+      if (responseData != null &&
+          responseData['success'] == true &&
+          responseData['customer'] != null) {
+        final customer = responseData['customer'];
+
+        // Store the fresh data for future fallback
+        await UserDataService.storeUserData(
+          firstName: customer['firstname'] ?? '',
+          lastName: customer['lastname'] ?? '',
+          phone: customer['phone_number'] ?? customer['phone'] ?? '',
+          email: customer['email'] ?? '',
+        );
+
+        return {
+          'success': true,
+          'firstName': customer['firstname'] ?? '',
+          'lastName': customer['lastname'] ?? '',
+          'email': customer['email'] ?? '',
+          'phone': customer['phone'] ?? '',
+          'mobile': customer['phone_number'] ?? '',
+          'id': customer['id'] ?? 0,
+          'id_state': customer['geoloc_id_state'],
+          'fromStorage': true,
+        };
+      }
+
+      // If all methods failed, use stored data
+      print("🔄 All auth methods failed, using stored data");
+      return _getCustomerDetailsFromStorage();
+    } catch (e) {
+      print("💥 Error in getCustomerDetails: $e");
+      return _getCustomerDetailsFromStorage();
+    }
+  }
+
+  static Future<Map<String, dynamic>?> _tryAuthMethod(
+    String url,
+    Map<String, String> headers,
+  ) async {
+    try {
+      final fullHeaders = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        ...headers,
+      };
+
+      print("🔄 Trying auth method with headers: $fullHeaders");
+
+      final response = await http
+          .get(Uri.parse(url), headers: fullHeaders)
+          .timeout(Duration(seconds: 10));
+
+      print("📡 Response status: ${response.statusCode}");
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        if (responseData['success'] == true) {
+          print("✅ Auth method successful!");
+          return responseData;
+        }
+      }
+
+      return null;
+    } catch (e) {
+      print("❌ Auth method failed: $e");
+      return null;
+    }
+  }
+
+  static Future<Map<String, dynamic>> _getCustomerDetailsFromStorage() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final firstName = prefs.getString('user_firstName') ?? '';
+    final lastName = prefs.getString('user_lastName') ?? '';
+    final email = prefs.getString('user_email') ?? '';
+    final phone = prefs.getString('user_phone') ?? '';
+    final userId = prefs.getInt('user_id') ?? 0;
+
+    // Only return success if we have basic user data
+    if (firstName.isNotEmpty && lastName.isNotEmpty) {
+      print("🔄 Returning customer details from storage");
+      return {
+        'success': true,
+        'firstName': firstName,
+        'lastName': lastName,
+        'email': email,
+        'phone': phone,
+        'mobile': phone,
+        'id': userId,
+        'id_state': null,
+        'fromStorage': true,
+      };
+    }
+
+    return {
+      'success': false,
+      'message': 'No user data available',
+      'code': 'NO_DATA',
+    };
+  }
+
+  /* ------------------------- GET CUSTOMER ADDRESSES ------------------------- */
+  static Future<Map<String, dynamic>> getCustomerAddresses() async {
+    try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      final String? token = prefs.getString('auth_token');
+
+      print(
+        "🔐 Getting addresses with token: ${token != null ? 'exists' : 'null'}",
+      );
+
+      if (token == null || token.isEmpty) {
+        return {
+          'success': false,
+          'message': 'Authentication token not found',
+          'code': 'NO_TOKEN',
+        };
+      }
+
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/public/getaddresses'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+              'Accept': 'application/json',
+            },
+          )
+          .timeout(Duration(seconds: timeoutSeconds));
+
+      print("📡 Addresses API Response: ${response.statusCode}");
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = json.decode(response.body);
+        print("✅ Addresses success: ${responseData['success']}");
+
+        return responseData;
+      } else if (response.statusCode == 401) {
+        print("❌ Authentication failed - 401 Unauthorized");
+        // Clear invalid token
+        await prefs.remove('auth_token');
+        return {
+          'success': false,
+          'message': 'Authentication failed. Please login again.',
+          'code': 'AUTH_FAILED',
+        };
+      } else {
+        print("❌ Server error: ${response.statusCode}");
+        return {
+          'success': false,
+          'message': 'Server error: ${response.statusCode}',
+          'code': 'SERVER_ERROR',
+        };
+      }
+    } catch (e) {
+      print("💥 Error fetching addresses: $e");
+      return {
+        'success': false,
+        'message': 'Failed to connect to server: $e',
+        'code': 'NETWORK_ERROR',
+      };
+    }
+  }
+
+  /* ------------------------- UPDATE ADDRESS ------------------------- */
+  static Future<Map<String, dynamic>> updateAddress({
+    required int idAddress,
+    required String firstname,
+    required String lastname,
+    required String address1,
+    required String city,
+    required String postcode,
+    required int idState,
+    String? phone,
+    String? address2,
+  }) async {
+    try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      final String? token = prefs.getString('auth_token');
+
+      if (token == null) {
+        return {'success': false, 'message': 'Authentication token not found'};
+      }
+
+      // Build query parameters
+      final Map<String, String> queryParams = {
+        'id_address': idAddress.toString(),
+        'firstname': firstname,
+        'lastname': lastname,
+        'address1': address1,
+        'city': city,
+        'postcode': postcode,
+        'id_state': idState.toString(),
+      };
+
+      // Add optional parameters
+      if (phone != null && phone.isNotEmpty) {
+        queryParams['phone'] = phone;
+      }
+      if (address2 != null && address2.isNotEmpty) {
+        queryParams['address2'] = address2;
+      }
+
+      final Uri uri = Uri.parse(
+        '$baseUrl/public/updateaddressbyid',
+      ).replace(queryParameters: queryParams);
+
+      final response = await http
+          .put(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+              'Accept': 'application/json',
+            },
+          )
+          .timeout(Duration(seconds: timeoutSeconds));
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = json.decode(response.body);
+
+        if (responseData['success'] == true) {
+          return {
+            'success': true,
+            'message':
+                responseData['message'] ?? 'Address updated successfully',
+            'id_address': responseData['id_address'],
+          };
+        } else {
+          return {
+            'success': false,
+            'message': responseData['message'] ?? 'Failed to update address',
+          };
+        }
+      } else if (response.statusCode == 401) {
+        return {
+          'success': false,
+          'message': 'Authentication failed. Please login again.',
+        };
+      } else {
+        return {
+          'success': false,
+          'message': 'Server error: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      print(" Error updating address: $e");
+      return {'success': false, 'message': 'Failed to connect to server: $e'};
+    }
+  }
+
+  /* ------------------------- CREATE ADDRESS  ------------------------- */
   static Future<Map<String, dynamic>> createAddress({
     required String firstname,
     required String lastname,
@@ -1058,201 +1363,45 @@ class ApiService {
     String? alias = 'Home Address',
   }) async {
     try {
-      final Map<String, String> queryParams = {
-        'firstname': firstname,
-        'lastname': lastname,
-        'address1': address1,
-        'city': city,
-        'postcode': postcode,
-        'id_state': idState.toString(),
-      };
+      // Get customer ID from shared preferences
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      final int? customerId = prefs.getInt('user_id');
 
-      // Add optional parameters if provided
-      if (phone != null && phone.isNotEmpty) {
-        queryParams['phone'] = phone;
-      }
-      if (address2 != null && address2.isNotEmpty) {
-        queryParams['address2'] = address2;
-      }
-      if (alias != null && alias.isNotEmpty) {
-        queryParams['alias'] = alias;
-      }
-
-      final Uri uri = Uri.parse(
-        '$baseUrl/public/createaddress',
-      ).replace(queryParameters: queryParams);
-
-      print("Making createAddress API call to: $uri");
-      print("Parameters: $queryParams");
-
-      final response = await http
-          .post(uri, headers: await _getAuthHeaders())
-          .timeout(Duration(seconds: timeoutSeconds));
-
-      print("createAddress API response status: ${response.statusCode}");
-      print("Response body: ${response.body}");
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
-
-        if (responseData['success'] == true ||
-            responseData['message'] == 'success') {
-          print("✓ Address created successfully");
-          return {
-            'success': true,
-            'message':
-                responseData['message'] ?? 'Address created successfully',
-            'addressId':
-                responseData['id_address'] ?? responseData['address_id'],
-            'addressData': responseData['address'] ?? responseData,
-          };
-        } else {
-          print("✗ Address creation failed: ${responseData['message']}");
-          return {
-            'success': false,
-            'message': responseData['message'] ?? 'Failed to create address',
-          };
-        }
-      } else {
-        print("✗ Address creation API error: ${response.statusCode}");
+      if (customerId == null) {
         return {
           'success': false,
-          'message': 'Server error: ${response.statusCode}',
+          'message': 'Customer ID not found. Please login again.',
         };
       }
-    } catch (e) {
-      print("✗ Error creating address: $e");
-      return {'success': false, 'message': 'Failed to connect to server: $e'};
-    }
-  }
 
-  /*                           GET CUSTOMER DETAILS API                               */
-  static Future<Map<String, dynamic>> getCustomerDetails() async {
-    try {
-      final response = await http
-          .get(
-            Uri.parse('$baseUrl/public/getcustomer'),
-            headers: await _getAuthHeaders(),
-          )
-          .timeout(Duration(seconds: timeoutSeconds));
-
-      print("getCustomerDetails API response status: ${response.statusCode}");
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
-
-        if (responseData['success'] == true) {
-          print("✓ Customer details fetched successfully");
-          return responseData;
-        } else {
-          return {
-            'success': false,
-            'message':
-                responseData['message'] ?? 'Failed to fetch customer details',
-          };
-        }
-      } else {
-        return {
-          'success': false,
-          'message': 'Server error: ${response.statusCode}',
-        };
-      }
-    } catch (e) {
-      print("✗ Error fetching customer details: $e");
-      return {'success': false, 'message': 'Failed to connect to server: $e'};
-    }
-  }
-
-  /*                           GET ADDRESS BY ID API                                */
-  static Future<Map<String, dynamic>> getAddressById(int addressId) async {
-    try {
-      final Uri uri = Uri.parse(
-        '$baseUrl/public/getadressebyid?id_address=$addressId',
+      // Create AddressModel
+      final address = AddressModel(
+        idCustomer: customerId,
+        firstname: firstname,
+        lastname: lastname,
+        address1: address1,
+        address2: address2,
+        city: city,
+        postcode: postcode,
+        idState: idState,
+        phone: phone,
+        alias: alias,
       );
 
-      print("Making getAddressById API call to: $uri");
-
-      final response = await http
-          .get(uri, headers: await _getAuthHeaders())
-          .timeout(Duration(seconds: timeoutSeconds));
-
-      print("getAddressById API response status: ${response.statusCode}");
-      print("Response body: ${response.body}");
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
-
-        if (responseData['success'] == true ||
-            responseData['message'] == 'success') {
-          print("✓ Address fetched successfully");
-          return {
-            'success': true,
-            'address': responseData['address'] ?? responseData,
-            'message':
-                responseData['message'] ?? 'Address fetched successfully',
-          };
-        } else {
-          print("✗ Address fetch failed: ${responseData['message']}");
-          return {
-            'success': false,
-            'message': responseData['message'] ?? 'Failed to fetch address',
-          };
-        }
-      } else {
-        print("✗ Address fetch API error: ${response.statusCode}");
-        return {
-          'success': false,
-          'message': 'Server error: ${response.statusCode}',
-        };
-      }
+      // Use AddressController to create address
+      return await AddressController.createAddress(address);
     } catch (e) {
-      print("✗ Error fetching address: $e");
-      return {'success': false, 'message': 'Failed to connect to server: $e'};
+      print(" Error in ApiService.createAddress: $e");
+      return {'success': false, 'message': 'Failed to create address: $e'};
     }
   }
 
-  /*                           GET CUSTOMER ADDRESSES API                          */
-  static Future<Map<String, dynamic>> getCustomerAddresses() async {
-    try {
-      final response = await http
-          .get(
-            Uri.parse('$baseUrl/public/getaddresses'),
-            headers: await _getAuthHeaders(),
-          )
-          .timeout(Duration(seconds: timeoutSeconds));
-
-      print("getCustomerAddresses API response status: ${response.statusCode}");
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
-
-        if (responseData['success'] == true) {
-          print("✓ Customer addresses fetched successfully");
-          return {
-            'success': true,
-            'addresses': responseData['addresses'] ?? [],
-            'message':
-                responseData['message'] ?? 'Addresses fetched successfully',
-          };
-        } else {
-          return {
-            'success': false,
-            'message': responseData['message'] ?? 'Failed to fetch addresses',
-          };
-        }
-      } else {
-        return {
-          'success': false,
-          'message': 'Server error: ${response.statusCode}',
-        };
-      }
-    } catch (e) {
-      print("✗ Error fetching customer addresses: $e");
-      return {'success': false, 'message': 'Failed to connect to server: $e'};
-    }
+  /* ------------------------- GET STATES            ------------------------- */
+  static Future<Map<String, dynamic>> getStates() async {
+    return await AddressController.getStates();
   }
 
-  /*                           GET PRODUCT ATTRIBUTES (ENHANCED)                          */
+  /*                           GET PRODUCT ATTRIBUTES                           */
   static Future<Map<String, dynamic>> getProductAttributes(
     int productId,
   ) async {
@@ -1355,7 +1504,7 @@ class ApiService {
   ) async {
     try {
       final uri = Uri.parse(
-        '$baseUrl/updatecart',
+        '$baseUrl/public/updatecart',
       ).replace(queryParameters: params);
       final response = await http.get(uri);
 
@@ -1377,7 +1526,7 @@ class ApiService {
     required int productAttributeId,
   }) async {
     try {
-      final uri = Uri.parse('$baseUrl/deleteproductcart').replace(
+      final uri = Uri.parse('$baseUrl/public/deleteproductcart').replace(
         queryParameters: {
           'id_cart': idCart.toString(),
           'id_product': productId.toString(),
@@ -1401,7 +1550,7 @@ class ApiService {
   static Future<Map<String, dynamic>> getProductCart(int idCart) async {
     try {
       final uri = Uri.parse(
-        '$baseUrl/getproductcart',
+        '$baseUrl/public/getproductcart',
       ).replace(queryParameters: {'id_cart': idCart.toString()});
       final response = await http.get(uri);
 
@@ -2159,49 +2308,6 @@ class ApiService {
       return false;
     } catch (e) {
       print('addAddress error: $e');
-      return false;
-    }
-  }
-
-  // Update address -> PUT
-  static Future<bool> updateAddress(
-    String code,
-    Map<String, dynamic> body,
-  ) async {
-    try {
-      final token = await _getAuthToken();
-
-      final requestBody = {
-        'code': code,
-        'address1': body['address1'],
-        'address2': body['address2'] ?? '',
-        'lastName': body['lastName'],
-        'firstName': body['firstName'],
-        'city': body['city'],
-        'postcode': body['postcode'] ?? '',
-        'phone': body['phoneNumber'] ?? '',
-      };
-
-      print('Sending update address request: ${json.encode(requestBody)}');
-
-      final res = await http.post(
-        Uri.parse('$baseUrl/updateAddress'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: json.encode(requestBody),
-      );
-
-      print('Update address response: ${res.statusCode} - ${res.body}');
-
-      if (res.statusCode == 200) {
-        final responseData = json.decode(res.body);
-        return responseData['message'] == 'success';
-      }
-      return false;
-    } catch (e) {
-      print('updateAddress error: $e');
       return false;
     }
   }

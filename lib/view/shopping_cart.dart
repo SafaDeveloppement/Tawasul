@@ -123,7 +123,7 @@ class _ShoppingCartState extends State<ShoppingCart> {
                         : ListView.separated(
                           itemCount: cartProvider.cartItems.length,
                           separatorBuilder:
-                              (_, __) => const SizedBox(height: 30),
+                              (_, __) => const SizedBox(height: 20),
                           itemBuilder: (context, index) {
                             final item = cartProvider.cartItems[index];
                             return Container(
@@ -139,7 +139,7 @@ class _ShoppingCartState extends State<ShoppingCart> {
                                 ],
                               ),
                               child: Padding(
-                                padding: const EdgeInsets.all(12),
+                                padding: const EdgeInsets.all(8),
                                 child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -206,7 +206,7 @@ class _ShoppingCartState extends State<ShoppingCart> {
                                                 ),
                                               ),
                                     ),
-                                    const SizedBox(width: 12),
+                                    const SizedBox(width: 8),
 
                                     // Product Details
                                     Expanded(
@@ -217,7 +217,7 @@ class _ShoppingCartState extends State<ShoppingCart> {
                                           Text(
                                             item.product.name,
                                             style: const TextStyle(
-                                              fontSize: 16,
+                                              fontSize: 13,
                                               fontWeight: FontWeight.bold,
                                               color: Colors.black87,
                                             ),

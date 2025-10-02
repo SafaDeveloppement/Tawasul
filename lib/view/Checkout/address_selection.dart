@@ -393,58 +393,58 @@ class _AddressSelectionState extends State<AddressSelection> {
       });
 
       // First, try to get all addresses
-      final addressesResponse = await ApiService.getCustomerAddresses();
+      // final addressesResponse = await ApiService.getCustomerAddresses();
 
-      if (addressesResponse['success'] == true) {
-        List<dynamic> fetchedAddresses = addressesResponse['addresses'] ?? [];
+      // if (addressesResponse['success'] == true) {
+      //   List<dynamic> fetchedAddresses = addressesResponse['addresses'] ?? [];
 
-        // If we have a selected address ID from checkout, try to fetch it specifically
-        if (widget.selectedAddressId != null) {
-          final specificAddressResponse = await ApiService.getAddressById(
-            widget.selectedAddressId!,
-          );
+      //   // If we have a selected address ID from checkout, try to fetch it specifically
+      //   if (widget.selectedAddressId != null) {
+      //     final specificAddressResponse = await ApiService.getAddressById(
+      //       widget.selectedAddressId!,
+      //     );
 
-          if (specificAddressResponse['success'] == true) {
-            final specificAddress = specificAddressResponse['address'];
-            // Check if this address is already in the list
-            bool addressExists = fetchedAddresses.any(
-              (addr) =>
-                  addr['id_address'] == widget.selectedAddressId ||
-                  addr['id'] == widget.selectedAddressId,
-            );
+      //     if (specificAddressResponse['success'] == true) {
+      //       final specificAddress = specificAddressResponse['address'];
+      //       // Check if this address is already in the list
+      //       bool addressExists = fetchedAddresses.any(
+      //         (addr) =>
+      //             addr['id_address'] == widget.selectedAddressId ||
+      //             addr['id'] == widget.selectedAddressId,
+      //       );
 
-            if (!addressExists && specificAddress != null) {
-              fetchedAddresses.add(specificAddress);
-            }
-          }
-        }
+      //       if (!addressExists && specificAddress != null) {
+      //         fetchedAddresses.add(specificAddress);
+      //       }
+      //     }
+      //   }
 
-        setState(() {
-          addresses = fetchedAddresses;
-          if (addresses.isNotEmpty) {
-            // Try to select the address from checkout first
-            if (widget.selectedAddressId != null) {
-              final selectedAddress = addresses.firstWhere(
-                (addr) =>
-                    addr['id_address'] == widget.selectedAddressId ||
-                    addr['id'] == widget.selectedAddressId,
-                orElse: () => addresses.first,
-              );
-              selectedDeliveryAddress = _getAddressIdentifier(selectedAddress);
-              selectedShippingAddress = _getAddressIdentifier(selectedAddress);
-            } else {
-              selectedDeliveryAddress = _getAddressIdentifier(addresses.first);
-              selectedShippingAddress = _getAddressIdentifier(addresses.first);
-            }
-          }
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _hasError = true;
-          _isLoading = false;
-        });
-      }
+      //   setState(() {
+      //     addresses = fetchedAddresses;
+      //     if (addresses.isNotEmpty) {
+      //       // Try to select the address from checkout first
+      //       if (widget.selectedAddressId != null) {
+      //         final selectedAddress = addresses.firstWhere(
+      //           (addr) =>
+      //               addr['id_address'] == widget.selectedAddressId ||
+      //               addr['id'] == widget.selectedAddressId,
+      //           orElse: () => addresses.first,
+      //         );
+      //         selectedDeliveryAddress = _getAddressIdentifier(selectedAddress);
+      //         selectedShippingAddress = _getAddressIdentifier(selectedAddress);
+      //       } else {
+      //         selectedDeliveryAddress = _getAddressIdentifier(addresses.first);
+      //         selectedShippingAddress = _getAddressIdentifier(addresses.first);
+      //       }
+      //     }
+      //     _isLoading = false;
+      //   });
+      // } else {
+      //   setState(() {
+      //     _hasError = true;
+      //     _isLoading = false;
+      //   });
+      // }
     } catch (e) {
       print('Error fetching addresses: $e');
       setState(() {
@@ -521,26 +521,26 @@ class _AddressSelectionState extends State<AddressSelection> {
       builder: (context) => AddressFormDialog(existingAddress: address),
     );
 
-    if (result != null) {
-      print('Updating address with data: $result');
-      final addressId = address['id_address'] ?? address['id'];
-      if (addressId != null) {
-        final success = await ApiService.updateAddress(
-          addressId.toString(),
-          result,
-        );
-        if (success) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(t.addressUpdatedSuccessfully)));
-          await _fetchAddresses();
-        } else {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(t.failedToUpdateAddress)));
-        }
-      }
-    }
+    // if (result != null) {
+    //   print('Updating address with data: $result');
+    //   final addressId = address['id_address'] ?? address['id'];
+    //   if (addressId != null) {
+    //     final success = await ApiService.updateAddress(
+    //       addressId.toString(),
+    //       result,
+    //     );
+    //     if (success) {
+    //       ScaffoldMessenger.of(
+    //         context,
+    //       ).showSnackBar(SnackBar(content: Text(t.addressUpdatedSuccessfully)));
+    //       await _fetchAddresses();
+    //     } else {
+    //       ScaffoldMessenger.of(
+    //         context,
+    //       ).showSnackBar(SnackBar(content: Text(t.failedToUpdateAddress)));
+    //     }
+    //   }
+    // }
   }
 
   Future<void> _deleteAddress(String addressIdentifier) async {
