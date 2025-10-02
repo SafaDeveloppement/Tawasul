@@ -784,6 +784,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tawasul_application/Services/api_debug_service.dart';
 import 'package:tawasul_application/Services/api_service.dart';
+import 'package:tawasul_application/Services/local_address_service.dart';
 import 'package:tawasul_application/Services/user_data_services.dart';
 import 'package:tawasul_application/view/Checkout/address_selection.dart';
 import 'package:tawasul_application/view/map/map.dart';
@@ -824,48 +825,42 @@ class CheckoutController {
         errorMessage =
             customerResponse['message'] ?? 'Failed to load customer details';
         errorCode = customerResponse['code'] ?? 'UNKNOWN_ERROR';
-        if (errorCode == 'NO_STORED_DATA') {
-          print("🔄 No stored data found, creating minimal user profile...");
-          await _createMinimalUserProfile();
-
-          // Try again with the newly created profile
-          final retryResponse = await ApiService.getCustomerDetails();
-          if (retryResponse['success']) {
-            customerResponse = retryResponse;
-          }
-        } else {
-          return false;
-        }
+        isUsingStoredData = true; // We're using stored/fake data
+      } else {
+        isUsingStoredData = customerResponse['fromStorage'] == true;
       }
 
-      // Check if we're using stored data
-      isUsingStoredData = customerResponse['fromStorage'] == true;
-      if (isUsingStoredData) {
-        print("ℹ️ Using stored customer data");
-      }
-
-      // Load customer addresses (this might fail but we continue)
+      // Load addresses from API first, then fall back to local storage
       try {
         final addressesResponse = await ApiService.getCustomerAddresses();
-        print("🏠 Addresses response: ${addressesResponse['success']}");
+        print("🏠 Addresses API response: ${addressesResponse['success']}");
 
         if (addressesResponse['success']) {
           addresses = addressesResponse['addresses'] ?? [];
-          print("📍 Loaded ${addresses.length} addresses");
-
-          if (addresses.isNotEmpty) {
-            selectedAddress = addresses.first;
-          }
+          print("📍 Loaded ${addresses.length} addresses from API");
         } else {
-          print("⚠️ Failed to load addresses: ${addressesResponse['message']}");
-          addresses = [];
+          // Try local storage if API fails
+          print("🔄 API addresses failed, trying local storage...");
+          final localAddresses = await LocalAddressService.getLocalAddresses();
+          addresses = localAddresses;
+          print("📍 Loaded ${addresses.length} addresses from local storage");
         }
       } catch (e) {
-        print("⚠️ Address loading failed but continuing: $e");
-        addresses = [];
+        print("⚠️ Address loading failed: $e");
+        // Try local storage as last resort
+        final localAddresses = await LocalAddressService.getLocalAddresses();
+        addresses = localAddresses;
+        print(
+          "📍 Loaded ${addresses.length} addresses from local storage (fallback)",
+        );
       }
 
-      return true;
+      // Auto-select the first address if available
+      if (addresses.isNotEmpty) {
+        selectedAddress = addresses.first;
+      }
+
+      return true; // Always return true since we have fallbacks
     } catch (e) {
       errorMessage = 'Failed to load customer data: $e';
       errorCode = 'EXCEPTION';
@@ -1568,13 +1563,17 @@ class _CheckoutState extends State<Checkout> {
                       style: TextStyle(color: Colors.orange[800]),
                     ),
                   ),
+                  
+                  // SizedBox(height: 4),
+                  // Text(
+                  //   "Some features may be limited. Address will be saved locally.",
+                  //   style: TextStyle(color: Colors.orange[700], fontSize: 12),
+                  // ),
                 ],
               ),
             ),
-          // Show address selection for existing customers
           if (_checkoutController.hasExistingAddresses)
             _buildAddressSelection(),
-
           Text(t.addYourDetails, style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 20),
           Text(t.deliveryAddress),
@@ -1876,9 +1875,40 @@ class _CheckoutState extends State<Checkout> {
           additionalAddressController.text.trim().isNotEmpty
               ? additionalAddressController.text.trim()
               : null,
+      'alias': 'Home Address',
     };
 
-    return await _checkoutController.createOrUpdateAddress(addressData);
+    // First try API
+    final apiResult = await _checkoutController.createOrUpdateAddress(
+      addressData,
+    );
+
+    if (apiResult) {
+      return true;
+    }
+
+    // If API fails, save locally
+    if (_checkoutController.errorMessage.contains('Authentication') ||
+        _checkoutController.errorMessage.contains('Token')) {
+      print('🔄 API authentication failed, saving address locally...');
+      final localResult = await LocalAddressService.saveLocalAddress(
+        addressData,
+      );
+
+      if (localResult['success'] == true) {
+        // Update the controller with the local address
+        _checkoutController.selectedAddress = localResult['address'];
+        _checkoutController.addresses.add(localResult['address']);
+
+        print('✅ Address saved locally');
+        return true;
+      } else {
+        _checkoutController.errorMessage = localResult['message'];
+        return false;
+      }
+    }
+
+    return false;
   }
 
   String _getPrimaryAddress() {
