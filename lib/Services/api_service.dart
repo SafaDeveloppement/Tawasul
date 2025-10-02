@@ -781,14 +781,14 @@ class ApiService {
 
           return data;
         } else {
-          print("❌ API returned success: false for product detail");
+          print(" API returned success: false for product detail");
         }
       } else {
-        print("❌ Product detail API error: ${response.statusCode}");
+        print(" Product detail API error: ${response.statusCode}");
       }
       return null;
     } catch (e) {
-      print('❌ Error fetching product detail: $e');
+      print(' Error fetching product detail: $e');
       return null;
     }
   }
@@ -1308,8 +1308,6 @@ class ApiService {
       final attributesResponse = await getProductAttributes(productId);
 
       if (attributesResponse['success'] == true) {
-        // The structure might vary - you need to check the actual API response
-        // Based on your Postman data, you might get a list of combinations
         if (attributesResponse['combinations'] != null &&
             attributesResponse['combinations'] is List &&
             attributesResponse['combinations'].isNotEmpty) {
@@ -1324,7 +1322,7 @@ class ApiService {
               : attributeId as int?;
         }
 
-        // Alternative: check if the response directly contains product_attribute_id
+        // check if the response directly contains product_attribute_id
         if (attributesResponse['id_product_attribute'] != null) {
           final attributeId = attributesResponse['id_product_attribute'];
           print("✓ Default attribute ID for product $productId: $attributeId");
@@ -1352,102 +1350,69 @@ class ApiService {
 
   /* ------------------------- CART OPERATIONS ------------------------- */
 
-  static Future<Map<String, dynamic>> updateCart({
-    required int idProduct,
-    int? idProductAttribute, // Optional - only for products with combinations
-    int quantity = 1, // Optional - defaults to 1
-  }) async {
+  static Future<Map<String, dynamic>> updateCart(
+    Map<String, dynamic> params,
+  ) async {
     try {
-      // Build URL based on your Postman examples
-      String url = '$baseUrl/public/updatecart?id_product=$idProduct';
-
-      // Add product attribute if provided (for products with combinations)
-      if (idProductAttribute != null && idProductAttribute > 0) {
-        url += '&id_product_attribute=$idProductAttribute';
-      }
-
-      // Add quantity if different from default
-      if (quantity != 1) {
-        url += '&quantity=$quantity';
-      }
-
-      print("🛒 Update Cart API: $url");
-
-      final response = await http
-          .post(Uri.parse(url), headers: await _getHeaders())
-          .timeout(Duration(seconds: timeoutSeconds));
-
-      print("📦 Response: ${response.statusCode} - ${response.body}");
+      final uri = Uri.parse(
+        '$baseUrl/updatecart',
+      ).replace(queryParameters: params);
+      final response = await http.get(uri);
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {
-        return {
-          'success': false,
-          'message': 'API Error ${response.statusCode}',
-          'statusCode': response.statusCode,
-        };
+        throw Exception('Failed to update cart: ${response.statusCode}');
       }
     } catch (e) {
-      print("❌ Cart update error: $e");
-      return {'success': false, 'message': 'Connection failed: $e'};
+      print('Update cart API error: $e');
+      rethrow;
     }
   }
 
-  // DELETE PRODUCT FROM CART (SIMPLIFIED)
-  static Future<Map<String, dynamic>> deleteProductFromCart({
-    required int idProduct,
-    int? idProductAttribute, // Optional - only for products with combinations
+  // DELETE PRODUCT FROM CART
+  static Future<Map<String, dynamic>> deleteProductCart({
+    required int idCart,
+    required int productId,
+    required int productAttributeId,
   }) async {
     try {
-      // Build URL based on your Postman examples
-      String url = '$baseUrl/public/deleteproductcart?id_product=$idProduct';
-
-      // Add product attribute if provided (for products with combinations)
-      if (idProductAttribute != null && idProductAttribute > 0) {
-        url += '&id_product_attribute=$idProductAttribute';
-      }
-
-      print("🗑️ Delete from cart: $url");
-
-      final response = await http
-          .post(Uri.parse(url), headers: await _getHeaders())
-          .timeout(Duration(seconds: timeoutSeconds));
+      final uri = Uri.parse('$baseUrl/deleteproductcart').replace(
+        queryParameters: {
+          'id_cart': idCart.toString(),
+          'id_product': productId.toString(),
+          'id_product_attribute': productAttributeId.toString(),
+        },
+      );
+      final response = await http.get(uri);
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {
-        return {
-          'success': false,
-          'message': 'Failed to delete: ${response.statusCode}',
-        };
+        throw Exception('Failed to delete product: ${response.statusCode}');
       }
     } catch (e) {
-      return {'success': false, 'message': 'Failed to delete: $e'};
+      print('Delete product cart API error: $e');
+      rethrow;
     }
   }
 
   // GET CART PRODUCTS (for shopping cart page)
-  static Future<Map<String, dynamic>> getProductCart({
-    required int idCart,
-  }) async {
+  static Future<Map<String, dynamic>> getProductCart(int idCart) async {
     try {
-      final url = '$baseUrl/public/getproductcart?id_cart=$idCart';
-
-      final response = await http
-          .get(Uri.parse(url), headers: await _getHeaders())
-          .timeout(Duration(seconds: timeoutSeconds));
+      final uri = Uri.parse(
+        '$baseUrl/getproductcart',
+      ).replace(queryParameters: {'id_cart': idCart.toString()});
+      final response = await http.get(uri);
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {
-        return {
-          'success': false,
-          'message': 'Failed to get cart: ${response.statusCode}',
-        };
+        throw Exception('Failed to get cart: ${response.statusCode}');
       }
     } catch (e) {
-      return {'success': false, 'message': 'Failed to get cart: $e'};
+      print('Get product cart API error: $e');
+      rethrow;
     }
   }
 

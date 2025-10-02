@@ -25,7 +25,6 @@ class _ShoppingCartState extends State<ShoppingCart> {
     }
   }
 
-  // Add this initState to refresh cart when page loads
   @override
   void initState() {
     super.initState();
@@ -239,35 +238,22 @@ class _ShoppingCartState extends State<ShoppingCart> {
 
                                           const SizedBox(height: 8),
 
-                                          // Quantity Controls - UPDATED
+                                          // Quantity Controls
                                           Row(
                                             children: [
-                                              // Decrease Quantity - UPDATED
                                               GestureDetector(
                                                 onTap: () async {
                                                   try {
-                                                    if (item.quantity > 1) {
-                                                      await cartProvider
-                                                          .updateQuantity(
-                                                            productId:
-                                                                item.product.id,
-                                                            productAttributeId:
-                                                                item.idProductAttribute ??
-                                                                0,
-                                                            newQuantity:
-                                                                item.quantity -
-                                                                1,
-                                                          );
-                                                    } else {
-                                                      await cartProvider
-                                                          .removeFromCart(
-                                                            productId:
-                                                                item.product.id,
-                                                            productAttributeId:
-                                                                item.idProductAttribute ??
-                                                                0,
-                                                          );
-                                                    }
+                                                    await cartProvider
+                                                        .updateQuantity(
+                                                          productId:
+                                                              item.product.id,
+                                                          productAttributeId:
+                                                              item.idProductAttribute ??
+                                                              0,
+                                                          newQuantity:
+                                                              item.quantity - 1,
+                                                        );
                                                   } catch (e) {
                                                     _showErrorSnackBar(
                                                       context,
@@ -308,7 +294,7 @@ class _ShoppingCartState extends State<ShoppingCart> {
                                                 ),
                                               ),
 
-                                              // Increase Quantity - UPDATED
+                                              // Increase Quantity
                                               GestureDetector(
                                                 onTap: () async {
                                                   try {
