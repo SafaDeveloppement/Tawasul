@@ -1169,16 +1169,24 @@ class ApiService {
   }
 
   static Future<Map<String, dynamic>> _getCustomerDetailsFromStorage() async {
+  try {
     final prefs = await SharedPreferences.getInstance();
-
+    
     final firstName = prefs.getString('user_firstName') ?? '';
     final lastName = prefs.getString('user_lastName') ?? '';
     final email = prefs.getString('user_email') ?? '';
     final phone = prefs.getString('user_phone') ?? '';
     final userId = prefs.getInt('user_id') ?? 0;
-
-    // Only return success if we have basic user data
-    if (firstName.isNotEmpty && lastName.isNotEmpty) {
+    
+    print("🔄 Checking stored user data:");
+    print("  First Name: '$firstName'");
+    print("  Last Name: '$lastName'");
+    print("  Email: '$email'");
+    print("  Phone: '$phone'");
+    print("  User ID: $userId");
+    
+    // Return success even with minimal data
+    if (userId > 0) {
       print("🔄 Returning customer details from storage");
       return {
         'success': true,
@@ -1192,13 +1200,21 @@ class ApiService {
         'fromStorage': true,
       };
     }
-
+    
     return {
       'success': false,
-      'message': 'No user data available',
-      'code': 'NO_DATA',
+      'message': 'No user data available in storage',
+      'code': 'NO_STORED_DATA'
+    };
+  } catch (e) {
+    print("💥 Error reading stored data: $e");
+    return {
+      'success': false,
+      'message': 'Error reading stored data: $e',
+      'code': 'STORAGE_ERROR'
     };
   }
+}
 
   /* ------------------------- GET CUSTOMER ADDRESSES ------------------------- */
   static Future<Map<String, dynamic>> getCustomerAddresses() async {

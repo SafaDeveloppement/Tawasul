@@ -744,7 +744,7 @@
 //             ? addressId
 //             : int.tryParse(addressId.toString());
 //       } else {
-//         print("❌ Address creation failed: ${response['message']}");
+//         print(" Address creation failed: ${response['message']}");
 //         ScaffoldMessenger.of(context).showSnackBar(
 //           SnackBar(
 //             content: Text("${t.addressCreationFailed}: ${response['message']}"),
@@ -817,39 +817,51 @@ class CheckoutController {
       print("🔄 Loading customer data...");
 
       // Load customer details
-      final customerResponse = await ApiService.getCustomerDetails();
+      var customerResponse = await ApiService.getCustomerDetails();
       print("📋 Customer details response: ${customerResponse['success']}");
 
       if (!customerResponse['success']) {
         errorMessage =
             customerResponse['message'] ?? 'Failed to load customer details';
         errorCode = customerResponse['code'] ?? 'UNKNOWN_ERROR';
+        if (errorCode == 'NO_STORED_DATA') {
+          print("🔄 No stored data found, creating minimal user profile...");
+          await _createMinimalUserProfile();
 
-        // If authentication failed, clear the token
-        if (errorCode == 'AUTH_FAILED' || errorCode == 'NO_TOKEN') {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.remove('auth_token');
-          await prefs.remove('user_id');
+          // Try again with the newly created profile
+          final retryResponse = await ApiService.getCustomerDetails();
+          if (retryResponse['success']) {
+            customerResponse = retryResponse;
+          }
+        } else {
+          return false;
         }
-
-        return false;
       }
 
-      // Load customer addresses
-      final addressesResponse = await ApiService.getCustomerAddresses();
-      print("🏠 Addresses response: ${addressesResponse['success']}");
+      // Check if we're using stored data
+      isUsingStoredData = customerResponse['fromStorage'] == true;
+      if (isUsingStoredData) {
+        print("ℹ️ Using stored customer data");
+      }
 
-      if (addressesResponse['success']) {
-        addresses = addressesResponse['addresses'] ?? [];
-        print("📍 Loaded ${addresses.length} addresses");
+      // Load customer addresses (this might fail but we continue)
+      try {
+        final addressesResponse = await ApiService.getCustomerAddresses();
+        print("🏠 Addresses response: ${addressesResponse['success']}");
 
-        // Auto-select the first address if available
-        if (addresses.isNotEmpty) {
-          selectedAddress = addresses.first;
+        if (addressesResponse['success']) {
+          addresses = addressesResponse['addresses'] ?? [];
+          print("📍 Loaded ${addresses.length} addresses");
+
+          if (addresses.isNotEmpty) {
+            selectedAddress = addresses.first;
+          }
+        } else {
+          print("⚠️ Failed to load addresses: ${addressesResponse['message']}");
+          addresses = [];
         }
-      } else {
-        // Don't fail completely if addresses fail but customer details worked
-        print("⚠️ Failed to load addresses: ${addressesResponse['message']}");
+      } catch (e) {
+        print("⚠️ Address loading failed but continuing: $e");
         addresses = [];
       }
 
@@ -864,7 +876,26 @@ class CheckoutController {
     }
   }
 
-  // ... rest of your methods remain the same
+  Future<void> _createMinimalUserProfile() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('user_id');
+      final email = prefs.getString('user_email');
+
+      if (userId != null && userId > 0) {
+        await UserDataService.storeUserData(
+          firstName: 'Customer',
+          lastName: 'User',
+          phone: '',
+          email: email ?? 'user@example.com',
+        );
+        print("✅ Created minimal user profile");
+      }
+    } catch (e) {
+      print("💥 Error creating minimal profile: $e");
+    }
+  }
+
   Future<bool> createOrUpdateAddress(Map<String, dynamic> addressData) async {
     try {
       isLoading = true;
@@ -901,7 +932,6 @@ class CheckoutController {
       }
 
       if (response['success']) {
-        // Reload addresses to get the updated list
         await loadCustomerData();
         return true;
       } else {
@@ -966,6 +996,7 @@ class _CheckoutState extends State<Checkout> {
   void initState() {
     super.initState();
     _debugAuthStatus();
+    _debugStoredData();
     _testTokenManually();
     _initializeController();
   }
@@ -988,6 +1019,7 @@ class _CheckoutState extends State<Checkout> {
         });
         return;
       }
+      await _ensureUserDataIsStored(); // ADD THIS
 
       // Test all authentication methods to find which one works
       print("🔄 Testing authentication methods...");
@@ -1051,11 +1083,11 @@ class _CheckoutState extends State<Checkout> {
     final token = prefs.getString('auth_token');
 
     if (token == null) {
-      print("❌ No token found");
+      print(" No token found");
       return;
     }
 
-    print("🧪 Testing token manually...");
+    print(" Testing token manually...");
     print("Token: $token");
 
     try {
@@ -1070,22 +1102,22 @@ class _CheckoutState extends State<Checkout> {
         },
       );
 
-      print("🧪 Manual test response:");
+      print(" Manual test response:");
       print("Status Code: ${response.statusCode}");
       print("Headers: ${response.headers}");
       print("Body: ${response.body}");
 
       if (response.statusCode == 401) {
-        print("❌ Token is rejected by server");
-        // The token format might be wrong or the server expects different authentication
+        print(" Token is rejected by server");
       }
     } catch (e) {
-      print("🧪 Manual test error: $e");
+      print(" Manual test error: $e");
     }
   }
 
   void _populateFormFromExistingData() {
     try {
+      // First, try to populate from selected address
       if (_checkoutController.selectedAddress != null) {
         final address = _checkoutController.selectedAddress;
 
@@ -1100,7 +1132,6 @@ class _CheckoutState extends State<Checkout> {
           selectedStateId = address['id_state'];
           selectedCity = address['city'];
 
-          // Update state display
           if (_stateIdToName.containsKey(address['id_state'])) {
             stateDisplayController.text = _stateIdToName[address['id_state']]!;
           }
@@ -1108,14 +1139,11 @@ class _CheckoutState extends State<Checkout> {
           _userDataLoaded = true;
         });
       } else {
-        // Load basic customer info if no addresses exist
         _loadBasicCustomerInfo();
       }
     } catch (e) {
-      print("Error populating form: $e");
-      setState(() {
-        _userDataLoaded = true;
-      });
+      print("Error populating form from address: $e");
+      _loadBasicCustomerInfo();
     }
   }
 
@@ -1876,5 +1904,50 @@ class _CheckoutState extends State<Checkout> {
       "Token preview: ${token != null ? '${token.substring(0, min(20, token.length))}...' : 'null'}",
     );
     print("======================");
+  }
+
+  Future<void> _debugStoredData() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    print("=== STORED DATA DEBUG ===");
+    print("user_id: ${prefs.getInt('user_id')}");
+    print("user_email: ${prefs.getString('user_email')}");
+    print("user_firstName: ${prefs.getString('user_firstName')}");
+    print("user_lastName: ${prefs.getString('user_lastName')}");
+    print("user_phone: ${prefs.getString('user_phone')}");
+    print(
+      "auth_token: ${prefs.getString('auth_token') != null ? 'exists' : 'null'}",
+    );
+    print("=========================");
+  }
+
+  Future<void> _ensureUserDataIsStored() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('user_id');
+      final email = prefs.getString('user_email');
+
+      if (userId != null && userId > 0) {
+        // Check if basic user data exists
+        final firstName = prefs.getString('user_firstName');
+        final lastName = prefs.getString('user_lastName');
+
+        if (firstName == null || lastName == null) {
+          print("🔄 Basic user data missing, storing default values...");
+
+          // Store default values based on available data
+          await UserDataService.storeUserData(
+            firstName: firstName ?? 'Customer',
+            lastName: lastName ?? 'User',
+            phone: prefs.getString('user_phone') ?? '',
+            email: email ?? '',
+          );
+
+          print("✅ Default user data stored");
+        }
+      }
+    } catch (e) {
+      print("💥 Error ensuring user data storage: $e");
+    }
   }
 }

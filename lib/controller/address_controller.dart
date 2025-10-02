@@ -20,79 +20,89 @@ class AddressController {
     };
   }
 
-  /* ------------------------- CREATE ADDRESS ------------------------- */
-  static Future<Map<String, dynamic>> createAddress(AddressModel address) async {
-    try {
-      // Build query parameters
-      final Map<String, String> queryParams = {
-        'firstname': address.firstname,
-        'lastname': address.lastname,
-        'address1': address.address1,
-        'city': address.city,
-        'postcode': address.postcode,
-        'id_state': address.idState.toString(),
-      };
+ /* ------------------------- CREATE ADDRESS ------------------------- */
+static Future<Map<String, dynamic>> createAddress(AddressModel address) async {
+  try {
+    // Build query parameters
+    final Map<String, String> queryParams = {
+      'firstname': address.firstname,
+      'lastname': address.lastname,
+      'address1': address.address1,
+      'city': address.city,
+      'postcode': address.postcode,
+      'id_state': address.idState.toString(),
+    };
 
-      // Add optional parameters
-      if (address.phone != null && address.phone!.isNotEmpty) {
-        queryParams['phone'] = address.phone!;
-      }
-      if (address.address2 != null && address.address2!.isNotEmpty) {
-        queryParams['address2'] = address.address2!;
-      }
-      if (address.alias != null && address.alias!.isNotEmpty) {
-        queryParams['alias'] = address.alias!;
-      }
+    // Add optional parameters
+    if (address.phone != null && address.phone!.isNotEmpty) {
+      queryParams['phone'] = address.phone!;
+    }
+    if (address.address2 != null && address.address2!.isNotEmpty) {
+      queryParams['address2'] = address.address2!;
+    }
+    if (address.alias != null && address.alias!.isNotEmpty) {
+      queryParams['alias'] = address.alias!;
+    }
 
-      final Uri uri = Uri.parse('$baseUrl/public/createaddress')
-          .replace(queryParameters: queryParams);
+    final Uri uri = Uri.parse('$baseUrl/public/createaddress')
+        .replace(queryParameters: queryParams);
 
-      print(" Address Controller - Creating address: $uri");
-      print(" Address data: ${address.toJson()}");
+    print(" Address Controller - Creating address: $uri");
 
-      final response = await http.post(
-        uri,
-        headers: await _getAuthHeaders(),
-      ).timeout(Duration(seconds: timeoutSeconds));
+    final response = await http.post(
+      uri,
+      headers: await _getAuthHeaders(),
+    ).timeout(Duration(seconds: timeoutSeconds));
 
-      print(" Create Address Response Status: ${response.statusCode}");
-      print(" Response Body: ${response.body}");
+    print(" Create Address Response Status: ${response.statusCode}");
+    print(" Response Body: ${response.body}");
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responseData = json.decode(response.body);
 
-        if (responseData['success'] == true) {
-          final createdAddress = AddressModel.fromApiResponse(responseData);
-          print(" Address created successfully: ${createdAddress.id}");
-          
-          return {
-            'success': true,
-            'message': responseData['message'] ?? 'Address created successfully',
-            'address': createdAddress,
-            'addressId': responseData['id_address'] ?? createdAddress.id,
-          };
-        } else {
-          print("❌ Address creation failed: ${responseData['message']}");
+      if (responseData['success'] == true) {
+        final createdAddress = AddressModel.fromApiResponse(responseData);
+        print(" Address created successfully: ${createdAddress.id}");
+        
+        return {
+          'success': true,
+          'message': responseData['message'] ?? 'Address created successfully',
+          'address': createdAddress,
+          'addressId': responseData['id_address'] ?? createdAddress.id,
+        };
+      } else {
+        print("❌ Address creation failed: ${responseData['error'] ?? responseData['message']}");
+        
+        // Handle token errors specifically
+        if (responseData['error']?.toString().contains('Token') == true ||
+            responseData['error']?.toString().contains('token') == true) {
           return {
             'success': false,
-            'message': responseData['message'] ?? 'Failed to create address',
+            'message': 'Authentication failed. Please login again.',
+            'code': 'AUTH_FAILED'
           };
         }
-      } else {
-        print("❌ HTTP Error: ${response.statusCode}");
+        
         return {
           'success': false,
-          'message': 'Server error: ${response.statusCode}',
+          'message': responseData['error'] ?? responseData['message'] ?? 'Failed to create address',
         };
       }
-    } catch (e) {
-      print("💥 Error in AddressController.createAddress: $e");
+    } else {
+      print("❌ HTTP Error: ${response.statusCode}");
       return {
         'success': false,
-        'message': 'Failed to connect to server: $e',
+        'message': 'Server error: ${response.statusCode}',
       };
     }
+  } catch (e) {
+    print("💥 Error in AddressController.createAddress: $e");
+    return {
+      'success': false,
+      'message': 'Failed to connect to server: $e',
+    };
   }
+}
 
   /* ------------------------- GET STATES ------------------------- */
   static Future<Map<String, dynamic>> getStates() async {
