@@ -4,13 +4,14 @@ import 'dart:developer' as developer;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tawasul_application/model/carrier_model.dart';
+import 'package:tawasul_application/model/cart_model.dart';
 import 'package:tawasul_application/model/product_model.dart';
 import 'package:tawasul_application/model/shop_model.dart';
 import 'package:tawasul_application/model/store_details_model.dart';
 import 'package:tawasul_application/model/category_model.dart';
 
 class ApiService {
-  static const String baseUrl = "http://197.13.18.8";
+  static const String baseUrl = "https://tawasul-dev.app-staging.fr";
   static const int timeoutSeconds = 30;
 
   static Future<String?> _getAuthToken() async {
@@ -158,7 +159,7 @@ class ApiService {
     }
   }
 
-  /*                           RESET PASSWORD                                             */
+  /*                                           RESET PASSWORD                                                   */
   static Future<Map<String, dynamic>> resetPassword({
     required String email,
     required String password,
@@ -190,7 +191,6 @@ class ApiService {
         var jsonResponse = json.decode(responseData);
         return jsonResponse;
       } else {
-        // It's HTML or other content
         return {
           'success': false,
           'message':
@@ -205,7 +205,7 @@ class ApiService {
     }
   }
 
-  /*                           GET ALL CATEGORIES                                             */
+  /*                           GET ALL CATEGORIES (UPDATED)                                          */
   static Future<List<Category>> getCategories() async {
     try {
       final response = await http
@@ -218,10 +218,32 @@ class ApiService {
         final Map<String, dynamic> data = json.decode(response.body);
         if (data['success'] == true) {
           final List<dynamic> categoriesJson = data['categories'];
-          print("Found ${categoriesJson.length} categories");
-          return categoriesJson.map((json) => Category.fromJson(json)).toList();
+          print("Found ${categoriesJson.length} root categories");
+
+          // Parse each category
+          final List<Category> categories = [];
+          for (var categoryJson in categoriesJson) {
+            if (categoryJson is Map<String, dynamic>) {
+              try {
+                final category = Category.fromJson(categoryJson);
+                categories.add(category);
+              } catch (e) {
+                print("Error parsing category: $e");
+                print("Problematic category JSON: $categoryJson");
+              }
+            }
+          }
+
+          // Debug: Print category tree
+          print("=== CATEGORY TREE ===");
+          for (var category in categories) {
+            category.printTree();
+          }
+          print("=====================");
+
+          return categories;
         } else {
-          print("API returned success: false");
+          print("API returned success: false for categories");
         }
       } else {
         print(
@@ -256,7 +278,6 @@ class ApiService {
           final products = jsonResponse['products'] as List;
           print("Found ${products.length} products for category $categoryCode");
 
-          // Debug: Print each product to verify data
           for (var product in products) {
             print(
               "Product: ${product['name']}, Brand: ${product['manufacturer']}, Price: ${product['price']}, Image: ${product['image']}",
@@ -292,7 +313,7 @@ class ApiService {
 
           // Check if this category matches
           if (category.name.toLowerCase() == name.toLowerCase()) {
-            print("✓ Found category: ${category.name} with ID: ${category.id}");
+            print(" Found category: ${category.name} with ID: ${category.id}");
             return category.id;
           }
 
@@ -308,7 +329,7 @@ class ApiService {
       final categoryId = findCategoryId(categories, categoryName);
 
       if (categoryId == null) {
-        print("✗ Category '$categoryName' not found!");
+        print(" Category '$categoryName' not found!");
         // Debug: print all available categories
         print("=== AVAILABLE CATEGORIES ===");
         void printCategories(List<Category> cats, [String indent = ""]) {
@@ -331,7 +352,7 @@ class ApiService {
     }
   }
 
-  // Add this method to your ApiService
+  /*                             GET PRODUCTS BY CATEGORY NAME                           */
   static Future<List<Product>> getProductsByCategoryName(
     String categoryName,
   ) async {
@@ -365,7 +386,6 @@ class ApiService {
         }
       }
 
-      // Remove duplicates based on product ID
       final uniqueProducts =
           allProducts
               .fold<Map<int, Product>>({}, (map, product) {
@@ -382,7 +402,7 @@ class ApiService {
     }
   }
 
-  // Also add this method to get products by category ID
+  //  get products by category ID
   static Future<List<Product>> getProductsByCategory(
     String categoryCode,
   ) async {
@@ -464,26 +484,6 @@ class ApiService {
     }
   }
 
-  /*                            TEST API GET CATEGORY                                         */
-  // Add this method to quickly test with a known category ID
-  static Future<void> testCategoryProducts() async {
-    // Test with Network & Security category (ID 14 from your Postman example)
-    final testProducts = await getProductsByCategoryCode(14);
-    print("=== TEST RESULTS ===");
-    print("Found ${testProducts.length} products for category 14");
-
-    for (var product in testProducts) {
-      print("Name: ${product.name}");
-      print("Brand: ${product.brand}");
-      print("Price: ${product.price}");
-      print("Image: ${product.image}");
-      print(
-        "Description: ${product.description.substring(0, (product.description.length))}...",
-      );
-      print("---");
-    }
-  }
-
   /*                           GET NEWEST PRODUCTS (Sorted by date_add)                                          */
   static Future<List<Product>> getNewestProducts({
     int numberOfProducts = 10,
@@ -543,6 +543,914 @@ class ApiService {
       return [];
     }
   }
+
+  /*                           GET CATEGORY CODE BY NAME                          */
+  static Future<String> getCategoryCodeByName(String categoryName) async {
+    try {
+      final categories = await getCategories();
+
+      // Recursive function to search through all categories and subcategories
+      String? findCategoryCode(List<Category> categories, String name) {
+        for (var category in categories) {
+          // Check if this category matches
+          if (category.name.toLowerCase() == name.toLowerCase()) {
+            return category.id.toString();
+          }
+
+          // Recursively search in children
+          if (category.children.isNotEmpty) {
+            final childCode = findCategoryCode(category.children, name);
+            if (childCode != null) return childCode;
+          }
+        }
+        return null;
+      }
+
+      final categoryCode = findCategoryCode(categories, categoryName);
+
+      if (categoryCode == null) {
+        print("Category '$categoryName' not found!");
+        return '';
+      }
+
+      return categoryCode;
+    } catch (e) {
+      print("Error finding category code for '$categoryName': $e");
+      return '';
+    }
+  }
+
+  /*                           GET RANDOM PRODUCTS FROM CATEGORIES                          */
+  static Future<List<Product>> getRandomProductsFromCategories({
+    int numberOfProducts = 20,
+    String shopId = '4',
+  }) async {
+    try {
+      print("Fetching random products from categories...");
+
+      // First, get all categories
+      final categories = await getCategories();
+      print("Found ${categories.length} total categories");
+
+      // Get all category IDs (including subcategories)
+      final allCategoryIds = <int>[];
+      void collectCategoryIds(List<Category> categoryList) {
+        for (var category in categoryList) {
+          allCategoryIds.add(category.id);
+          if (category.children.isNotEmpty) {
+            collectCategoryIds(category.children);
+          }
+        }
+      }
+
+      collectCategoryIds(categories);
+
+      print("Available category IDs: $allCategoryIds");
+
+      if (allCategoryIds.isEmpty) {
+        print("No categories found!");
+        return [];
+      }
+
+      // Shuffle the category IDs to get random order
+      allCategoryIds.shuffle();
+
+      List<Product> allProducts = [];
+      int productsNeeded = numberOfProducts;
+
+      // Fetch products from random categories until we have enough products
+      for (int categoryId in allCategoryIds) {
+        if (productsNeeded <= 0) break;
+
+        try {
+          print("Fetching products from category ID: $categoryId");
+          final products = await getProductsByCategoryCode(categoryId);
+
+          if (products.isNotEmpty) {
+            // Shuffle products from this category and take what we need
+            products.shuffle();
+            final productsToTake = products.take(productsNeeded).toList();
+            allProducts.addAll(productsToTake);
+            productsNeeded -= productsToTake.length;
+
+            print(
+              "Added ${productsToTake.length} products from category $categoryId",
+            );
+            print("Still need $productsNeeded more products");
+          }
+        } catch (e) {
+          print("Error fetching products from category $categoryId: $e");
+          // Continue with next category
+        }
+
+        // Small delay to avoid overwhelming the API
+        await Future.delayed(Duration(milliseconds: 100));
+      }
+
+      // If we still don't have enough products, shuffle and duplicate (or return what we have)
+      if (allProducts.length < numberOfProducts) {
+        print(
+          "Only found ${allProducts.length} products, needed $numberOfProducts",
+        );
+        // You can choose to return what we have, or duplicate to fill
+        // For now, let's return what we have
+      }
+
+      // Final shuffle to mix products from different categories
+      allProducts.shuffle();
+
+      print(" Final result: ${allProducts.length} random products");
+      return allProducts;
+    } catch (e) {
+      print('Error fetching random products from categories: $e');
+      return [];
+    }
+  }
+
+  /*                           GET PRODUCTS FROM MULTIPLE CATEGORIES                       */
+  static Future<List<Product>> getProductsFromMultipleCategories(
+    List<int> categoryIds,
+  ) async {
+    try {
+      List<Product> allProducts = [];
+
+      for (int categoryId in categoryIds) {
+        try {
+          final products = await getProductsByCategoryCode(categoryId);
+          allProducts.addAll(products);
+          print("Added ${products.length} products from category $categoryId");
+        } catch (e) {
+          print("Error fetching from category $categoryId: $e");
+        }
+      }
+
+      // Shuffle the final list
+      allProducts.shuffle();
+
+      return allProducts;
+    } catch (e) {
+      print('Error fetching products from multiple categories: $e');
+      return [];
+    }
+  }
+
+  /*                           GET PRODUCT DETAIL BY ID                                            */
+  // static Future<Map<String, dynamic>?> getProductDetail({
+  //   required int productId,
+  //   int languageId = 1,
+  // }) async {
+  //   try {
+  //     final response = await http
+  //         .get(
+  //           Uri.parse(
+  //             '$baseUrl/public/getproductdetail?id_product=$productId&id_lang_app=$languageId',
+  //           ),
+  //           headers: await _getHeaders(),
+  //         )
+  //         .timeout(Duration(seconds: timeoutSeconds));
+
+  //     print("Product detail API response status: ${response.statusCode}");
+  //     print(
+  //       "Product detail API URL: $baseUrl/public/getproductdetail?id_product=$productId&id_lang_app=$languageId",
+  //     );
+
+  //     if (response.statusCode == 200) {
+  //       final Map<String, dynamic> data = json.decode(response.body);
+
+  //       if (data['success'] == true) {
+  //         print(" Product detail fetched successfully for ID: $productId");
+  //         return data;
+  //       } else {
+  //         print(" API returned success: false for product detail");
+  //         print("Error message: ${data['error']}");
+  //       }
+  //     } else {
+  //       print(
+  //         "Product detail API error: ${response.statusCode} - ${response.body}",
+  //       );
+  //     }
+  //     return null;
+  //   } catch (e) {
+  //     print('Error fetching product detail: $e');
+  //     return null;
+  //   }
+  // }
+
+  static Future<Map<String, dynamic>?> getProductDetail({
+    required int productId,
+    int languageId = 1,
+  }) async {
+    try {
+      final response = await http
+          .get(
+            Uri.parse(
+              '$baseUrl/public/getproductdetail?id_product=$productId&id_lang_app=$languageId',
+            ),
+            headers: await _getHeaders(),
+          )
+          .timeout(Duration(seconds: timeoutSeconds));
+
+      print("🔍 Product detail API response status: ${response.statusCode}");
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+
+        if (data['success'] == true && data['product'] != null) {
+          final productData = data['product'];
+
+          // ENHANCED DEBUG: Print all combination data
+          if (productData['combinations'] != null) {
+            final combos = productData['combinations'] as List;
+            print("🔄 Raw combinations from API: ${combos.length}");
+
+            for (var i = 0; i < combos.length; i++) {
+              final combo = combos[i];
+              final attributes = combo['attributes']?.toString() ?? '';
+              final colorCode = combo['color']?.toString() ?? '';
+              final stock = combo['quantity'] ?? combo['stock'] ?? 0;
+
+              print(
+                "   [$i] ID: ${combo['id_product_attribute']}, "
+                "Attributes: '$attributes', "
+                "Color: '$colorCode', "
+                "Stock: $stock, "
+                "Default: ${combo['default']}",
+              );
+            }
+          }
+
+          return data;
+        } else {
+          print("❌ API returned success: false for product detail");
+        }
+      } else {
+        print("❌ Product detail API error: ${response.statusCode}");
+      }
+      return null;
+    } catch (e) {
+      print('❌ Error fetching product detail: $e');
+      return null;
+    }
+  }
+
+  /*                           GET SIMILAR PRODUCTS BY CATEGORY ID                          */
+  static Future<List<Product>> getSimilarProductsByCategory({
+    required int categoryId,
+    required int excludeProductId,
+    int limit = 10,
+  }) async {
+    try {
+      print(
+        "Fetching similar products for category ID: $categoryId, excluding product: $excludeProductId",
+      );
+
+      // First, get all categories to find the category hierarchy
+      final categories = await getCategories();
+
+      // Find all related category IDs (including parent and children)
+      final relatedCategoryIds = _getRelatedCategoryIds(categories, categoryId);
+
+      if (relatedCategoryIds.isEmpty) {
+        print("No related categories found for ID: $categoryId");
+
+        // Fallback: try to get products from any category (random products)
+        print("Using fallback: fetching random products");
+        return await getRandomProductsFromCategories(numberOfProducts: limit);
+      }
+
+      print("Related category IDs: $relatedCategoryIds");
+
+      List<Product> allSimilarProducts = [];
+
+      // Fetch products from all related categories
+      for (int catId in relatedCategoryIds) {
+        try {
+          final products = await getProductsByCategoryCode(catId);
+
+          // Filter out the current product and add to list
+          final filteredProducts =
+              products
+                  .where((product) => product.id != excludeProductId)
+                  .toList();
+          allSimilarProducts.addAll(filteredProducts);
+
+          print("Found ${filteredProducts.length} products in category $catId");
+
+          // If we have enough products, break early
+          if (allSimilarProducts.length >= limit) {
+            break;
+          }
+        } catch (e) {
+          print("Error fetching products from category $catId: $e");
+        }
+      }
+
+      // Remove duplicates and limit the results
+      final uniqueProducts =
+          allSimilarProducts
+              .fold<Map<int, Product>>({}, (map, product) {
+                if (!map.containsKey(product.id)) {
+                  map[product.id] = product;
+                }
+                return map;
+              })
+              .values
+              .toList();
+
+      final result = uniqueProducts.take(limit).toList();
+      print(" Found ${result.length} similar products");
+
+      return result;
+    } catch (e) {
+      print('Error fetching similar products: $e');
+      return [];
+    }
+  }
+
+  /*                           GET RELATED CATEGORY IDs (including parent and children)     */
+  static List<int> _getRelatedCategoryIds(
+    List<Category> categories,
+    int targetCategoryId,
+  ) {
+    final List<int> relatedIds = [];
+
+    // First, declare the helper functions
+    void _addAllChildrenIds(Category category, List<int> idList) {
+      for (var child in category.children) {
+        idList.add(child.id);
+        if (child.children.isNotEmpty) {
+          _addAllChildrenIds(child, idList);
+        }
+      }
+    }
+
+    void findAndCollectCategories(List<Category> categoryList, int targetId) {
+      for (var category in categoryList) {
+        // If this is the target category, add it and its children
+        if (category.id == targetId) {
+          relatedIds.add(category.id);
+          // Add all children categories
+          _addAllChildrenIds(category, relatedIds);
+          return;
+        }
+
+        // If this category has children, search recursively
+        if (category.children.isNotEmpty) {
+          findAndCollectCategories(category.children, targetId);
+        }
+      }
+    }
+
+    // Search for the target category
+    findAndCollectCategories(categories, targetCategoryId);
+
+    // If we found the target category, also try to find its parent
+    if (relatedIds.isNotEmpty) {
+      _findParentCategoryId(categories, targetCategoryId, relatedIds);
+    }
+
+    return relatedIds;
+  }
+
+  /*                           FIND PARENT CATEGORY ID                                      */
+  static void _findParentCategoryId(
+    List<Category> categories,
+    int targetCategoryId,
+    List<int> idList,
+  ) {
+    for (var category in categories) {
+      // Check if this category has the target as a child
+      if (_hasChildWithId(category, targetCategoryId)) {
+        idList.add(category.id);
+        return;
+      }
+
+      // Recursively search in children
+      if (category.children.isNotEmpty) {
+        _findParentCategoryId(category.children, targetCategoryId, idList);
+      }
+    }
+  }
+
+  /*                           CHECK IF CATEGORY HAS CHILD WITH SPECIFIC ID                */
+  static bool _hasChildWithId(Category category, int targetId) {
+    for (var child in category.children) {
+      if (child.id == targetId) {
+        return true;
+      }
+      if (child.children.isNotEmpty && _hasChildWithId(child, targetId)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /*                           GET PRODUCTS BY CATEGORY ID (ENHANCED)                      */
+  static Future<List<Product>> getProductsByCategoryId(
+    int categoryId, {
+    String shopId = '4',
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/public/getproducts?code=$categoryId'),
+        headers: await _getHeaders(),
+      );
+
+      print(
+        "Products API Response for category $categoryId: ${response.statusCode}",
+      );
+
+      if (response.statusCode == 200) {
+        final jsonResponse = json.decode(response.body);
+        if (jsonResponse['success'] == true) {
+          final products = jsonResponse['products'] as List;
+          print("Found ${products.length} products for category $categoryId");
+          return products
+              .map((productJson) => Product.fromJson(productJson))
+              .toList();
+        } else {
+          print("API returned success: false for category $categoryId");
+        }
+      } else {
+        print("Products API error: ${response.statusCode} - ${response.body}");
+      }
+      return [];
+    } catch (e) {
+      print("Error fetching products for category $categoryId: $e");
+      return [];
+    }
+  }
+
+  /*                           GET CART ITEMS API (FIXED)                          */
+  static Future<Map<String, dynamic>> getCart() async {
+    try {
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/public/getcart'),
+            headers: await _getAuthHeaders(),
+          )
+          .timeout(Duration(seconds: timeoutSeconds));
+
+      print("getCart API response status: ${response.statusCode}");
+      print("Response body: ${response.body}");
+
+      // Handle redirects
+      if (response.statusCode == 301 || response.statusCode == 302) {
+        final location = response.headers['location'];
+        print("Redirect detected to: $location");
+        return {
+          'success': false,
+          'message': 'getcart endpoint redirected. Please check API URL.',
+        };
+      }
+
+      if (response.statusCode == 200) {
+        // Check if response is JSON
+        if (response.body.trim().startsWith('{') ||
+            response.body.trim().startsWith('[')) {
+          final Map<String, dynamic> responseData = json.decode(response.body);
+
+          if (responseData['success'] == true) {
+            print("✓ Cart fetched successfully");
+            return {
+              'success': true,
+              'cart': responseData['cart'] ?? {},
+              'products': responseData['products'] ?? [],
+              'id_cart': responseData['id_cart'],
+            };
+          } else {
+            return {
+              'success': false,
+              'message': responseData['message'] ?? 'Failed to fetch cart',
+            };
+          }
+        } else {
+          // HTML response
+          print("✗ getcart returned HTML instead of JSON");
+          return {
+            'success': false,
+            'message':
+                'getcart endpoint returned HTML. Endpoint may not exist.',
+          };
+        }
+      } else {
+        return {
+          'success': false,
+          'message': 'Server error: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      print("✗ Error fetching cart: $e");
+      return {'success': false, 'message': 'Failed to connect to server: $e'};
+    }
+  }
+
+  /*                           CREATE ADDRESS API                                       */
+  static Future<Map<String, dynamic>> createAddress({
+    required String firstname,
+    required String lastname,
+    required String address1,
+    required String city,
+    required String postcode,
+    required int idState,
+    String? phone,
+    String? address2,
+    String? alias = 'Home Address',
+  }) async {
+    try {
+      final Map<String, String> queryParams = {
+        'firstname': firstname,
+        'lastname': lastname,
+        'address1': address1,
+        'city': city,
+        'postcode': postcode,
+        'id_state': idState.toString(),
+      };
+
+      // Add optional parameters if provided
+      if (phone != null && phone.isNotEmpty) {
+        queryParams['phone'] = phone;
+      }
+      if (address2 != null && address2.isNotEmpty) {
+        queryParams['address2'] = address2;
+      }
+      if (alias != null && alias.isNotEmpty) {
+        queryParams['alias'] = alias;
+      }
+
+      final Uri uri = Uri.parse(
+        '$baseUrl/public/createaddress',
+      ).replace(queryParameters: queryParams);
+
+      print("Making createAddress API call to: $uri");
+      print("Parameters: $queryParams");
+
+      final response = await http
+          .post(uri, headers: await _getAuthHeaders())
+          .timeout(Duration(seconds: timeoutSeconds));
+
+      print("createAddress API response status: ${response.statusCode}");
+      print("Response body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = json.decode(response.body);
+
+        if (responseData['success'] == true ||
+            responseData['message'] == 'success') {
+          print("✓ Address created successfully");
+          return {
+            'success': true,
+            'message':
+                responseData['message'] ?? 'Address created successfully',
+            'addressId':
+                responseData['id_address'] ?? responseData['address_id'],
+            'addressData': responseData['address'] ?? responseData,
+          };
+        } else {
+          print("✗ Address creation failed: ${responseData['message']}");
+          return {
+            'success': false,
+            'message': responseData['message'] ?? 'Failed to create address',
+          };
+        }
+      } else {
+        print("✗ Address creation API error: ${response.statusCode}");
+        return {
+          'success': false,
+          'message': 'Server error: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      print("✗ Error creating address: $e");
+      return {'success': false, 'message': 'Failed to connect to server: $e'};
+    }
+  }
+
+  /*                           GET CUSTOMER DETAILS API                               */
+  static Future<Map<String, dynamic>> getCustomerDetails() async {
+    try {
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/public/getcustomer'),
+            headers: await _getAuthHeaders(),
+          )
+          .timeout(Duration(seconds: timeoutSeconds));
+
+      print("getCustomerDetails API response status: ${response.statusCode}");
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = json.decode(response.body);
+
+        if (responseData['success'] == true) {
+          print("✓ Customer details fetched successfully");
+          return responseData;
+        } else {
+          return {
+            'success': false,
+            'message':
+                responseData['message'] ?? 'Failed to fetch customer details',
+          };
+        }
+      } else {
+        return {
+          'success': false,
+          'message': 'Server error: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      print("✗ Error fetching customer details: $e");
+      return {'success': false, 'message': 'Failed to connect to server: $e'};
+    }
+  }
+
+  /*                           GET ADDRESS BY ID API                                */
+  static Future<Map<String, dynamic>> getAddressById(int addressId) async {
+    try {
+      final Uri uri = Uri.parse(
+        '$baseUrl/public/getadressebyid?id_address=$addressId',
+      );
+
+      print("Making getAddressById API call to: $uri");
+
+      final response = await http
+          .get(uri, headers: await _getAuthHeaders())
+          .timeout(Duration(seconds: timeoutSeconds));
+
+      print("getAddressById API response status: ${response.statusCode}");
+      print("Response body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = json.decode(response.body);
+
+        if (responseData['success'] == true ||
+            responseData['message'] == 'success') {
+          print("✓ Address fetched successfully");
+          return {
+            'success': true,
+            'address': responseData['address'] ?? responseData,
+            'message':
+                responseData['message'] ?? 'Address fetched successfully',
+          };
+        } else {
+          print("✗ Address fetch failed: ${responseData['message']}");
+          return {
+            'success': false,
+            'message': responseData['message'] ?? 'Failed to fetch address',
+          };
+        }
+      } else {
+        print("✗ Address fetch API error: ${response.statusCode}");
+        return {
+          'success': false,
+          'message': 'Server error: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      print("✗ Error fetching address: $e");
+      return {'success': false, 'message': 'Failed to connect to server: $e'};
+    }
+  }
+
+  /*                           GET CUSTOMER ADDRESSES API                          */
+  static Future<Map<String, dynamic>> getCustomerAddresses() async {
+    try {
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/public/getaddresses'),
+            headers: await _getAuthHeaders(),
+          )
+          .timeout(Duration(seconds: timeoutSeconds));
+
+      print("getCustomerAddresses API response status: ${response.statusCode}");
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = json.decode(response.body);
+
+        if (responseData['success'] == true) {
+          print("✓ Customer addresses fetched successfully");
+          return {
+            'success': true,
+            'addresses': responseData['addresses'] ?? [],
+            'message':
+                responseData['message'] ?? 'Addresses fetched successfully',
+          };
+        } else {
+          return {
+            'success': false,
+            'message': responseData['message'] ?? 'Failed to fetch addresses',
+          };
+        }
+      } else {
+        return {
+          'success': false,
+          'message': 'Server error: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      print("✗ Error fetching customer addresses: $e");
+      return {'success': false, 'message': 'Failed to connect to server: $e'};
+    }
+  }
+
+  /*                           GET PRODUCT ATTRIBUTES (ENHANCED)                          */
+  static Future<Map<String, dynamic>> getProductAttributes(
+    int productId,
+  ) async {
+    try {
+      final headers = await _getAuthHeaders();
+
+      final response = await http
+          .get(
+            Uri.parse(
+              '$baseUrl/public/getproductattributes?id_product=$productId',
+            ),
+            headers: headers,
+          )
+          .timeout(Duration(seconds: timeoutSeconds));
+
+      print("Get product attributes response: ${response.statusCode}");
+      print("Product attributes body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+
+        if (responseData['success'] == true) {
+          print(
+            "✓ Product attributes fetched successfully for product $productId",
+          );
+          return responseData;
+        } else {
+          print("✗ Product attributes API returned success: false");
+          return {
+            'success': false,
+            'message':
+                responseData['message'] ?? 'Failed to get product attributes',
+          };
+        }
+      } else {
+        return {
+          'success': false,
+          'message': 'Failed to get product attributes: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      print("Error getting product attributes: $e");
+      return {
+        'success': false,
+        'message': 'Failed to get product attributes: $e',
+      };
+    }
+  }
+
+  /*                           GET DEFAULT PRODUCT ATTRIBUTE ID                          */
+  static Future<int?> getDefaultProductAttributeId(int productId) async {
+    try {
+      final attributesResponse = await getProductAttributes(productId);
+
+      if (attributesResponse['success'] == true) {
+        // The structure might vary - you need to check the actual API response
+        // Based on your Postman data, you might get a list of combinations
+        if (attributesResponse['combinations'] != null &&
+            attributesResponse['combinations'] is List &&
+            attributesResponse['combinations'].isNotEmpty) {
+          final firstCombination = attributesResponse['combinations'][0];
+          final attributeId =
+              firstCombination['id_product_attribute'] ??
+              firstCombination['id'];
+
+          print("✓ Default attribute ID for product $productId: $attributeId");
+          return attributeId is String
+              ? int.tryParse(attributeId)
+              : attributeId as int?;
+        }
+
+        // Alternative: check if the response directly contains product_attribute_id
+        if (attributesResponse['id_product_attribute'] != null) {
+          final attributeId = attributesResponse['id_product_attribute'];
+          print("✓ Default attribute ID for product $productId: $attributeId");
+          return attributeId is String
+              ? int.tryParse(attributeId)
+              : attributeId as int?;
+        }
+
+        // If no combinations found, return the product ID as fallback (not ideal)
+        print(
+          "⚠ No combinations found for product $productId, using product ID as fallback",
+        );
+        return productId;
+      } else {
+        print(
+          "✗ Failed to get attributes for product $productId: ${attributesResponse['message']}",
+        );
+        return productId; // Fallback
+      }
+    } catch (e) {
+      print("Error getting default product attribute: $e");
+      return productId; // Fallback
+    }
+  }
+
+  /* ------------------------- CART OPERATIONS ------------------------- */
+
+  static Future<Map<String, dynamic>> updateCart({
+    required int idProduct,
+    int? idProductAttribute, // Optional - only for products with combinations
+    int quantity = 1, // Optional - defaults to 1
+  }) async {
+    try {
+      // Build URL based on your Postman examples
+      String url = '$baseUrl/public/updatecart?id_product=$idProduct';
+
+      // Add product attribute if provided (for products with combinations)
+      if (idProductAttribute != null && idProductAttribute > 0) {
+        url += '&id_product_attribute=$idProductAttribute';
+      }
+
+      // Add quantity if different from default
+      if (quantity != 1) {
+        url += '&quantity=$quantity';
+      }
+
+      print("🛒 Update Cart API: $url");
+
+      final response = await http
+          .post(Uri.parse(url), headers: await _getHeaders())
+          .timeout(Duration(seconds: timeoutSeconds));
+
+      print("📦 Response: ${response.statusCode} - ${response.body}");
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        return {
+          'success': false,
+          'message': 'API Error ${response.statusCode}',
+          'statusCode': response.statusCode,
+        };
+      }
+    } catch (e) {
+      print("❌ Cart update error: $e");
+      return {'success': false, 'message': 'Connection failed: $e'};
+    }
+  }
+
+  // DELETE PRODUCT FROM CART (SIMPLIFIED)
+  static Future<Map<String, dynamic>> deleteProductFromCart({
+    required int idProduct,
+    int? idProductAttribute, // Optional - only for products with combinations
+  }) async {
+    try {
+      // Build URL based on your Postman examples
+      String url = '$baseUrl/public/deleteproductcart?id_product=$idProduct';
+
+      // Add product attribute if provided (for products with combinations)
+      if (idProductAttribute != null && idProductAttribute > 0) {
+        url += '&id_product_attribute=$idProductAttribute';
+      }
+
+      print("🗑️ Delete from cart: $url");
+
+      final response = await http
+          .post(Uri.parse(url), headers: await _getHeaders())
+          .timeout(Duration(seconds: timeoutSeconds));
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        return {
+          'success': false,
+          'message': 'Failed to delete: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Failed to delete: $e'};
+    }
+  }
+
+  // GET CART PRODUCTS (for shopping cart page)
+  static Future<Map<String, dynamic>> getProductCart({
+    required int idCart,
+  }) async {
+    try {
+      final url = '$baseUrl/public/getproductcart?id_cart=$idCart';
+
+      final response = await http
+          .get(Uri.parse(url), headers: await _getHeaders())
+          .timeout(Duration(seconds: timeoutSeconds));
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        return {
+          'success': false,
+          'message': 'Failed to get cart: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Failed to get cart: $e'};
+    }
+  }
+
   /*                           TEST ENDPOINT FOR RESET PASSWORD                                             */
   // static Future<void> testApiEndpoint() async {
   //   try {
@@ -579,47 +1487,6 @@ class ApiService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
     // authToken = null;
-  }
-
-  //Product detail
-  static Future<Product?> getProductDetail({
-    required String code,
-    required String shopId,
-  }) async {
-    try {
-      final url = '$baseUrl/public/getProduct?code=$code&id-shop=$shopId';
-      print(" Request URL: $url");
-
-      final response = await http
-          .get(Uri.parse(url), headers: await _getAuthHeaders())
-          .timeout(Duration(seconds: timeoutSeconds));
-
-      print(" Raw API Response: ${response.body}");
-      final data = jsonDecode(response.body);
-      print(" DEBUG - Full response structure:");
-      _printJsonStructure(data, 0);
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-
-        if (data['response'] != null) {
-          if (data['response'] is List && data['response'].isNotEmpty) {
-            return Product.fromJson(data['response'][0]);
-          } else if (data['response']['product'] != null) {
-            return Product.fromJson(data['response']['product']);
-          }
-        }
-
-        print(" No valid product found in response");
-        return null;
-      } else {
-        print(" API Error: ${response.statusCode}");
-        return null;
-      }
-    } catch (e) {
-      print(" Exception in getProductDetail: $e");
-      return null;
-    }
   }
 
   static void _printJsonStructure(dynamic json, int indent) {
@@ -1067,31 +1934,6 @@ class ApiService {
       return {};
     }
   }
-  //Similar product part
-
-  static Future<String?> getProductCategoryCode(int productId) async {
-    try {
-      final url = '$baseUrl/public/getProductCategory?product_id=$productId';
-      final response = await http
-          .get(Uri.parse(url), headers: await _getAuthHeaders())
-          .timeout(Duration(seconds: timeoutSeconds));
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return data['category_code']?.toString();
-      }
-
-      final productDetail = await getProductDetail(
-        code: productId.toString(),
-        shopId: '4',
-      );
-
-      return productDetail?.categoryCode;
-    } catch (e) {
-      print("Error fetching product category: $e");
-      return null;
-    }
-  }
 
   //debug api response
   static Future<void> debugApiResponse() async {
@@ -1140,96 +1982,7 @@ class ApiService {
     }
   }
 
-  // Get Category Code By Name method
-  static Future<String> getCategoryCodeByName(String categoryName) async {
-    try {
-      final categoryData = await getCategoryStructure();
-
-      print(" Parsing category structure for: $categoryName");
-      print("Full response: $categoryData");
-
-      if (categoryData['response'] != null &&
-          categoryData['response'] is List) {
-        final rootCategories = List<Map<String, dynamic>>.from(
-          categoryData['response'],
-        );
-
-        print(" Root categories found: ${rootCategories.length}");
-
-        // Print all root categories for debugging
-        for (var i = 0; i < rootCategories.length; i++) {
-          final category = rootCategories[i];
-          print("   ${i + 1}. ${category['name']} (ID: ${category['id']})");
-
-          // Check if this is the "Accueil" category
-          if (category['name'] == 'Accueil' || category['id'] == '2') {
-            print(" Found Accueil category!");
-
-            if (category['childs'] != null && category['childs'] is List) {
-              final childCategories = List<Map<String, dynamic>>.from(
-                category['childs'],
-              );
-
-              print(
-                "   Child categories of Accueil: ${childCategories.length}",
-              );
-
-              // Print all child categories
-              for (var j = 0; j < childCategories.length; j++) {
-                final child = childCategories[j];
-                print(
-                  "   └─ ${j + 1}. ${child['name']} (ID: ${child['id']}, Code: ${child['code']})",
-                );
-
-                // Check if this is the target category
-                if (child['name']?.toLowerCase() ==
-                    categoryName.toLowerCase()) {
-                  print(
-                    " Found $categoryName category! Code: ${child['code']}",
-                  );
-                  return child['code']?.toString() ?? '';
-                }
-              }
-
-              // If exact name match not found, try partial match
-              for (var j = 0; j < childCategories.length; j++) {
-                final child = childCategories[j];
-                if (child['name']?.toLowerCase().contains(
-                      categoryName.toLowerCase(),
-                    ) ==
-                    true) {
-                  print(
-                    " Found similar category: ${child['name']} with code: ${child['code']}",
-                  );
-                  return child['code']?.toString() ?? '';
-                }
-              }
-            } else {
-              print("Accueil category has no childs");
-            }
-          }
-        }
-
-        print(" Searching through all categories recursively...");
-        final foundCode = _findCategoryCodeRecursive(
-          rootCategories,
-          categoryName,
-        );
-        if (foundCode.isNotEmpty) {
-          return foundCode;
-        }
-      } else {
-        print("No response data found in API response");
-      }
-
-      return '';
-    } catch (e) {
-      print("Error getting category code for $categoryName: $e");
-      return '';
-    }
-  }
-
-  /*                           FIND CATEGORY BY NAME (IMPROVED)                                          */
+  /*                           FIND CATEGORY BY NAME                                           */
   static Future<Category?> findCategoryByName(String categoryName) async {
     try {
       final categories = await getCategories();
@@ -1380,306 +2133,6 @@ class ApiService {
       print("=== END DEBUG ===");
     } catch (e) {
       print("Error debugging category structure: $e");
-    }
-  }
-
-  //CART METHODS
-  static Future<Map<String, dynamic>> getCart(int shopId) async {
-    try {
-      final headers = await _getHeaders();
-
-      final response = await http
-          .get(
-            Uri.parse('$baseUrl/public/getCart?id-shop=$shopId'),
-            headers: headers,
-          )
-          .timeout(Duration(seconds: 10));
-
-      print('Cart API Response Status: ${response.statusCode}');
-      print('Cart API Response Body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
-        return responseData;
-      } else if (response.statusCode == 401) {
-        throw Exception('Unauthorized - Please login again');
-      } else {
-        throw Exception('Failed to load cart. Status: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Error fetching cart: $e');
-      throw Exception('Error fetching cart: $e');
-    }
-  }
-
-  //UPDATE CART
-  static Future<Map<String, dynamic>> updateCart({
-    required int shopId,
-    required String cartId,
-    required int customerId,
-    required String customerEmail,
-    required List<Map<String, dynamic>> cartDetails,
-    int addressDeliveryId = 1,
-    int addressInvoiceId = 1,
-    int carrierId = 1,
-  }) async {
-    try {
-      final headers = await _getHeaders();
-
-      final requestBody = {
-        'cart_summary': {
-          'idShop': shopId,
-          'idAddressDelivery': addressDeliveryId,
-          'idAddressInvoice': addressInvoiceId,
-          'idCustomer': customerId,
-          'idCarrier': carrierId,
-          'idCart': int.parse(cartId),
-          'emailCustomer': customerEmail,
-        },
-        'cart_details': cartDetails,
-      };
-
-      print('Update Cart Request: ${json.encode(requestBody)}');
-
-      final response = await http
-          .post(
-            Uri.parse('$baseUrl/public/updateCart'),
-            headers: {...headers, 'Content-Type': 'application/json'},
-            body: json.encode(requestBody),
-          )
-          .timeout(Duration(seconds: 10));
-
-      print('Update Cart API Response Status: ${response.statusCode}');
-      print('Update Cart API Response Body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
-        return responseData;
-      } else if (response.statusCode == 401) {
-        throw Exception('Unauthorized - Please login again');
-      } else {
-        throw Exception(
-          'Failed to update cart. Status: ${response.statusCode}',
-        );
-      }
-    } catch (e) {
-      print('Error updating cart: $e');
-      throw Exception('Error updating cart: $e');
-    }
-  }
-
-  //ADD TO CART
-  static Future<bool> addToCart(
-    String productCode,
-    int quantity, {
-    String? color,
-    int shopId = 4,
-    required int customerId,
-    required String customerEmail,
-  }) async {
-    try {
-      print(
-        'Adding to cart - Product: $productCode, Qty: $quantity, Color: $color',
-      );
-
-      // First get the current cart to get the cartId
-      final cartResponse = await getCart(shopId);
-
-      if (cartResponse['message'] == 'success' ||
-          cartResponse['status'] == 'success') {
-        // Extract cart ID from response - adjust based on your actual response structure
-        String cartId = '0';
-        if (cartResponse['response'] != null &&
-            cartResponse['response']['cart_summary'] != null) {
-          cartId =
-              cartResponse['response']['cart_summary']['idCart']?.toString() ??
-              '0';
-        }
-
-        final response = await updateCart(
-          shopId: shopId,
-          cartId: cartId,
-          customerId: customerId,
-          customerEmail: customerEmail,
-          cartDetails: [
-            {
-              'code': productCode,
-              'quantity': quantity,
-              'operator':
-                  'up', // Use 'up' for add/update as per Postman example
-              if (color != null) 'color': color,
-            },
-          ],
-        );
-
-        // Check for success based on your API response structure
-        final success =
-            response['message'] == 'success' || response['status'] == 'success';
-        print('Add to cart success: $success');
-        return success;
-      }
-
-      return false;
-    } catch (e) {
-      print('Error in addToCart: $e');
-      return false;
-    }
-  }
-
-  // REMOVE FROM CART
-  static Future<bool> removeFromCart(
-    String productCode,
-    int shopId,
-    String cartId,
-    int customerId,
-    String customerEmail,
-  ) async {
-    try {
-      final response = await updateCart(
-        shopId: shopId,
-        cartId: cartId,
-        customerId: customerId,
-        customerEmail: customerEmail,
-        cartDetails: [
-          {'code': productCode, 'operator': 'del', 'quantity': 0},
-        ],
-      );
-
-      return response['message'] == 'success' ||
-          response['status'] == 'success';
-    } catch (e) {
-      print('Error removing from cart: $e');
-      return false;
-    }
-  }
-
-  // UPDATED CART QUANTITY
-  static Future<bool> updateCartQuantity(
-    String productCode,
-    int newQuantity,
-    int shopId,
-    String cartId,
-    int customerId,
-    String customerEmail,
-  ) async {
-    try {
-      final response = await updateCart(
-        shopId: shopId,
-        cartId: cartId,
-        customerId: customerId,
-        customerEmail: customerEmail,
-        cartDetails: [
-          {'code': productCode, 'operator': 'up', 'quantity': newQuantity},
-        ],
-      );
-
-      return response['message'] == 'success' ||
-          response['status'] == 'success';
-    } catch (e) {
-      print('Error updating cart quantity: $e');
-      return false;
-    }
-  }
-
-  //CLEAR CART
-  static Future<bool> clearCart(
-    int shopId,
-    String cartId,
-    int customerId,
-    String customerEmail,
-  ) async {
-    try {
-      // First get current cart items
-      final cartResponse = await getCart(shopId);
-
-      if (cartResponse['message'] == 'success' ||
-          cartResponse['status'] == 'success') {
-        final cartDetails = cartResponse['response']['cart_details'] ?? [];
-
-        // Create delete operations for all items
-        final List<Map<String, dynamic>> clearOperations = [];
-        for (var item in cartDetails) {
-          clearOperations.add({
-            'code': item['code'],
-            'operator': 'del',
-            'quantity': 0,
-          });
-        }
-
-        if (clearOperations.isNotEmpty) {
-          final response = await updateCart(
-            shopId: shopId,
-            cartId: cartId,
-            customerId: customerId,
-            customerEmail: customerEmail,
-            cartDetails: clearOperations,
-          );
-
-          return response['message'] == 'success' ||
-              response['status'] == 'success';
-        }
-
-        return true;
-      }
-
-      return false;
-    } catch (e) {
-      print('Error clearing cart: $e');
-      return false;
-    }
-  }
-
-  static Future<Map<String, dynamic>> createAddress(
-    Map<String, dynamic> addressData,
-  ) async {
-    try {
-      final headers = await _getHeaders();
-
-      final response = await http
-          .post(
-            Uri.parse('$baseUrl/newAddress'),
-            headers: headers,
-            body: json.encode(addressData),
-          )
-          .timeout(Duration(seconds: 10));
-
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
-      } else {
-        throw Exception('Failed to create address: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Error creating address: $e');
-    }
-  }
-
-  static Future<Map<String, dynamic>?> getCustomerDetails() async {
-    try {
-      final headers = await _getAuthHeaders();
-
-      final response = await http
-          .get(Uri.parse('$baseUrl/customerDetails'), headers: headers)
-          .timeout(Duration(seconds: timeoutSeconds));
-
-      print("Customer Details API Response: ${response.statusCode}");
-      print("Customer Details API Body: ${response.body}");
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-
-        if (data['message'] == 'success' && data['response'] != null) {
-          return data['response'];
-        } else {
-          print("API returned error: ${data['message']}");
-          return null;
-        }
-      } else {
-        print("Failed to fetch customer details: ${response.statusCode}");
-        return null;
-      }
-    } catch (e) {
-      print("Exception in getCustomerDetails: $e");
-      return null;
     }
   }
 
@@ -1910,4 +2363,9 @@ class ApiService {
       return null;
     }
   }
+
+  static syncCartWithServer({
+    required List<CartItem> localCartItems,
+    required int idCart,
+  }) {}
 }

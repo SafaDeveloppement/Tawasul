@@ -431,7 +431,6 @@ class _SearchingResultState extends State<SearchingResult> {
             builder:
                 (context) => ProductDetail(
                   productReference: product.reference,
-                  shopId: '4',
                   toggleFavorite: () => {},
                   isFavorite: false,
                 ),

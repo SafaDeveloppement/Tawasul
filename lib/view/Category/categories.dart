@@ -137,28 +137,28 @@ class _CategoriesState extends State<Categories> {
   Widget _buildAppBar(AppLocalizations t) {
     return Container(
       width: double.infinity,
-      height: 100.h,
+      height: 80.h,
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 8,
-            offset: const Offset(0, 2),
+            offset: Offset(0, 2),
           ),
         ],
       ),
       child: SafeArea(
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 16.h),
+          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // Back Button
               Container(
-                width: 40.w,
-                height: 40.h,
+                width: 35.w,
+                height: 35.h,
                 decoration: BoxDecoration(
                   color: const Color(0xFF008AD2),
                   shape: BoxShape.circle,
@@ -258,7 +258,6 @@ class CategoryCard extends StatelessWidget {
         ),
         child: Column(
           children: [
-            // Image Container with Gradient Overlay
             Expanded(
               flex: 3,
               child: Container(
@@ -298,7 +297,7 @@ class CategoryCard extends StatelessWidget {
 
             // Content Area
             Expanded(
-              flex: 2,
+              flex: 4,
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(

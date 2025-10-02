@@ -126,11 +126,10 @@ Future<void> _loadCategoryProducts() async {
           MaterialPageRoute(
             builder:
                 (context) => ProductDetail(
-                  productReference: product.reference,
-                  shopId: '4',
-                  toggleFavorite:
-                      () => productController.toggleFavorite(product.id),
-                  isFavorite: product.isFavorite,
+                  toggleFavorite: () => {},
+                  isFavorite: false,
+                  productReference: product.id.toString(),
+                  product: product,
                 ),
           ),
         );

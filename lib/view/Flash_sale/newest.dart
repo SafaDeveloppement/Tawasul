@@ -280,8 +280,6 @@
 //   }
 // }
 
-
-
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
@@ -429,19 +427,20 @@ class _NewestState extends State<Newest> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ProductDetail(
-              productReference: product.reference,
-              shopId: '4', // You might want to make this dynamic
-              toggleFavorite: () => productController.toggleFavorite(product.id),
-              isFavorite: product.isFavorite,
-            ),
+            builder:
+                (context) => ProductDetail(
+                 toggleFavorite: () => {},
+                  isFavorite: false,
+                  productReference: product.id.toString(),
+                  product: product,
+                ),
           ),
         );
       },
       child: Container(
         margin: EdgeInsets.all(7.w),
         width: 150.w,
-        height: 200.h,
+        height: 215.h,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12.r),
@@ -477,7 +476,7 @@ class _NewestState extends State<Newest> {
                   ),
                 ),
               ),
-            
+
             // Favorite button
             Positioned(
               top: 8.h,
@@ -489,13 +488,16 @@ class _NewestState extends State<Newest> {
                   radius: 14.r,
                   child: Icon(
                     product.isFavorite ? Icons.favorite : Icons.favorite_border,
-                    color: product.isFavorite ? const Color(0xFF008AD2) : Colors.grey,
+                    color:
+                        product.isFavorite
+                            ? const Color(0xFF008AD2)
+                            : Colors.grey,
                     size: 20.sp,
                   ),
                 ),
               ),
             ),
-            
+
             // Product content
             Padding(
               padding: EdgeInsets.only(top: 19.h, left: 8.w, right: 8.w),
@@ -503,26 +505,33 @@ class _NewestState extends State<Newest> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Center(
-                    child: product.image.isNotEmpty
-                        ? Image.network(
-                            product.image,
-                            height: 90.h,
-                            width: 90.w,
-                            fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) =>
-                                Container(
-                                  height: 90.h,
-                                  width: 90.w,
-                                  color: Colors.grey[200],
-                                  child: Icon(Icons.image_not_supported, size: 40.h),
-                                ),
-                          )
-                        : Container(
-                            height: 90.h,
-                            width: 90.w,
-                            color: Colors.grey[200],
-                            child: Icon(Icons.image_not_supported, size: 40.h),
-                          ),
+                    child:
+                        product.image.isNotEmpty
+                            ? Image.network(
+                              product.image,
+                              height: 90.h,
+                              width: 90.w,
+                              fit: BoxFit.contain,
+                              errorBuilder:
+                                  (context, error, stackTrace) => Container(
+                                    height: 90.h,
+                                    width: 90.w,
+                                    color: Colors.grey[200],
+                                    child: Icon(
+                                      Icons.image_not_supported,
+                                      size: 40.h,
+                                    ),
+                                  ),
+                            )
+                            : Container(
+                              height: 90.h,
+                              width: 90.w,
+                              color: Colors.grey[200],
+                              child: Icon(
+                                Icons.image_not_supported,
+                                size: 40.h,
+                              ),
+                            ),
                   ),
                   SizedBox(height: 5.h),
                   Text(

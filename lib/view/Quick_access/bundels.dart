@@ -178,7 +178,6 @@ class _BundelsPageState extends State<BundelsPage>
             builder:
                 (context) => ProductDetail(
                   productReference: product.reference,
-                  shopId: '4',
                   toggleFavorite:
                       () => productController.toggleFavorite(product.id),
                   isFavorite: product.isFavorite,

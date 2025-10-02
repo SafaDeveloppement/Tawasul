@@ -714,11 +714,14 @@ class _LifestyleState extends State<Lifestyle> with TickerProviderStateMixin {
           MaterialPageRoute(
             builder:
                 (context) => ProductDetail(
-                  productReference: product.reference,
-                  shopId: '4',
-                  toggleFavorite:
-                      () => productController.toggleFavorite(product.id),
-                  isFavorite: product.isFavorite,
+                  // productReference: product.reference,
+                  // toggleFavorite:
+                  //     () => productController.toggleFavorite(product.id),
+                  // isFavorite: product.isFavorite,
+                  toggleFavorite: () => {},
+                  isFavorite: false,
+                  productReference: product.id.toString(),
+                  product: product,
                 ),
           ),
         );
@@ -726,7 +729,7 @@ class _LifestyleState extends State<Lifestyle> with TickerProviderStateMixin {
       child: Container(
         width: 184.w,
         height: 200.h,
-        margin: EdgeInsets.all(6.w),
+        margin: EdgeInsets.all(4.w),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16.r),
@@ -737,7 +740,7 @@ class _LifestyleState extends State<Lifestyle> with TickerProviderStateMixin {
         child: Stack(
           children: [
             Padding(
-              padding: EdgeInsets.all(10.w),
+              padding: EdgeInsets.all(5.w),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

@@ -194,7 +194,6 @@ class _PromoPageState extends State<PromoPage> with TickerProviderStateMixin {
             builder:
                 (context) => ProductDetail(
                   productReference: product.reference,
-                  shopId: '4',
                   toggleFavorite:
                       () => productController.toggleFavorite(product.id),
                   isFavorite: product.isFavorite,

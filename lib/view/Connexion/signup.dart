@@ -182,7 +182,7 @@ class _SignupState extends State<Signup> {
     });
 
     try {
-      final url = Uri.parse("http://197.13.18.8/public/register-check");
+      final url = Uri.parse("http://tawasul-dev.app-staging.fr/public/register-check");
 
       String? formattedBirthday;
       if (_birthdateController.text.isNotEmpty) {

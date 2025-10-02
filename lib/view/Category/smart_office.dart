@@ -645,22 +645,22 @@ class _SmartOfficeState extends State<SmartOffice>
     super.dispose();
   }
 
-Future<void> _loadCategoryProducts() async {
-  setState(() => _isLoading = true);
+  Future<void> _loadCategoryProducts() async {
+    setState(() => _isLoading = true);
 
-  try {
-    final productController = Provider.of<ProductController>(
-      context, 
-      listen: false
-    );
-    
-    await productController.fetchProductsByCategoryName('Smart Office'); 
-    setState(() => _isLoading = false);
-  } catch (e) {
-    print("Error loading products: $e");
-    setState(() => _isLoading = false);
+    try {
+      final productController = Provider.of<ProductController>(
+        context,
+        listen: false,
+      );
+
+      await productController.fetchProductsByCategoryName('Smart Office');
+      setState(() => _isLoading = false);
+    } catch (e) {
+      print("Error loading products: $e");
+      setState(() => _isLoading = false);
+    }
   }
-}
 
   void _filterProducts(String query) {
     if (query.isEmpty) {
@@ -721,11 +721,10 @@ Future<void> _loadCategoryProducts() async {
           MaterialPageRoute(
             builder:
                 (context) => ProductDetail(
-                  productReference: product.reference,
-                  shopId: '4',
-                  toggleFavorite:
-                      () => productController.toggleFavorite(product.id),
-                  isFavorite: product.isFavorite,
+                  toggleFavorite: () => {},
+                  isFavorite: false,
+                  productReference: product.id.toString(),
+                  product: product,
                 ),
           ),
         );
@@ -733,7 +732,7 @@ Future<void> _loadCategoryProducts() async {
       child: Container(
         width: 184.w,
         height: 200.h,
-        margin: EdgeInsets.all(6.w),
+        margin: EdgeInsets.all(4.w),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16.r),
@@ -744,7 +743,7 @@ Future<void> _loadCategoryProducts() async {
         child: Stack(
           children: [
             Padding(
-              padding: EdgeInsets.all(10.w),
+              padding: EdgeInsets.all(5.w),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

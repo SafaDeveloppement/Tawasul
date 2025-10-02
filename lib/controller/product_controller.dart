@@ -335,4 +335,73 @@ class ProductController with ChangeNotifier {
     }
     return _allProducts;
   }
+
+  // Fetch random products from various categories
+Future<void> fetchRandomProductsFromCategories({
+  int numberOfProducts = 20,
+  String shopId = '4'
+}) async {
+  try {
+    _isLoading = true;
+    _errorMessage = '';
+    notifyListeners();
+
+    print("Fetching random products from categories...");
+
+    final products = await ApiService.getRandomProductsFromCategories(
+      numberOfProducts: numberOfProducts,
+      shopId: shopId,
+    );
+
+    _allProducts = _syncProductsWithFavorites(products);
+    _isLoading = false;
+    
+    print("✓ Loaded ${products.length} random products from categories");
+    notifyListeners();
+  } catch (e) {
+    _isLoading = false;
+    _errorMessage = 'Failed to load random products: $e';
+    notifyListeners();
+    print("✗ Error fetching random products: $e");
+  }
+}
+
+// Fetch products from specific category names
+Future<void> fetchProductsFromCategoryNames(List<String> categoryNames) async {
+  try {
+    _isLoading = true;
+    _errorMessage = '';
+    notifyListeners();
+
+    print("Fetching products from categories: $categoryNames");
+
+    List<int> categoryIds = [];
+    
+    for (String categoryName in categoryNames) {
+      final categoryId = await ApiService.getCategoryIdByName(categoryName);
+      if (categoryId != null) {
+        categoryIds.add(categoryId);
+        print("Resolved '$categoryName' to ID: $categoryId");
+      } else {
+        print("Category '$categoryName' not found");
+      }
+    }
+
+    if (categoryIds.isEmpty) {
+      throw Exception('No valid categories found');
+    }
+
+    final products = await ApiService.getProductsFromMultipleCategories(categoryIds);
+    _allProducts = _syncProductsWithFavorites(products);
+    _isLoading = false;
+    
+    print("✓ Loaded ${products.length} products from ${categoryIds.length} categories");
+    notifyListeners();
+  } catch (e) {
+    _isLoading = false;
+    _errorMessage = 'Failed to load products from categories: $e';
+    notifyListeners();
+    print("✗ Error fetching products from categories: $e");
+  }
+}
 }
