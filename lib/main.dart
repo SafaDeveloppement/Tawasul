@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tawasul_application/Provider/cart_provider.dart';
-import 'package:tawasul_application/Provider/order_provider.dart';  
+import 'package:tawasul_application/Provider/order_provider.dart';
 import 'package:tawasul_application/Provider/product_provider.dart';
 import 'package:tawasul_application/Provider/user_provider.dart';
 import 'package:tawasul_application/controller/product_controller.dart';
@@ -27,7 +27,7 @@ class MyApp extends StatefulWidget {
   final Locale initialLocale;
 
   const MyApp({super.key, required this.initialLocale});
- 
+
   static void setLocale(BuildContext context, Locale newLocale) {
     _MyAppState? state = context.findAncestorStateOfType<_MyAppState>();
     state?.setLocale(newLocale);

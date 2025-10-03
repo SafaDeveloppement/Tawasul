@@ -3,7 +3,7 @@ class StateModel {
   final int idCountry;
   final String isoCode;
   final String name;
-  final bool active;
+  final int active;
 
   StateModel({
     required this.idState,
@@ -19,7 +19,7 @@ class StateModel {
       idCountry: json['id_country'] ?? 0,
       isoCode: json['iso_code'] ?? '',
       name: json['name'] ?? '',
-      active: (json['active'] ?? 0) == 1,
+      active: json['active'] ?? 0,
     );
   }
 
@@ -29,12 +29,7 @@ class StateModel {
       'id_country': idCountry,
       'iso_code': isoCode,
       'name': name,
-      'active': active ? 1 : 0,
+      'active': active,
     };
-  }
-
-  @override
-  String toString() {
-    return 'StateModel(id: $idState, name: $name, country: $idCountry)';
   }
 }

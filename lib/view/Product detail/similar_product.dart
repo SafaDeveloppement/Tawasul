@@ -33,56 +33,146 @@ class _SimilarProductsState extends State<SimilarProducts> {
     _loadSimilarProducts();
   }
 
+  // Future<void> _loadSimilarProducts() async {
+  //   try {
+  //     setState(() {
+  //       _isLoading = true;
+  //       _error = '';
+  //     });
+
+  //     final int? categoryId = widget.currentProduct.categoryId;
+
+  //     if (categoryId == null) {
+  //       print(" Product does not have a category ID, using fallback strategy");
+
+  //       final randomProducts = await ApiService.getRandomProductsFromCategories(
+  //         numberOfProducts: 8,
+  //       );
+
+  //       final filteredProducts =
+  //           randomProducts
+  //               .where((product) => product.id != widget.currentProduct.id)
+  //               .toList();
+
+  //       setState(() {
+  //         _similarProducts = filteredProducts;
+  //         _isLoading = false;
+  //       });
+
+  //       print(" Loaded ${filteredProducts.length} random products as fallback");
+  //       return;
+  //     }
+
+  //     print("Loading similar products for category ID: $categoryId");
+
+  //     final similarProducts = await ApiService.getSimilarProductsByCategory(
+  //       categoryId: categoryId,
+  //       excludeProductId: widget.currentProduct.id,
+  //       limit: 8,
+  //     );
+
+  //     setState(() {
+  //       _similarProducts = similarProducts;
+  //       _isLoading = false;
+  //     });
+
+  //     print(" Loaded ${similarProducts.length} similar products");
+  //   } catch (e) {
+  //     setState(() {
+  //       _error = 'Failed to load similar products: $e';
+  //       _isLoading = false;
+  //     });
+  //     print("✗ Error loading similar products: $e");
+  //   }
+  // }
   Future<void> _loadSimilarProducts() async {
+    // ADD: Check if widget is still mounted before starting
+    if (!mounted) return;
+
     try {
-      setState(() {
-        _isLoading = true;
-        _error = '';
-      });
+      // ADD: Safe setState with mounted check
+      if (mounted) {
+        setState(() {
+          _isLoading = true;
+          _error = '';
+        });
+      }
 
       final int? categoryId = widget.currentProduct.categoryId;
 
       if (categoryId == null) {
-        print(" Product does not have a category ID, using fallback strategy");
+        print(
+          "ℹ️ Product does not have a category ID, using fallback strategy",
+        );
 
         final randomProducts = await ApiService.getRandomProductsFromCategories(
           numberOfProducts: 8,
+        ).timeout(
+          Duration(seconds: 30),
+          onTimeout: () {
+            print("⏰ Timeout fetching random products");
+            return [];
+          },
         );
+
+        // ADD: Check mounted before proceeding
+        if (!mounted) return;
 
         final filteredProducts =
             randomProducts
                 .where((product) => product.id != widget.currentProduct.id)
                 .toList();
 
-        setState(() {
-          _similarProducts = filteredProducts;
-          _isLoading = false;
-        });
+        // ADD: Safe setState
+        if (mounted) {
+          setState(() {
+            _similarProducts = filteredProducts;
+            _isLoading = false;
+          });
+        }
 
-        print(" Loaded ${filteredProducts.length} random products as fallback");
+        print(
+          "✅ Loaded ${filteredProducts.length} random products as fallback",
+        );
         return;
       }
 
-      print("Loading similar products for category ID: $categoryId");
+      print("🔄 Loading similar products for category ID: $categoryId");
 
       final similarProducts = await ApiService.getSimilarProductsByCategory(
         categoryId: categoryId,
         excludeProductId: widget.currentProduct.id,
         limit: 8,
+      ).timeout(
+        Duration(seconds: 30),
+        onTimeout: () {
+          print("⏰ Timeout fetching similar products");
+          return [];
+        },
       );
 
-      setState(() {
-        _similarProducts = similarProducts;
-        _isLoading = false;
-      });
+      // ADD: Check mounted before updating state
+      if (!mounted) return;
 
-      print(" Loaded ${similarProducts.length} similar products");
+      // ADD: Safe setState
+      if (mounted) {
+        setState(() {
+          _similarProducts = similarProducts;
+          _isLoading = false;
+        });
+      }
+
+      print("✅ Loaded ${similarProducts.length} similar products");
     } catch (e) {
-      setState(() {
-        _error = 'Failed to load similar products: $e';
-        _isLoading = false;
-      });
-      print("✗ Error loading similar products: $e");
+      print("❌ Error loading similar products: $e");
+
+      // ADD: Safe error handling with mounted check
+      if (mounted) {
+        setState(() {
+          _error = 'Failed to load similar products: $e';
+          _isLoading = false;
+        });
+      }
     }
   }
 

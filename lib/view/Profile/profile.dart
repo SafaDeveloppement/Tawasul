@@ -141,17 +141,7 @@ class _ProfileState extends State<Profile> {
                   ),
                   child: Column(
                     children: [
-                      // Text(
-                      //   '$_firstName $_lastName',
-                      //   style: TextStyle(
-                      //     fontSize: 18,
-                      //     fontWeight: FontWeight.bold,
-                      //     fontFamily: "Montserrat",
-                      //   ),
-                      //   textAlign: TextAlign.center,
-                      // ),
                       const SizedBox(height: 24),
-
                       // Navigation Menu Items
                       _buildMenuItem(
                         Icons.person,
