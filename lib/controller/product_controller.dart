@@ -88,7 +88,7 @@ class ProductController with ChangeNotifier {
 
       // Update favorite states
       for (var product in products) {
-        _favoriteStates[product.id] = true;
+        _favoriteStates[product.idProduct] = true;
       }
 
       _favoriteProducts = products;
@@ -138,7 +138,7 @@ class ProductController with ChangeNotifier {
 
         // Debug: Check if products have date information
         for (var product in products.take(3)) {
-          print(" ${product.name} (ID: ${product.id})");
+          print(" ${product.name} (ID: ${product.idProduct})");
         }
       }
 
@@ -175,11 +175,11 @@ class ProductController with ChangeNotifier {
       if (newStatus) {
         final product = _findProductById(productId);
         if (product != null &&
-            !_favoriteProducts.any((p) => p.id == productId)) {
+            !_favoriteProducts.any((p) => p.idProduct == productId)) {
           _favoriteProducts.add(product..isFavorite = true);
         }
       } else {
-        _favoriteProducts.removeWhere((p) => p.id == productId);
+        _favoriteProducts.removeWhere((p) => p.idProduct == productId);
       }
 
       print(" Updated favorite status to: $newStatus");
@@ -202,7 +202,7 @@ class ProductController with ChangeNotifier {
     int productId,
     bool isFavorite,
   ) {
-    final index = products.indexWhere((p) => p.id == productId);
+    final index = products.indexWhere((p) => p.idProduct == productId);
     if (index != -1) {
       products[index] = products[index].copyWith(isFavorite: isFavorite);
     }
@@ -211,10 +211,10 @@ class ProductController with ChangeNotifier {
   // Sync products with favorite states
   List<Product> _syncProductsWithFavorites(List<Product> products) {
     return products.map((product) {
-      if (_favoriteStates.containsKey(product.id)) {
-        return product.copyWith(isFavorite: _favoriteStates[product.id]!);
+      if (_favoriteStates.containsKey(product.idProduct)) {
+        return product.copyWith(isFavorite: _favoriteStates[product.idProduct]!);
       } else {
-        _favoriteStates[product.id] = product.isFavorite;
+        _favoriteStates[product.idProduct] = product.isFavorite;
         return product;
       }
     }).toList();
@@ -255,7 +255,7 @@ class ProductController with ChangeNotifier {
         _favoriteProducts.add(product..isFavorite = true);
       }
     } else {
-      _favoriteProducts.removeWhere((p) => p.id == productId);
+      _favoriteProducts.removeWhere((p) => p.idProduct == productId);
     }
   }
 
@@ -263,50 +263,45 @@ class ProductController with ChangeNotifier {
   Product? _findProductById(int productId) {
     // Check current category products first
     final currentCategoryProduct = _currentCategoryProducts.firstWhere(
-      (p) => p.id == productId,
+      (p) => p.idProduct == productId,
       orElse:
           () => Product(
-            id: 0,
+            idProduct: 0,
             name: '',
-            brand: '',
             price: 0,
             image: '',
-            description: '',
-            reference: '',
+            description: '', categoryName: '', idAttributeDefault: 0, combinations: [],
+         
           ),
     );
 
-    if (currentCategoryProduct.id != 0) return currentCategoryProduct;
+    if (currentCategoryProduct.idProduct != 0) return currentCategoryProduct;
 
     // Check all products
     final allProductsItem = _allProducts.firstWhere(
-      (p) => p.id == productId,
+      (p) => p.idProduct == productId,
       orElse:
           () => Product(
-            id: 0,
+            idProduct: 0,
             name: '',
-            brand: '',
             price: 0,
             image: '',
-            description: '',
-            reference: '',
+            description: '', categoryName: '', idAttributeDefault: 0, combinations: [],
           ),
     );
 
-    if (allProductsItem.id != 0) return allProductsItem;
+    if (allProductsItem.idProduct != 0) return allProductsItem;
 
     // Check newest products
     return _newestProducts.firstWhere(
-      (p) => p.id == productId,
+      (p) => p.idProduct == productId,
       orElse:
           () => Product(
-            id: 0,
+            idProduct: 0,
             name: '',
-            brand: '',
             price: 0,
             image: '',
-            description: '',
-            reference: '',
+            description: '', categoryName: '', idAttributeDefault: 0, combinations: [],
           ),
     );
   }

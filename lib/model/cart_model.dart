@@ -442,9 +442,11 @@ class CartItem {
 
   Map<String, dynamic> toApiParams() {
     return {
-      'id_product': product.id,
+      'id_product': product.idProduct,
       'id_product_attribute': idProductAttribute ?? 0,
       'qty': quantity,
     };
   }
+
+  
 }

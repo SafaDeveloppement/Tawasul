@@ -79,7 +79,7 @@ Future<void> _loadCategoryProducts() async {
       _searchResults =
           allProducts.where((product_model.Product product) {
             return product.name.toLowerCase().contains(lowerCaseQuery) ||
-                product.brand!.toLowerCase().contains(lowerCaseQuery) ||
+              //  product.brand!.toLowerCase().contains(lowerCaseQuery) ||
                 product.description.toLowerCase().contains(lowerCaseQuery);
           }).toList();
     });
@@ -112,7 +112,7 @@ Future<void> _loadCategoryProducts() async {
       listen: false,
     );
     print('Product: ${product.name}');
-    print('Brand: ${product.brand}');
+   // print('Brand: ${product.brand}');
     print('Price: ${product.price}');
     print('Image: ${product.image}');
     print(
@@ -128,8 +128,7 @@ Future<void> _loadCategoryProducts() async {
                 (context) => ProductDetail(
                   toggleFavorite: () => {},
                   isFavorite: false,
-                  productReference: product.id.toString(),
-                  product: product,
+                  product: product, productReference: '',
                 ),
           ),
         );
@@ -175,12 +174,12 @@ Future<void> _loadCategoryProducts() async {
                             ),
                   ),
                   SizedBox(height: 7.h),
-                  Text(
-                    product.brand!,
-                    style: TextStyle(fontSize: 10.sp, color: Colors.grey),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  // Text(
+                  //   product.brand!,
+                  //   style: TextStyle(fontSize: 10.sp, color: Colors.grey),
+                  //   maxLines: 1,
+                  //   overflow: TextOverflow.ellipsis,
+                  // ),
                   SizedBox(height: 2.h),
                   Text(
                     product.name,
@@ -202,17 +201,7 @@ Future<void> _loadCategoryProducts() async {
                           color: const Color(0xff1264a3),
                         ),
                       ),
-                      if (product.oldPrice != null) ...[
-                        SizedBox(width: 3.w),
-                        Text(
-                          product.oldPrice.toString(),
-                          style: TextStyle(
-                            decoration: TextDecoration.lineThrough,
-                            fontSize: 12.sp,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
+                     
                     ],
                   ),
                 ],
@@ -228,7 +217,7 @@ Future<void> _loadCategoryProducts() async {
                   final currentProduct = productController
                       .currentCategoryProducts
                       .firstWhere(
-                        (p) => p.id == product.id,
+                        (p) => p.idProduct == product.idProduct,
                         orElse: () => product,
                       );
 
@@ -236,12 +225,12 @@ Future<void> _loadCategoryProducts() async {
                     behavior: HitTestBehavior.opaque,
                     onTap: () {
                       print(
-                        " Favorite tapped for: ${currentProduct.name} (ID: ${currentProduct.id})",
+                        " Favorite tapped for: ${currentProduct.name} (ID: ${currentProduct.idProduct})",
                       );
                       print(
                         " Current favorite status: ${currentProduct.isFavorite}",
                       );
-                      productController.toggleFavorite(currentProduct.id);
+                      productController.toggleFavorite(currentProduct.idProduct);
                     },
                     child: CircleAvatar(
                       backgroundColor: Colors.white,

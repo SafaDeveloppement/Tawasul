@@ -34,21 +34,15 @@ class ProductProvider with ChangeNotifier {
 
           return (products as List).map<Product>((productJson) {
             return Product(
-              id:
+              idProduct:
                   int.tryParse(productJson['id_product']?.toString() ?? '0') ??
                   0,
-              reference: productJson['reference'] ?? 'N/A',
               name: productJson['name'] ?? 'No Name',
-              brand: productJson['manufacturer_name'] ?? 'No Brand',
               price: productJson['price'],
               image: productJson['image'] ?? '',
-              description: productJson['description_short'] ?? 'No Description',
-              oldPrice: productJson['price_without_reduction'],
-              discount:
-                  productJson['reduction'] != null &&
-                          productJson['reduction'] > 0
-                      ? '${(productJson['reduction'] * 100).toStringAsFixed(0)}% OFF'
-                      : null,
+              description: productJson['description'] ?? 'No Description', categoryName: '', idAttributeDefault: 0, combinations: [],
+
+             
             );
           }).toList();
         }
@@ -92,7 +86,7 @@ class ProductProvider with ChangeNotifier {
       if (excludeProductId != null) {
         _similarProducts =
             products
-                .where((product) => product.id.toString() != excludeProductId)
+                .where((product) => product.idProduct.toString() != excludeProductId)
                 .take(limit)
                 .toList();
         print(" After filtering, ${_similarProducts.length} products remain");

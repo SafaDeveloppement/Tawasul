@@ -274,7 +274,7 @@
 //                 productReference: product.reference,
 //                 shopId: '4',
 //                 toggleFavorite:
-//                     () => productController.toggleFavorite(product.id),
+//                     () => productController.toggleFavorite(product.idProduct),
 //                 isFavorite: product.isFavorite,
 //               ),
 //         ),
@@ -322,7 +322,7 @@
 //             top: 8.h,
 //             right: 8.w,
 //             child: GestureDetector(
-//               onTap: () => productController.toggleFavorite(product.id),
+//               onTap: () => productController.toggleFavorite(product.idProduct),
 //               child: CircleAvatar(
 //                 backgroundColor: Colors.white,
 //                 radius: 14.r,
@@ -693,7 +693,7 @@ class _AllState extends State<All> {
                 (context) => ProductDetail(
                   toggleFavorite: () => {},
                   isFavorite: false,
-                  productReference: product.id.toString(),
+                  productReference: product.idProduct.toString(),
                   product: product,
                 ),
           ),
@@ -717,31 +717,32 @@ class _AllState extends State<All> {
         ),
         child: Stack(
           children: [
-            if (product.discount != null)
-              Positioned(
-                top: 8.h,
-                left: 8.w,
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF39C12),
-                    borderRadius: BorderRadius.circular(4.r),
-                  ),
-                  child: Text(
-                    product.discount!,
-                    style: TextStyle(
-                      fontSize: 10.sp,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
+            // if (product.discount != null)
+            //   Positioned(
+            //     top: 8.h,
+            //     left: 8.w,
+            //     child: Container(
+            //       padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+            //       decoration: BoxDecoration(
+            //         color: const Color(0xFFF39C12),
+            //         borderRadius: BorderRadius.circular(4.r),
+            //       ),
+            //       child: Text(
+            //         product.discount!,
+            //         style: TextStyle(
+            //           fontSize: 10.sp,
+            //           color: Colors.white,
+            //           fontWeight: FontWeight.bold,
+            //         ),
+            //       ),
+            //     ),
+            //   ),
             Positioned(
               top: 8.h,
               right: 8.w,
               child: GestureDetector(
-                onTap: () => productController.toggleFavorite(product.id),
+                onTap:
+                    () => productController.toggleFavorite(product.idProduct),
                 child: CircleAvatar(
                   backgroundColor: Colors.white,
                   radius: 14.r,
@@ -776,15 +777,15 @@ class _AllState extends State<All> {
                             : Icon(Icons.image_not_supported, size: 40.h),
                   ),
                   SizedBox(height: 5.h),
-                  Text(
-                    product.brand?.toUpperCase() ?? 'BRAND',
-                    style: TextStyle(
-                      fontSize: 10.sp,
-                      color: const Color(0xFF96979A),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  SizedBox(height: 3.h),
+                  // Text(
+                  //   product.brand?.toUpperCase() ?? 'BRAND',
+                  //   style: TextStyle(
+                  //     fontSize: 10.sp,
+                  //     color: const Color(0xFF96979A),
+                  //     fontWeight: FontWeight.w500,
+                  //   ),
+                  // ),
+                  // SizedBox(height: 3.h),
                   Text(
                     product.name,
                     style: TextStyle(
@@ -807,27 +808,8 @@ class _AllState extends State<All> {
                         ),
                       ),
                       SizedBox(width: 4.w),
-                      if (product.oldPrice != null)
-                        Text(
-                          "${product.oldPrice} LYD",
-                          style: TextStyle(
-                            fontSize: 11.sp,
-                            color: Colors.grey,
-                            decoration: TextDecoration.lineThrough,
-                          ),
-                        ),
                     ],
                   ),
-                  if (product.category != null)
-                    Padding(
-                      padding: EdgeInsets.only(top: 2.h),
-                      child: Text(
-                        product.category!,
-                        style: TextStyle(fontSize: 10.sp, color: Colors.grey),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
                 ],
               ),
             ),

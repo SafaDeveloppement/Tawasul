@@ -145,7 +145,7 @@
 //                   productReference: product.reference,
 //                   shopId: '4',
 //                   toggleFavorite:
-//                       () => productController.toggleFavorite(product.id),
+//                       () => productController.toggleFavorite(product.idProduct),
 //                   isFavorite: product.isFavorite,
 //                 ),
 //           ),
@@ -193,7 +193,7 @@
 //               top: 8.h,
 //               right: 8.w,
 //               child: GestureDetector(
-//                 onTap: () => productController.toggleFavorite(product.id),
+//                 onTap: () => productController.toggleFavorite(product.idProduct),
 //                 child: CircleAvatar(
 //                   backgroundColor: Colors.white,
 //                   radius: 14.r,
@@ -429,9 +429,9 @@ class _NewestState extends State<Newest> {
           MaterialPageRoute(
             builder:
                 (context) => ProductDetail(
-                 toggleFavorite: () => {},
+                  toggleFavorite: () => {},
                   isFavorite: false,
-                  productReference: product.id.toString(),
+                  productReference: product.idProduct.toString(),
                   product: product,
                 ),
           ),
@@ -456,33 +456,34 @@ class _NewestState extends State<Newest> {
         child: Stack(
           children: [
             // Discount badge
-            if (product.hasDiscount)
-              Positioned(
-                top: 8.h,
-                left: 8.w,
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF39C12),
-                    borderRadius: BorderRadius.circular(4.r),
-                  ),
-                  child: Text(
-                    product.discount ?? 'SALE',
-                    style: TextStyle(
-                      fontSize: 10.sp,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
+            // if (product.hasDiscount)
+            //   Positioned(
+            //     top: 8.h,
+            //     left: 8.w,
+            //     child: Container(
+            //       padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+            //       decoration: BoxDecoration(
+            //         color: const Color(0xFFF39C12),
+            //         borderRadius: BorderRadius.circular(4.r),
+            //       ),
+            //       child: Text(
+            //         product.discount ?? 'SALE',
+            //         style: TextStyle(
+            //           fontSize: 10.sp,
+            //           color: Colors.white,
+            //           fontWeight: FontWeight.bold,
+            //         ),
+            //       ),
+            //     ),
+            //   ),
 
             // Favorite button
             Positioned(
               top: 8.h,
               right: 8.w,
               child: GestureDetector(
-                onTap: () => productController.toggleFavorite(product.id),
+                onTap:
+                    () => productController.toggleFavorite(product.idProduct),
                 child: CircleAvatar(
                   backgroundColor: Colors.white,
                   radius: 14.r,
@@ -534,15 +535,15 @@ class _NewestState extends State<Newest> {
                             ),
                   ),
                   SizedBox(height: 5.h),
-                  Text(
-                    product.brand?.toUpperCase() ?? 'BRAND',
-                    style: TextStyle(
-                      fontSize: 10.sp,
-                      color: const Color(0xFF96979A),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  SizedBox(height: 3.h),
+                  // Text(
+                  //   product.brand?.toUpperCase() ?? 'BRAND',
+                  //   style: TextStyle(
+                  //     fontSize: 10.sp,
+                  //     color: const Color(0xFF96979A),
+                  //     fontWeight: FontWeight.w500,
+                  //   ),
+                  // ),
+                  // SizedBox(height: 3.h),
                   Text(
                     product.name,
                     style: TextStyle(
@@ -565,24 +566,24 @@ class _NewestState extends State<Newest> {
                         ),
                       ),
                       SizedBox(width: 4.w),
-                      if (product.oldPrice != null && product.hasDiscount)
-                        Text(
-                          "${product.oldPrice!.toStringAsFixed(3)} LYD",
-                          style: TextStyle(
-                            fontSize: 11.sp,
-                            color: Colors.grey,
-                            decoration: TextDecoration.lineThrough,
-                          ),
-                        ),
+                      // if (product.oldPrice != null && product.hasDiscount)
+                      //   Text(
+                      //     "${product.oldPrice!.toStringAsFixed(3)} LYD",
+                      //     style: TextStyle(
+                      //       fontSize: 11.sp,
+                      //       color: Colors.grey,
+                      //       decoration: TextDecoration.lineThrough,
+                      //     ),
+                      //   ),
                     ],
                   ),
                   SizedBox(height: 2.h),
                   // Stock indicator
                   Text(
-                    product.inStock ? "In Stock" : "Out of Stock",
+                    product.stock > 0 ? "In Stock" : "Out of Stock",
                     style: TextStyle(
                       fontSize: 10.sp,
-                      color: product.inStock ? Colors.green : Colors.red,
+                      color: product.stock > 0 ? Colors.green : Colors.red,
                     ),
                   ),
                 ],

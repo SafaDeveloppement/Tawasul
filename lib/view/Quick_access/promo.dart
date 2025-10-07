@@ -1,495 +1,493 @@
-import 'dart:async';
-import 'dart:convert';
-import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:provider/provider.dart';
-import 'package:tawasul_application/controller/product_controller.dart';
-import 'package:tawasul_application/model/product_model.dart';
-import 'package:tawasul_application/view/filter.dart';
-import 'package:tawasul_application/view/home_page.dart';
-import 'package:tawasul_application/view/Product%20detail/product_detail.dart';
-import 'package:http/http.dart' as http;
-import 'package:tawasul_application/view/shopping_cart.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+// import 'dart:async';
+// import 'dart:convert';
+// import 'package:flutter/material.dart';
+// import 'package:flutter_screenutil/flutter_screenutil.dart';
+// import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+// import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+// import 'package:provider/provider.dart';
+// import 'package:tawasul_application/controller/product_controller.dart';
+// import 'package:tawasul_application/model/product_model.dart';
+// import 'package:tawasul_application/view/filter.dart';
+// import 'package:tawasul_application/view/home_page.dart';
+// import 'package:tawasul_application/view/Product%20detail/product_detail.dart';
+// import 'package:http/http.dart' as http;
+// import 'package:tawasul_application/view/shopping_cart.dart';
+// import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-class PromoPage extends StatefulWidget {
-  const PromoPage({super.key});
+// class PromoPage extends StatefulWidget {
+//   const PromoPage({super.key});
 
-  @override
-  State<PromoPage> createState() => _PromoPageState();
-}
+//   @override
+//   State<PromoPage> createState() => _PromoPageState();
+// }
 
-class _PromoPageState extends State<PromoPage> with TickerProviderStateMixin {
-  late TabController _tabController;
-  bool _showSearch = false;
-  List<Product> _promoProducts = [];
-  bool _isLoading = true;
-  String _errorMessage = '';
+// class _PromoPageState extends State<PromoPage> with TickerProviderStateMixin {
+//   late TabController _tabController;
+//   bool _showSearch = false;
+//   List<Product> _promoProducts = [];
+//   bool _isLoading = true;
+//   String _errorMessage = '';
 
-  // API Configuration
-  final String _apiBaseUrl = "http://t-api.dotit-corp.com/api";
-  final String _promoEndpoint = "/public/promo-products";
+//   // API Configuration
+//   final String _apiBaseUrl = "http://t-api.dotit-corp.com/api";
+//   final String _promoEndpoint = "/public/promo-products";
 
-  final _storage = const FlutterSecureStorage(); // Secure storage instance
-  String? _token;
+//   final _storage = const FlutterSecureStorage(); // Secure storage instance
+//   String? _token;
 
-  @override
-  void initState() {
-    _tabController = TabController(length: 3, vsync: this);
-    _loadTokenAndFetch();
-    super.initState();
-  }
+//   @override
+//   void initState() {
+//     _tabController = TabController(length: 3, vsync: this);
+//     _loadTokenAndFetch();
+//     super.initState();
+//   }
 
-  /// Load token from secure storage and then fetch promo products
-  Future<void> _loadTokenAndFetch() async {
-    String? storedToken = await _storage.read(key: 'auth_token');
-    setState(() {
-      _token = storedToken;
-    });
+//   /// Load token from secure storage and then fetch promo products
+//   Future<void> _loadTokenAndFetch() async {
+//     String? storedToken = await _storage.read(key: 'auth_token');
+//     setState(() {
+//       _token = storedToken;
+//     });
 
-    if (_token != null && _token!.isNotEmpty) {
-      _fetchPromoProducts();
-    } else {
-      setState(() {
-        _errorMessage = AppLocalizations.of(context)!.noTokenFound;
-        _isLoading = false;
-      });
-    }
-  }
+//     if (_token != null && _token!.isNotEmpty) {
+//       _fetchPromoProducts();
+//     } else {
+//       setState(() {
+//         _errorMessage = AppLocalizations.of(context)!.noTokenFound;
+//         _isLoading = false;
+//       });
+//     }
+//   }
 
-  Future<void> _showFilterDialog(BuildContext context) async {
-    final result = await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          margin: EdgeInsets.only(top: 50.h),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: FilterPage(),
-        );
-      },
-    );
+//   Future<void> _showFilterDialog(BuildContext context) async {
+//     final result = await showModalBottomSheet(
+//       context: context,
+//       isScrollControlled: true,
+//       backgroundColor: Colors.transparent,
+//       builder: (context) {
+//         return Container(
+//           margin: EdgeInsets.only(top: 50.h),
+//           decoration: const BoxDecoration(
+//             color: Colors.white,
+//             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+//           ),
+//           child: FilterPage(),
+//         );
+//       },
+//     );
 
-    if (result != null) {
-      debugPrint('${AppLocalizations.of(context)!.appliedFilters}: $result');
-    }
-  }
+//     if (result != null) {
+//       debugPrint('${AppLocalizations.of(context)!.appliedFilters}: $result');
+//     }
+//   }
 
-  /// Fetch promo products from API using the stored token
-  Future<void> _fetchPromoProducts({int retryCount = 0}) async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = '';
-    });
+//   /// Fetch promo products from API using the stored token
+//   Future<void> _fetchPromoProducts({int retryCount = 0}) async {
+//     setState(() {
+//       _isLoading = true;
+//       _errorMessage = '';
+//     });
 
-    try {
-      final response = await http
-          .get(
-            Uri.parse(
-              '$_apiBaseUrl$_promoEndpoint?id-shop=4&itemsPerPage=10&page=1',
-            ),
-            headers: {
-              'Authorization': 'Bearer $_token',
-              'Content-Type': 'application/json',
-            },
-          )
-          .timeout(const Duration(seconds: 10));
+//     try {
+//       final response = await http
+//           .get(
+//             Uri.parse(
+//               '$_apiBaseUrl$_promoEndpoint?idProduct-shop=4&itemsPerPage=10&page=1',
+//             ),
+//             headers: {
+//               'Authorization': 'Bearer $_token',
+//               'Content-Type': 'application/json',
+//             },
+//           )
+//           .timeout(const Duration(seconds: 10));
 
-      if (response.statusCode == 200) {
-        final responseData = json.decode(response.body);
+//       if (response.statusCode == 200) {
+//         final responseData = json.decode(response.body);
 
-        if (responseData['message'] == 'success') {
-          final items = responseData['response']['items'] as List;
+//         if (responseData['message'] == 'success') {
+//           final items = responseData['response']['items'] as List;
 
-          setState(() {
-            _promoProducts =
-                items
-                    .map(
-                      (productJson) => Product(
-                        id: productJson['productId'],
-                        name: productJson['name'],
-                        brand: productJson['brand'] ?? '',
-                        price: productJson['priceWithDiscount'],
-                        image: productJson['image'],
-                        description: productJson['description'] ?? '',
-                        oldPrice: productJson['priceWithoutDiscount'],
-                        discount:
-                            _calculateDiscount(
-                              productJson['priceWithoutDiscount'],
-                              productJson['priceWithDiscount'],
-                            ).toString(),
-                      ),
-                    )
-                    .toList();
+//           setState(() {
+//             _promoProducts =
+//                 items
+//                     .map(
+//                       (productJson) => Product(
+//                         idProduct: productJson['productId'],
+//                         name: productJson['name'],
+//                         price: productJson['priceWithDiscount'],
+//                         image: productJson['image'],
+//                         description: productJson['description'] ?? '', idAttributeDefault: 0, categoryName: '', combinations: [],
+//                         // discount:
+//                         //     _calculateDiscount(
+//                         //       productJson['priceWithoutDiscount'],
+//                         //       productJson['priceWithDiscount'],
+//                         //     ).toString(),
+//                       ),
+//                     )
+//                     .toList();
 
-            _isLoading = false;
-          });
-        } else {
-          setState(() {
-            _errorMessage =
-                '${AppLocalizations.of(context)!.apiError}: ${responseData['message']}';
-            _isLoading = false;
-          });
-        }
-      } else {
-        setState(() {
-          _errorMessage =
-              '${AppLocalizations.of(context)!.failedToLoad}: ${response.statusCode}';
-          _isLoading = false;
-        });
-      }
-    } on http.ClientException {
-      if (retryCount < 3) {
-        await Future.delayed(const Duration(seconds: 2));
-        return _fetchPromoProducts(retryCount: retryCount + 1);
-      } else {
-        setState(() {
-          _errorMessage = AppLocalizations.of(context)!.networkError;
-          _isLoading = false;
-        });
-      }
-    } on TimeoutException {
-      if (retryCount < 3) {
-        await Future.delayed(const Duration(seconds: 2));
-        return _fetchPromoProducts(retryCount: retryCount + 1);
-      } else {
-        setState(() {
-          _errorMessage = AppLocalizations.of(context)!.requestTimeout;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _errorMessage =
-            '${AppLocalizations.of(context)!.anErrorOccurred}: ${e.toString()}';
-        _isLoading = false;
-      });
-    }
-  }
+//             _isLoading = false;
+//           });
+//         } else {
+//           setState(() {
+//             _errorMessage =
+//                 '${AppLocalizations.of(context)!.apiError}: ${responseData['message']}';
+//             _isLoading = false;
+//           });
+//         }
+//       } else {
+//         setState(() {
+//           _errorMessage =
+//               '${AppLocalizations.of(context)!.failedToLoad}: ${response.statusCode}';
+//           _isLoading = false;
+//         });
+//       }
+//     } on http.ClientException {
+//       if (retryCount < 3) {
+//         await Future.delayed(const Duration(seconds: 2));
+//         return _fetchPromoProducts(retryCount: retryCount + 1);
+//       } else {
+//         setState(() {
+//           _errorMessage = AppLocalizations.of(context)!.networkError;
+//           _isLoading = false;
+//         });
+//       }
+//     } on TimeoutException {
+//       if (retryCount < 3) {
+//         await Future.delayed(const Duration(seconds: 2));
+//         return _fetchPromoProducts(retryCount: retryCount + 1);
+//       } else {
+//         setState(() {
+//           _errorMessage = AppLocalizations.of(context)!.requestTimeout;
+//           _isLoading = false;
+//         });
+//       }
+//     } catch (e) {
+//       setState(() {
+//         _errorMessage =
+//             '${AppLocalizations.of(context)!.anErrorOccurred}: ${e.toString()}';
+//         _isLoading = false;
+//       });
+//     }
+//   }
 
-  String _calculateDiscount(num originalPrice, num discountedPrice) {
-    if (originalPrice == 0) return '0';
-    final discount =
-        ((originalPrice - discountedPrice) / originalPrice * 100).round();
-    return discount.toString();
-  }
+//   String _calculateDiscount(num originalPrice, num discountedPrice) {
+//     if (originalPrice == 0) return '0';
+//     final discount =
+//         ((originalPrice - discountedPrice) / originalPrice * 100).round();
+//     return discount.toString();
+//   }
 
-  Widget _buildProductCard(BuildContext context, Product product) {
-    final productController = Provider.of<ProductController>(
-      context,
-      listen: false,
-    );
+//   Widget _buildProductCard(BuildContext context, Product product) {
+//     final productController = Provider.of<ProductController>(
+//       context,
+//       listen: false,
+//     );
 
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder:
-                (context) => ProductDetail(
-                  productReference: product.reference,
-                  toggleFavorite:
-                      () => productController.toggleFavorite(product.id),
-                  isFavorite: product.isFavorite,
-                ),
-          ),
-        );
-      },
-      child: Container(
-        width: 184.w,
-        height: 200.h,
-        margin: EdgeInsets.all(8.w),
-        decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 254, 254, 254),
-          borderRadius: BorderRadius.circular(16.r),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey,
-              offset: const Offset(0, 2),
-              blurRadius: 1,
-            ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            Padding(
-              padding: EdgeInsets.all(10.w),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(height: 7.h),
-                  Center(
-                    child: Image.network(
-                      product.image,
-                      width: 90.w,
-                      height: 90.h,
-                      fit: BoxFit.contain,
-                      errorBuilder:
-                          (context, error, stackTrace) =>
-                              Icon(Icons.error, size: 50.w),
-                    ),
-                  ),
-                  SizedBox(height: 7.h),
-                  Text(
-                    product.brand!,
-                    style: TextStyle(fontSize: 10.sp, color: Colors.grey),
-                  ),
-                  SizedBox(height: 2.h),
-                  Text(
-                    product.name,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14.sp,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: 4.h),
-                  Row(
-                    children: [
-                      Text(
-                        '${product.price} ${AppLocalizations.of(context)!.lyd}',
-                        style: TextStyle(
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xff1264a3),
-                        ),
-                      ),
-                      if (product.oldPrice != null &&
-                          product.oldPrice! > 0) ...[
-                        SizedBox(width: 3.w),
-                        Text(
-                          '${product.oldPrice} ${AppLocalizations.of(context)!.lyd}',
-                          style: TextStyle(
-                            decoration: TextDecoration.lineThrough,
-                            fontSize: 12.sp,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  if (product.discount != null &&
-                      product.discount!.isNotEmpty &&
-                      product.discount != '0')
-                    Container(
-                      margin: EdgeInsets.only(top: 4.h),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 8.w,
-                        vertical: 2.h,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(4.r),
-                      ),
-                      child: Text(
-                        '${product.discount}% ${AppLocalizations.of(context)!.off}',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10.sp,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+//     return GestureDetector(
+//       onTap: () {
+//         Navigator.push(
+//           context,
+//           MaterialPageRoute(
+//             builder:
+//                 (context) => ProductDetail(
+//                   productReference: product.reference,
+//                   toggleFavorite:
+//                       () => productController.toggleFavorite(product.idProduct),
+//                   isFavorite: product.isFavorite,
+//                 ),
+//           ),
+//         );
+//       },
+//       child: Container(
+//         width: 184.w,
+//         height: 200.h,
+//         margin: EdgeInsets.all(8.w),
+//         decoration: BoxDecoration(
+//           color: const Color.fromARGB(255, 254, 254, 254),
+//           borderRadius: BorderRadius.circular(16.r),
+//           boxShadow: [
+//             BoxShadow(
+//               color: Colors.grey,
+//               offset: const Offset(0, 2),
+//               blurRadius: 1,
+//             ),
+//           ],
+//         ),
+//         child: Stack(
+//           children: [
+//             Padding(
+//               padding: EdgeInsets.all(10.w),
+//               child: Column(
+//                 crossAxisAlignment: CrossAxisAlignment.start,
+//                 children: [
+//                   SizedBox(height: 7.h),
+//                   Center(
+//                     child: Image.network(
+//                       product.image,
+//                       width: 90.w,
+//                       height: 90.h,
+//                       fit: BoxFit.contain,
+//                       errorBuilder:
+//                           (context, error, stackTrace) =>
+//                               Icon(Icons.error, size: 50.w),
+//                     ),
+//                   ),
+//                   SizedBox(height: 7.h),
+//                   Text(
+//                     product.brand!,
+//                     style: TextStyle(fontSize: 10.sp, color: Colors.grey),
+//                   ),
+//                   SizedBox(height: 2.h),
+//                   Text(
+//                     product.name,
+//                     style: TextStyle(
+//                       fontWeight: FontWeight.w600,
+//                       fontSize: 14.sp,
+//                     ),
+//                     maxLines: 1,
+//                     overflow: TextOverflow.ellipsis,
+//                   ),
+//                   SizedBox(height: 4.h),
+//                   Row(
+//                     children: [
+//                       Text(
+//                         '${product.price} ${AppLocalizations.of(context)!.lyd}',
+//                         style: TextStyle(
+//                           fontSize: 14.sp,
+//                           fontWeight: FontWeight.bold,
+//                           color: const Color(0xff1264a3),
+//                         ),
+//                       ),
+//                       if (product.oldPrice != null &&
+//                           product.oldPrice! > 0) ...[
+//                         SizedBox(width: 3.w),
+//                         Text(
+//                           '${product.oldPrice} ${AppLocalizations.of(context)!.lyd}',
+//                           style: TextStyle(
+//                             decoration: TextDecoration.lineThrough,
+//                             fontSize: 12.sp,
+//                             color: Colors.grey,
+//                           ),
+//                         ),
+//                       ],
+//                     ],
+//                   ),
+//                   if (product.discount != null &&
+//                       product.discount!.isNotEmpty &&
+//                       product.discount != '0')
+//                     Container(
+//                       margin: EdgeInsets.only(top: 4.h),
+//                       padding: EdgeInsets.symmetric(
+//                         horizontal: 8.w,
+//                         vertical: 2.h,
+//                       ),
+//                       decoration: BoxDecoration(
+//                         color: Colors.red,
+//                         borderRadius: BorderRadius.circular(4.r),
+//                       ),
+//                       child: Text(
+//                         '${product.discount}% ${AppLocalizations.of(context)!.off}',
+//                         style: TextStyle(
+//                           color: Colors.white,
+//                           fontSize: 10.sp,
+//                           fontWeight: FontWeight.bold,
+//                         ),
+//                       ),
+//                     ),
+//                 ],
+//               ),
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
 
-  Widget _buildProductGrid(BuildContext context, List<Product> products) {
-    return GridView.count(
-      crossAxisCount: 2,
-      childAspectRatio: 0.75,
-      padding: EdgeInsets.only(bottom: 90.h),
-      children:
-          products
-              .map((product) => _buildProductCard(context, product))
-              .toList(),
-    );
-  }
+//   Widget _buildProductGrid(BuildContext context, List<Product> products) {
+//     return GridView.count(
+//       crossAxisCount: 2,
+//       childAspectRatio: 0.75,
+//       padding: EdgeInsets.only(bottom: 90.h),
+//       children:
+//           products
+//               .map((product) => _buildProductCard(context, product))
+//               .toList(),
+//     );
+//   }
 
-  Widget _buildErrorWidget() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            _errorMessage,
-            style: TextStyle(fontSize: 16.sp, color: Colors.red),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: 20.h),
-          ElevatedButton(
-            onPressed: () => _fetchPromoProducts(),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF008AD2),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8.r),
-              ),
-              padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
-            ),
-            child: Text(
-              AppLocalizations.of(context)!.retry,
-              style: TextStyle(color: Colors.white, fontSize: 16.sp),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+//   Widget _buildErrorWidget() {
+//     return Center(
+//       child: Column(
+//         mainAxisAlignment: MainAxisAlignment.center,
+//         children: [
+//           Text(
+//             _errorMessage,
+//             style: TextStyle(fontSize: 16.sp, color: Colors.red),
+//             textAlign: TextAlign.center,
+//           ),
+//           SizedBox(height: 20.h),
+//           ElevatedButton(
+//             onPressed: () => _fetchPromoProducts(),
+//             style: ElevatedButton.styleFrom(
+//               backgroundColor: const Color(0xFF008AD2),
+//               shape: RoundedRectangleBorder(
+//                 borderRadius: BorderRadius.circular(8.r),
+//               ),
+//               padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
+//             ),
+//             child: Text(
+//               AppLocalizations.of(context)!.retry,
+//               style: TextStyle(color: Colors.white, fontSize: 16.sp),
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
 
-  Widget _buildTabContent(BuildContext context, int tabIndex) {
-    List<Product> sortedProducts = List.from(_promoProducts);
+//   Widget _buildTabContent(BuildContext context, int tabIndex) {
+//     List<Product> sortedProducts = List.from(_promoProducts);
 
-    if (tabIndex == 1) {
-      sortedProducts.sort((a, b) => a.price.compareTo(b.price));
-    } else if (tabIndex == 2) {
-      sortedProducts.sort((a, b) => b.price.compareTo(a.price));
-    }
+//     if (tabIndex == 1) {
+//       sortedProducts.sort((a, b) => a.price.compareTo(b.price));
+//     } else if (tabIndex == 2) {
+//       sortedProducts.sort((a, b) => b.price.compareTo(a.price));
+//     }
 
-    return _buildProductGrid(context, sortedProducts);
-  }
+//     return _buildProductGrid(context, sortedProducts);
+//   }
 
-  PreferredSizeWidget _buildAppBar() {
-    return PreferredSize(
-      preferredSize: Size.fromHeight(kToolbarHeight + 48.h),
-      child: Container(
-        padding: EdgeInsets.only(top: 15.h),
-        color: Colors.white,
-        child: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leadingWidth: 50.w,
-          leading: Padding(
-            padding: EdgeInsets.only(
-              left: Directionality.of(context) == TextDirection.rtl ? 0 : 12.w,
-              right: Directionality.of(context) == TextDirection.rtl ? 12.w : 0,
-            ),
-            child: GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => HomePage()),
-                );
-              },
-              child: Container(
-                width: 35.w,
-                height: 35.w,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF008AD2),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.arrow_back_ios_new,
-                    color: Colors.white,
-                    size: 18.sp,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          title: Text(
-            AppLocalizations.of(context)!.promo,
-            style: TextStyle(
-              color: Colors.black,
-              fontWeight: FontWeight.w500,
-              fontSize: 18.sp,
-            ),
-          ),
-          actions: [
-            GestureDetector(
-              onTap: () => _showFilterDialog(context),
-              child: Container(
-                width: 36.w,
-                height: 34.h,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0984E3),
-                  borderRadius: BorderRadius.circular(50.r),
-                ),
-                child: Center(
-                  child: FaIcon(
-                    FontAwesomeIcons.sliders,
-                    color: Colors.white,
-                    size: 20.sp,
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(width: 10.w),
-            GestureDetector(
-              onTap:
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => ShoppingCart()),
-                  ),
-              child: Container(
-                width: 36.w,
-                height: 34.h,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0984E3),
-                  borderRadius: BorderRadius.circular(24.r),
-                ),
-                child: Icon(
-                  Icons.shopping_cart,
-                  color: Colors.white,
-                  size: 22.sp,
-                ),
-              ),
-            ),
-            SizedBox(width: 10.w),
-          ],
-          centerTitle: true,
-          bottom: PreferredSize(
-            preferredSize: Size.fromHeight(50.h),
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 5.w),
-              child: TabBar(
-                controller: _tabController,
-                labelColor: Colors.blue,
-                unselectedLabelColor: Colors.grey,
-                indicatorColor: Colors.blue,
-                labelStyle: TextStyle(fontSize: 12.sp),
-                tabs: [
-                  Tab(text: AppLocalizations.of(context)!.topRated),
-                  Tab(text: AppLocalizations.of(context)!.priceLowHigh),
-                  Tab(text: AppLocalizations.of(context)!.priceHighLow),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+//   PreferredSizeWidget _buildAppBar() {
+//     return PreferredSize(
+//       preferredSize: Size.fromHeight(kToolbarHeight + 48.h),
+//       child: Container(
+//         padding: EdgeInsets.only(top: 15.h),
+//         color: Colors.white,
+//         child: AppBar(
+//           backgroundColor: Colors.transparent,
+//           elevation: 0,
+//           leadingWidth: 50.w,
+//           leading: Padding(
+//             padding: EdgeInsets.only(
+//               left: Directionality.of(context) == TextDirection.rtl ? 0 : 12.w,
+//               right: Directionality.of(context) == TextDirection.rtl ? 12.w : 0,
+//             ),
+//             child: GestureDetector(
+//               onTap: () {
+//                 Navigator.push(
+//                   context,
+//                   MaterialPageRoute(builder: (context) => HomePage()),
+//                 );
+//               },
+//               child: Container(
+//                 width: 35.w,
+//                 height: 35.w,
+//                 decoration: const BoxDecoration(
+//                   color: Color(0xFF008AD2),
+//                   shape: BoxShape.circle,
+//                 ),
+//                 child: Center(
+//                   child: Icon(
+//                     Icons.arrow_back_ios_new,
+//                     color: Colors.white,
+//                     size: 18.sp,
+//                   ),
+//                 ),
+//               ),
+//             ),
+//           ),
+//           title: Text(
+//             AppLocalizations.of(context)!.promo,
+//             style: TextStyle(
+//               color: Colors.black,
+//               fontWeight: FontWeight.w500,
+//               fontSize: 18.sp,
+//             ),
+//           ),
+//           actions: [
+//             GestureDetector(
+//               onTap: () => _showFilterDialog(context),
+//               child: Container(
+//                 width: 36.w,
+//                 height: 34.h,
+//                 decoration: BoxDecoration(
+//                   color: const Color(0xFF0984E3),
+//                   borderRadius: BorderRadius.circular(50.r),
+//                 ),
+//                 child: Center(
+//                   child: FaIcon(
+//                     FontAwesomeIcons.sliders,
+//                     color: Colors.white,
+//                     size: 20.sp,
+//                   ),
+//                 ),
+//               ),
+//             ),
+//             SizedBox(width: 10.w),
+//             GestureDetector(
+//               onTap:
+//                   () => Navigator.push(
+//                     context,
+//                     MaterialPageRoute(builder: (context) => ShoppingCart()),
+//                   ),
+//               child: Container(
+//                 width: 36.w,
+//                 height: 34.h,
+//                 decoration: BoxDecoration(
+//                   color: const Color(0xFF0984E3),
+//                   borderRadius: BorderRadius.circular(24.r),
+//                 ),
+//                 child: Icon(
+//                   Icons.shopping_cart,
+//                   color: Colors.white,
+//                   size: 22.sp,
+//                 ),
+//               ),
+//             ),
+//             SizedBox(width: 10.w),
+//           ],
+//           centerTitle: true,
+//           bottom: PreferredSize(
+//             preferredSize: Size.fromHeight(50.h),
+//             child: Padding(
+//               padding: EdgeInsets.symmetric(horizontal: 5.w),
+//               child: TabBar(
+//                 controller: _tabController,
+//                 labelColor: Colors.blue,
+//                 unselectedLabelColor: Colors.grey,
+//                 indicatorColor: Colors.blue,
+//                 labelStyle: TextStyle(fontSize: 12.sp),
+//                 tabs: [
+//                   Tab(text: AppLocalizations.of(context)!.topRated),
+//                   Tab(text: AppLocalizations.of(context)!.priceLowHigh),
+//                   Tab(text: AppLocalizations.of(context)!.priceHighLow),
+//                 ],
+//               ),
+//             ),
+//           ),
+//         ),
+//       ),
+//     );
+//   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xfff5f6f8),
-      appBar: _showSearch ? null : _buildAppBar(),
-      body:
-          _isLoading
-              ? Center(child: CircularProgressIndicator())
-              : _errorMessage.isNotEmpty
-              ? _buildErrorWidget()
-              : TabBarView(
-                controller: _tabController,
-                children: List.generate(
-                  3,
-                  (index) => _buildTabContent(context, index),
-                ),
-              ),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       backgroundColor: const Color(0xfff5f6f8),
+//       appBar: _showSearch ? null : _buildAppBar(),
+//       body:
+//           _isLoading
+//               ? Center(child: CircularProgressIndicator())
+//               : _errorMessage.isNotEmpty
+//               ? _buildErrorWidget()
+//               : TabBarView(
+//                 controller: _tabController,
+//                 children: List.generate(
+//                   3,
+//                   (index) => _buildTabContent(context, index),
+//                 ),
+//               ),
+//     );
+//   }
+// }

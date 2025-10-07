@@ -247,7 +247,7 @@ class _ShoppingCartState extends State<ShoppingCart> {
                                                     await cartProvider
                                                         .updateQuantity(
                                                           productId:
-                                                              item.product.id,
+                                                              item.product.idProduct,
                                                           productAttributeId:
                                                               item.idProductAttribute ??
                                                               0,
@@ -301,7 +301,7 @@ class _ShoppingCartState extends State<ShoppingCart> {
                                                     await cartProvider
                                                         .updateQuantity(
                                                           productId:
-                                                              item.product.id,
+                                                              item.product.idProduct,
                                                           productAttributeId:
                                                               item.idProductAttribute ??
                                                               0,
@@ -350,7 +350,7 @@ class _ShoppingCartState extends State<ShoppingCart> {
                                           onPressed: () async {
                                             try {
                                               await cartProvider.removeFromCart(
-                                                productId: item.product.id,
+                                                productId: item.product.idProduct,
                                                 productAttributeId:
                                                     item.idProductAttribute ??
                                                     0,

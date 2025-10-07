@@ -26,71 +26,16 @@ class _SimilarProductsState extends State<SimilarProducts> {
   void initState() {
     super.initState();
     print("SimilarProducts initState called");
-    print("Current product ID: ${widget.currentProduct.id}");
+    print("Current product ID: ${widget.currentProduct.idProduct}");
     print("Current product category ID: ${widget.currentProduct.categoryId}");
     print("Shop ID: ${widget.shopId}");
 
     _loadSimilarProducts();
   }
 
-  // Future<void> _loadSimilarProducts() async {
-  //   try {
-  //     setState(() {
-  //       _isLoading = true;
-  //       _error = '';
-  //     });
-
-  //     final int? categoryId = widget.currentProduct.categoryId;
-
-  //     if (categoryId == null) {
-  //       print(" Product does not have a category ID, using fallback strategy");
-
-  //       final randomProducts = await ApiService.getRandomProductsFromCategories(
-  //         numberOfProducts: 8,
-  //       );
-
-  //       final filteredProducts =
-  //           randomProducts
-  //               .where((product) => product.id != widget.currentProduct.id)
-  //               .toList();
-
-  //       setState(() {
-  //         _similarProducts = filteredProducts;
-  //         _isLoading = false;
-  //       });
-
-  //       print(" Loaded ${filteredProducts.length} random products as fallback");
-  //       return;
-  //     }
-
-  //     print("Loading similar products for category ID: $categoryId");
-
-  //     final similarProducts = await ApiService.getSimilarProductsByCategory(
-  //       categoryId: categoryId,
-  //       excludeProductId: widget.currentProduct.id,
-  //       limit: 8,
-  //     );
-
-  //     setState(() {
-  //       _similarProducts = similarProducts;
-  //       _isLoading = false;
-  //     });
-
-  //     print(" Loaded ${similarProducts.length} similar products");
-  //   } catch (e) {
-  //     setState(() {
-  //       _error = 'Failed to load similar products: $e';
-  //       _isLoading = false;
-  //     });
-  //     print("✗ Error loading similar products: $e");
-  //   }
-  // }
   Future<void> _loadSimilarProducts() async {
-    // ADD: Check if widget is still mounted before starting
     if (!mounted) return;
-
     try {
-      // ADD: Safe setState with mounted check
       if (mounted) {
         setState(() {
           _isLoading = true;
@@ -120,7 +65,10 @@ class _SimilarProductsState extends State<SimilarProducts> {
 
         final filteredProducts =
             randomProducts
-                .where((product) => product.id != widget.currentProduct.id)
+                .where(
+                  (product) =>
+                      product.idProduct != widget.currentProduct.idProduct,
+                )
                 .toList();
 
         // ADD: Safe setState
@@ -141,7 +89,7 @@ class _SimilarProductsState extends State<SimilarProducts> {
 
       final similarProducts = await ApiService.getSimilarProductsByCategory(
         categoryId: categoryId,
-        excludeProductId: widget.currentProduct.id,
+        excludeProductId: widget.currentProduct.idProduct,
         limit: 8,
       ).timeout(
         Duration(seconds: 30),
@@ -187,7 +135,7 @@ class _SimilarProductsState extends State<SimilarProducts> {
                   context,
                   listen: false,
                 );
-                productController.toggleFavorite(product.id);
+                productController.toggleFavorite(product.idProduct);
               },
               isFavorite: product.isFavorite,
               productReference: product.reference,
@@ -284,30 +232,30 @@ class _SimilarProductsState extends State<SimilarProducts> {
                             ),
                   ),
 
-                  // Discount badge
-                  if (product.discount != null)
-                    Positioned(
-                      top: 4.w,
-                      left: 4.w,
-                      child: Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 6.w,
-                          vertical: 2.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF39C12),
-                          borderRadius: BorderRadius.circular(4.r),
-                        ),
-                        child: Text(
-                          product.discount!,
-                          style: TextStyle(
-                            fontSize: 10.sp,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
+                  // // Discount badge
+                  // if (product.discount != null)
+                  //   Positioned(
+                  //     top: 4.w,
+                  //     left: 4.w,
+                  //     child: Container(
+                  //       padding: EdgeInsets.symmetric(
+                  //         horizontal: 6.w,
+                  //         vertical: 2.h,
+                  //       ),
+                  //       decoration: BoxDecoration(
+                  //         color: const Color(0xFFF39C12),
+                  //         borderRadius: BorderRadius.circular(4.r),
+                  //       ),
+                  //       child: Text(
+                  //         product.discount!,
+                  //         style: TextStyle(
+                  //           fontSize: 10.sp,
+                  //           color: Colors.white,
+                  //           fontWeight: FontWeight.bold,
+                  //         ),
+                  //       ),
+                  //     ),
+                  //   ),
                 ],
               ),
             ),
@@ -319,18 +267,6 @@ class _SimilarProductsState extends State<SimilarProducts> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Brand
-                  if (product.brand != null && product.brand!.isNotEmpty)
-                    Text(
-                      product.brand!.toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 10.sp,
-                        color: const Color(0xFF96979A),
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-
                   SizedBox(height: 4.h),
 
                   // Product Name
@@ -359,17 +295,17 @@ class _SimilarProductsState extends State<SimilarProducts> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      SizedBox(width: 4.w),
-                      if (product.oldPrice != null &&
-                          product.oldPrice! > product.price)
-                        Text(
-                          "${product.oldPrice} LYD",
-                          style: TextStyle(
-                            fontSize: 10.sp,
-                            color: Colors.grey,
-                            decoration: TextDecoration.lineThrough,
-                          ),
-                        ),
+                      // SizedBox(width: 4.w),
+                      // if (product.oldPrice != null &&
+                      //     product.oldPrice! > product.price)
+                      //   Text(
+                      //     "${product.oldPrice} LYD",
+                      //     style: TextStyle(
+                      //       fontSize: 10.sp,
+                      //       color: Colors.grey,
+                      //       decoration: TextDecoration.lineThrough,
+                      //     ),
+                      //   ),
                     ],
                   ),
 
@@ -379,9 +315,14 @@ class _SimilarProductsState extends State<SimilarProducts> {
                   Row(
                     children: [
                       Icon(
-                        product.stock > 0 ? Icons.check_circle : Icons.cancel,
+                        product.stock > 0
+                            ? Icons.check_circle
+                            : Icons.cancel, // Direct boolean check
                         size: 12.sp,
-                        color: product.stock > 0 ? Colors.green : Colors.red,
+                        color:
+                            product.stock > 0
+                                ? Colors.green
+                                : Colors.red, // Direct boolean check
                       ),
                       SizedBox(width: 4.w),
                       Text(
@@ -393,6 +334,23 @@ class _SimilarProductsState extends State<SimilarProducts> {
                       ),
                     ],
                   ),
+                  // Row(
+                  //   children: [
+                  //     Icon(
+                  //       product.stock > 0 ? Icons.check_circle : Icons.cancel,
+                  //       size: 12.sp,
+                  //       color: product.stock > 0 ? Colors.green : Colors.red,
+                  //     ),
+                  //     SizedBox(width: 4.w),
+                  //     Text(
+                  //       product.stock > 0 ? 'In Stock' : 'Out of Stock',
+                  //       style: TextStyle(
+                  //         fontSize: 10.sp,
+                  //         color: product.stock > 0 ? Colors.green : Colors.red,
+                  //       ),
+                  //     ),
+                  //   ],
+                  // ),
                 ],
               ),
             ),

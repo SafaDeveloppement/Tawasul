@@ -21,12 +21,10 @@ import 'package:tawasul_application/view/Flash_sale/newest.dart';
 import 'package:tawasul_application/view/Profile/profile.dart';
 import 'package:tawasul_application/view/Product%20detail/product_detail.dart';
 import 'package:tawasul_application/view/Quick_access/bundels.dart';
-import 'package:tawasul_application/view/Quick_access/promo.dart';
 import 'package:tawasul_application/view/Quick_access/shops.dart';
 import 'package:tawasul_application/view/filter.dart';
 import 'package:tawasul_application/view/navbar.dart';
 import 'package:tawasul_application/view/notification.dart';
-import 'package:tawasul_application/view/search/searching_result.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 enum FlashSaleFilter { all, newest, brands }
@@ -147,12 +145,9 @@ class _HomePageState extends State<HomePage> {
     return product_model.Product(
       reference: productData['reference']?.toString() ?? '',
       name: productData['name']?.toString() ?? 'Unknown Product',
-      brand: productData['brand']?.toString() ?? 'Unknown Brand',
-      price: parsePrice(productData['price']), // Now double
-      oldPrice: parseOldPrice(productData['old_price']), // Now double?
+      price: parsePrice(productData['price']), 
       image: productData['image']?.toString() ?? '',
-      description: productData['description']?.toString() ?? '',
-      discount: productData['discount']?.toString(),
+      description: productData['description']?.toString() ?? '', categoryName: '', idAttributeDefault: 0, idProduct: 0, combinations: [],
     );
   }
 
@@ -161,20 +156,7 @@ class _HomePageState extends State<HomePage> {
       _searchLoading = true;
     });
 
-    try {
-      _allProducts = await ApiService.getCategoryProducts(
-        categoryCode: '10',
-        shopId: '4',
-      );
-
-      // Only set _filteredProducts to _allProducts if we're not showing filtered results
-      if (!_showingFilteredResults) {
-        _filteredProducts = _allProducts;
-      }
-    } catch (e) {
-      print("Error loading products for search: $e");
-    }
-
+    
     setState(() {
       _searchLoading = false;
     });
@@ -241,7 +223,6 @@ class _HomePageState extends State<HomePage> {
       _filteredProducts =
           _allProducts.where((product_model.Product product) {
             return product.name.toLowerCase().contains(lowerCaseQuery) ||
-                product.brand!.toLowerCase().contains(lowerCaseQuery) ||
                 product.description.toLowerCase().contains(lowerCaseQuery);
           }).toList();
       _showSearchResults = true;
@@ -263,7 +244,7 @@ class _HomePageState extends State<HomePage> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => SearchingResult(searchQuery: query),
+          builder: (context) =>HomePage(),
         ),
       );
     }
@@ -485,7 +466,7 @@ class _HomePageState extends State<HomePage> {
                 (context) => ProductDetail(
                   toggleFavorite: () => {},
                   isFavorite: false,
-                  productReference: product.id.toString(),
+                  productReference: product.idProduct.toString(),
                   product: product,
                 ),
           ),
@@ -546,14 +527,7 @@ class _HomePageState extends State<HomePage> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     SizedBox(height: 4.h),
-                    Text(
-                      product.brand!,
-                      style: TextStyle(
-                        fontSize: 14.sp,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    SizedBox(height: 8.h),
+                   
                     Row(
                       children: [
                         Text(
@@ -564,33 +538,33 @@ class _HomePageState extends State<HomePage> {
                             color: const Color(0xFF0984E3),
                           ),
                         ),
-                        if (product.oldPrice != null &&
-                            product.oldPrice != product.price)
-                          Padding(
-                            padding: EdgeInsets.only(left: 8.w),
-                            child: Text(
-                              '${product.oldPrice!.toStringAsFixed(2)} ${t.lyd}',
-                              style: TextStyle(
-                                fontSize: 14.sp,
-                                color: Colors.grey,
-                                decoration: TextDecoration.lineThrough,
-                              ),
-                            ),
-                          ),
+                        // if (product.oldPrice != null &&
+                        //     product.oldPrice != product.price)
+                        //   Padding(
+                        //     padding: EdgeInsets.only(left: 8.w),
+                        //     child: Text(
+                        //       '${product.oldPrice!.toStringAsFixed(2)} ${t.lyd}',
+                        //       style: TextStyle(
+                        //         fontSize: 14.sp,
+                        //         color: Colors.grey,
+                        //         decoration: TextDecoration.lineThrough,
+                        //       ),
+                        //     ),
+                        //   ),
                       ],
                     ),
-                    if (product.discount != null)
-                      Padding(
-                        padding: EdgeInsets.only(top: 4.h),
-                        child: Text(
-                          product.discount!,
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            color: Colors.red,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
+                    // if (product.discount != null)
+                    //   Padding(
+                    //     padding: EdgeInsets.only(top: 4.h),
+                    //     child: Text(
+                    //       product.discount!,
+                    //       style: TextStyle(
+                    //         fontSize: 12.sp,
+                    //         color: Colors.red,
+                    //         fontWeight: FontWeight.bold,
+                    //       ),
+                    //     ),
+                    //   ),
                   ],
                 ),
               ),
@@ -811,7 +785,7 @@ class _HomePageState extends State<HomePage> {
 
     final List<Category> quickAccessCategories = [
       Category("assets/icons/warranty.svg", t.warranty, HomePage()),
-      Category("assets/icons/sale.svg", t.promo, PromoPage()),
+      //Category("assets/icons/sale.svg", t.promo, PromoPage()),
       Category("assets/icons/gift.svg", t.bundles, BundelsPage()),
       Category("assets/icons/shops.svg", t.shops, FindTawasul()),
     ];

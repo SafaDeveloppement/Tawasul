@@ -118,7 +118,7 @@ class FavoritesPage extends StatelessWidget {
                 (context) => ProductDetail(
                   productReference: product.reference,
                   toggleFavorite:
-                      () => productController.toggleFavorite(product.id),
+                      () => productController.toggleFavorite(product.idProduct),
                   isFavorite: product.isFavorite,
                 ),
           ),
@@ -154,13 +154,7 @@ class FavoritesPage extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: 8.h),
-                  Text(
-                    product.brand!,
-                    style: TextStyle(fontSize: 12.sp, color: Colors.grey),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: 4.h),
+
                   Text(
                     product.name,
                     style: TextStyle(
@@ -181,43 +175,18 @@ class FavoritesPage extends StatelessWidget {
                           color: const Color(0xff1264a3),
                         ),
                       ),
-                      if (product.oldPrice != null) ...[
-                        SizedBox(width: 4.w),
-                        Text(
-                          product.oldPrice.toString(),
-                          style: TextStyle(
-                            decoration: TextDecoration.lineThrough,
-                            fontSize: 12.sp,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                 ],
               ),
             ),
-            if (product.discount != null)
-              Positioned(
-                top: 6.h,
-                left: 6.w,
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
-                  decoration: BoxDecoration(
-                    color: Colors.orange,
-                    borderRadius: BorderRadius.circular(4.r),
-                  ),
-                  child: Text(
-                    product.discount!,
-                    style: TextStyle(fontSize: 10.sp, color: Colors.white),
-                  ),
-                ),
-              ),
+
             Positioned(
               top: 6.h,
               right: 6.w,
               child: GestureDetector(
-                onTap: () => productController.toggleFavorite(product.id),
+                onTap:
+                    () => productController.toggleFavorite(product.idProduct),
                 child: CircleAvatar(
                   backgroundColor: Colors.white,
                   radius: 16.r,

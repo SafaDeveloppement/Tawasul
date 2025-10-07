@@ -170,7 +170,7 @@
 //                   productReference: product.reference,
 //                   shopId: '4',
 //                   toggleFavorite:
-//                       () => productController.toggleFavorite(product.id),
+//                       () => productController.toggleFavorite(product.idProduct),
 //                   isFavorite: product.isFavorite,
 //                 ),
 //           ),
@@ -267,7 +267,7 @@
 //               top: 8.h,
 //               right: 8.w,
 //               child: GestureDetector(
-//                 onTap: () => productController.toggleFavorite(product.id),
+//                 onTap: () => productController.toggleFavorite(product.idProduct),
 //                 child: CircleAvatar(
 //                   backgroundColor: Colors.white,
 //                   radius: 14.r,
@@ -681,7 +681,7 @@ class _SmartOfficeState extends State<SmartOffice>
       _searchResults =
           allProducts.where((product_model.Product product) {
             return product.name.toLowerCase().contains(lowerCaseQuery) ||
-                product.brand!.toLowerCase().contains(lowerCaseQuery) ||
+                // product.brand!.toLowerCase().contains(lowerCaseQuery) ||
                 product.description.toLowerCase().contains(lowerCaseQuery);
           }).toList();
     });
@@ -723,7 +723,7 @@ class _SmartOfficeState extends State<SmartOffice>
                 (context) => ProductDetail(
                   toggleFavorite: () => {},
                   isFavorite: false,
-                  productReference: product.id.toString(),
+                  productReference: product.idProduct.toString(),
                   product: product,
                 ),
           ),
@@ -770,13 +770,7 @@ class _SmartOfficeState extends State<SmartOffice>
                             ),
                   ),
                   SizedBox(height: 7.h),
-                  Text(
-                    product.brand!,
-                    style: TextStyle(fontSize: 10.sp, color: Colors.grey),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: 2.h),
+
                   Text(
                     product.name,
                     style: TextStyle(
@@ -797,17 +791,6 @@ class _SmartOfficeState extends State<SmartOffice>
                           color: const Color(0xff1264a3),
                         ),
                       ),
-                      if (product.oldPrice != null) ...[
-                        SizedBox(width: 3.w),
-                        Text(
-                          '${product.oldPrice!.toStringAsFixed(2)} TND',
-                          style: TextStyle(
-                            decoration: TextDecoration.lineThrough,
-                            fontSize: 12.sp,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                 ],
@@ -819,13 +802,13 @@ class _SmartOfficeState extends State<SmartOffice>
               child: Consumer<ProductController>(
                 builder: (context, productController, child) {
                   final isFavorite = productController.isProductFavorite(
-                    product.id,
+                    product.idProduct,
                   );
 
                   return GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: () {
-                      productController.toggleFavorite(product.id);
+                      productController.toggleFavorite(product.idProduct);
                     },
                     child: CircleAvatar(
                       backgroundColor: Colors.white,

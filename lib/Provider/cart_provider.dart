@@ -18,7 +18,7 @@ class CartItem {
 
   Map<String, dynamic> toApiParams() {
     return {
-      'id_product': product.id,
+      'id_product': product.idProduct,
       'id_product_attribute': idProductAttribute ?? 0,
       'qty': quantity,
     };
@@ -85,12 +85,12 @@ class CartProvider with ChangeNotifier {
       _clearError();
 
       print(
-        ' Adding to cart - Product: ${product.id}, '
+        ' Adding to cart - Product: ${product.idProduct}, '
         'Attribute: $productAttributeId, Quantity: $quantity',
       );
 
       final params = {
-        'id_product': product.id.toString(),
+        'id_product': product.idProduct.toString(),
         'id_product_attribute': (productAttributeId ?? 0).toString(),
         'qty': quantity.toString(),
       };
@@ -104,7 +104,7 @@ class CartProvider with ChangeNotifier {
       }
 
       final response = await ApiService.updateCart({
-        'id_product': product.id.toString(),
+        'id_product': product.idProduct.toString(),
         'id_product_attribute': (productAttributeId ?? 0).toString(),
         'qty': quantity.toString(),
       });
@@ -275,7 +275,7 @@ class CartProvider with ChangeNotifier {
               final product = Product.fromCartJson(productJson);
               return CartItem(
                 product: product,
-                quantity: product.quantity,
+                quantity: product.qty,
                 idProductAttribute: productJson['id_product_attribute'],
                 selectedColor: productJson['attributes_small']?.toString(),
               );
@@ -309,7 +309,7 @@ class CartProvider with ChangeNotifier {
       final itemsToRemove = List.from(_cartItems);
       for (final item in itemsToRemove) {
         await removeFromCart(
-          productId: item.product.id,
+          productId: item.product.idProduct,
           productAttributeId: item.idProductAttribute ?? 0,
         );
       }
@@ -357,7 +357,7 @@ class CartProvider with ChangeNotifier {
   bool isProductInCart(int productId, [int? productAttributeId]) {
     return _cartItems.any(
       (item) =>
-          item.product.id == productId &&
+          item.product.idProduct == productId &&
           item.idProductAttribute == (productAttributeId ?? 0),
     );
   }
@@ -366,11 +366,19 @@ class CartProvider with ChangeNotifier {
   int getProductQuantity(int productId, [int? productAttributeId]) {
     final item = _cartItems.firstWhere(
       (item) =>
-          item.product.id == productId &&
+          item.product.idProduct == productId &&
           item.idProductAttribute == (productAttributeId ?? 0),
       orElse:
           () => CartItem(
-            product: Product(name: '', price: 0, image: '', description: ''),
+            product: Product(
+              name: '',
+              price: 0,
+              image: '',
+              description: '',
+              categoryName: '',
+              idAttributeDefault: 0,
+              idProduct: 0, combinations: [],
+            ),
             quantity: 0,
           ),
     );

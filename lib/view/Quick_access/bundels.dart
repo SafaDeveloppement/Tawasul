@@ -90,7 +90,7 @@ class _BundelsPageState extends State<BundelsPage>
     try {
       final response = await http
           .get(
-            Uri.parse('$_apiBaseUrl$_bundelsEndpoint?code=10&id-shop=4'),
+            Uri.parse('$_apiBaseUrl$_bundelsEndpoint?code=10&idProduct-shop=4'),
             headers: {
               'Authorization': 'Bearer $_token',
               'Content-Type': 'application/json',
@@ -109,14 +109,11 @@ class _BundelsPageState extends State<BundelsPage>
             _bundelsProducts =
                 products.map((productJson) {
                   return Product(
-                    id: productJson['id'] ?? 0,
+                    idProduct: productJson['idProduct'] ?? 0,
                     name: productJson['name'] ?? '',
-                    brand: productJson['manufacturer_name'] ?? '',
                     price: productJson['price'],
                     image: productJson['image'] ?? '',
-                    description: productJson['description'] ?? '',
-                    oldPrice: productJson['price_after_reduction'],
-                    discount: productJson['discount']?.toString(),
+                    description: productJson['description'] ?? '', categoryName: '', idAttributeDefault: 0, combinations: [],
                   );
                 }).toList();
 
@@ -177,9 +174,9 @@ class _BundelsPageState extends State<BundelsPage>
           MaterialPageRoute(
             builder:
                 (context) => ProductDetail(
-                  productReference: product.reference,
+                  productReference: '',
                   toggleFavorite:
-                      () => productController.toggleFavorite(product.id),
+                      () => productController.toggleFavorite(product.idProduct),
                   isFavorite: product.isFavorite,
                 ),
           ),
@@ -254,11 +251,7 @@ class _BundelsPageState extends State<BundelsPage>
                     ),
                   ),
                   SizedBox(height: 7.h),
-                  Text(
-                    product.brand!,
-                    style: TextStyle(fontSize: 10.sp, color: Colors.grey),
-                  ),
-                  SizedBox(height: 2.h),
+                 
                   Text(
                     product.name,
                     style: TextStyle(
@@ -277,28 +270,7 @@ class _BundelsPageState extends State<BundelsPage>
                       color: const Color(0xff1264a3),
                     ),
                   ),
-                  if (product.discount != null &&
-                      product.discount!.isNotEmpty &&
-                      product.discount != '0')
-                    Container(
-                      margin: EdgeInsets.only(top: 4.h),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 8.w,
-                        vertical: 2.h,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(4.r),
-                      ),
-                      child: Text(
-                        '${product.discount}% ${AppLocalizations.of(context)!.off}',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10.sp,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
+                  
                 ],
               ),
             ),
