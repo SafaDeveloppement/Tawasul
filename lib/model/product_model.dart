@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
@@ -60,23 +59,60 @@ class Product {
   });
 
   /* ------------------------- COLOR & STOCK MANAGEMENT METHODS ------------------------- */
+  List<Map<String, dynamic>> get parsedColorsWithNames {
+    if (colors == null || colors!.isEmpty) return [];
+    final colorPairs = colors!.split(',');
+    return colorPairs.map((pair) {
+      final parts = pair.trim().split(':');
+      if (parts.length != 2) return {'name': 'Unknown', 'color': Colors.grey};
 
-  // Get only color combinations (filter out SKU entries)
+      final colorName = parts[0].trim();
+      final hexCode = parts[1].trim();
+
+      Color parsedColor = Colors.grey;
+      try {
+        parsedColor = Color(int.parse(hexCode.replaceAll('#', '0xff')));
+      } catch (_) {}
+
+      return {'name': colorName, 'color': parsedColor};
+    }).toList();
+  }
+
+  List<Color> get parsedColors {
+    final Set<String> seen = {};
+    final List<Color> colorsList = [];
+
+    for (final comb in colorCombinations) {
+      final hex = comb.codeColeur.trim();
+      if (hex.isEmpty || hex == "#" || seen.contains(hex)) continue;
+
+      try {
+        final buffer = StringBuffer();
+        if (hex.length == 6 || hex.length == 7) buffer.write('ff');
+        buffer.write(hex.replaceFirst('#', ''));
+        final color = Color(int.parse(buffer.toString(), radix: 16));
+        colorsList.add(color);
+        seen.add(hex);
+      } catch (e) {
+        debugPrint("Invalid color hex: $hex");
+      }
+    }
+
+    return colorsList;
+  }
+
   List<ProductCombination> get colorCombinations {
     return combinations.where((comb) => comb.isColorCombination).toList();
   }
 
-  // Get available colors (with stock > 0)
   List<ProductCombination> get availableColors {
     return colorCombinations.where((comb) => comb.isAvailable).toList();
   }
 
-  // Get unavailable colors (with stock = 0)
   List<ProductCombination> get unavailableColors {
     return colorCombinations.where((comb) => !comb.isAvailable).toList();
   }
 
-  // Check if a specific color is available by name
   bool isColorAvailable(String colorName) {
     return colorCombinations.any(
       (comb) =>
@@ -85,27 +121,21 @@ class Product {
     );
   }
 
-  // Check if a specific color is available by ID
-  bool isColorAvailableById(int attributeId) {
+  bool isColorAvailableById(String attributeId) {
     return combinations.any(
-      (comb) => comb.id == attributeId && comb.isAvailable,
+      (comb) => comb.id_product_attribute == attributeId && comb.isAvailable,
     );
   }
 
-  // Get default color (prioritizes available colors)
   ProductCombination? get defaultColor {
-    // First try to find an available default color
     final availableDefault = colorCombinations.firstWhereOrNull(
-      (comb) => comb.defaultOn == 1 && comb.isAvailable,
+      (comb) => comb.defaultOn == "1" && comb.isAvailable,
     );
-
-    // If no available default, try any available color
     return availableDefault ??
         availableColors.firstOrNull() ??
         colorCombinations.firstOrNull();
   }
 
-  // Find combination by color name
   ProductCombination? getCombinationByColorName(String colorName) {
     try {
       return colorCombinations.firstWhere(
@@ -116,66 +146,54 @@ class Product {
     }
   }
 
-  // Find combination by attribute ID
-  ProductCombination? getCombination(int attributeId) {
+  ProductCombination? getCombination(String attributeId) {
     try {
-      return combinations.firstWhere((combo) => combo.id == attributeId);
+      return combinations.firstWhere(
+        (combo) => combo.id_product_attribute == attributeId,
+      );
     } catch (e) {
       return null;
     }
   }
 
-  // Get unique colors (group by color code to avoid duplicates)
   List<ProductCombination> get uniqueColors {
     final Map<String, ProductCombination> uniqueMap = {};
-
     for (var combo in colorCombinations) {
       if (combo.hasColor && !uniqueMap.containsKey(combo.codeColeur)) {
         uniqueMap[combo.codeColeur] = combo;
       }
     }
-
     return uniqueMap.values.toList();
   }
 
   /* ------------------------- CART OPERATION METHODS ------------------------- */
-
-  // Get the correct attribute ID for cart operations
-  int? getCartAttributeId([ProductCombination? selectedColor]) {
-    // If a specific color is selected, use its attribute ID
+  String? getCartAttributeId([ProductCombination? selectedColor]) {
     if (selectedColor != null) {
-      return selectedColor.id;
+      return selectedColor.id_product_attribute;
     }
-
-    // For products with combinations, use the default available color
     if (colorCombinations.isNotEmpty) {
-      return defaultColor?.id;
+      return defaultColor?.id_product_attribute;
     }
-
-    // For simple products, return null (no attribute needed)
     return null;
   }
 
-  // Check if product has combinations
   bool get hasCombinations => combinations.isNotEmpty;
-
-  // Check if product has color combinations
   bool get hasColorCombinations => colorCombinations.isNotEmpty;
-
-  // Get all available attribute IDs from combinations
-  List<int> getAvailableAttributeIds() {
+  List<String> getAvailableAttributeIds() {
     if (combinations.isNotEmpty) {
-      return combinations.map((combo) => combo.id).toList();
+      return combinations.map((combo) => combo.id_product_attribute).toList();
     }
     return [];
   }
 
   // Check if a specific attribute ID is valid for this product
-  bool isValidAttributeId(int attributeId) {
+  bool isValidAttributeId(String attributeId) {
     if (!hasCombinations) {
       return false; // Simple products don't need attribute IDs
     }
-    return combinations.any((combo) => combo.id == attributeId);
+    return combinations.any(
+      (combo) => combo.id_product_attribute == attributeId,
+    );
   }
 
   // Check if attributes map is not empty
@@ -199,20 +217,17 @@ class Product {
   }
 
   // Stock status for a specific color
-  bool isInStockForColor(int attributeId) {
+  bool isInStockForColor(String attributeId) {
     final combo = getCombination(attributeId);
     return combo?.inStock ?? false;
   }
 
-  // Get stock quantity for a specific color
-  int getStockForColor(int attributeId) {
+  int getStockForColor(String attributeId) {
     final combo = getCombination(attributeId);
-    return combo?.quantity ?? 0;
+    return combo?.qty ?? 0;
   }
 
   /* ------------------------- FACTORY METHODS ------------------------- */
-
-  // Factory method for detailed product parsing
   factory Product.fromDetailedJson(Map<String, dynamic> json) {
     print('=== PARSING DETAILED PRODUCT JSON ===');
     print('Product name: ${json['name']}');
@@ -233,12 +248,14 @@ class Product {
     final categoryId = _parseCategoryId(json);
 
     return Product(
-      id: json['id_product'] is int
-          ? json['id_product'] as int
-          : int.tryParse(json['id_product']?.toString() ?? '') ?? 0,
+      id:
+          json['id_product'] is int
+              ? json['id_product'] as int
+              : int.tryParse(json['id_product']?.toString() ?? '') ?? 0,
       reference: json['reference']?.toString() ?? '',
       name: json['name']?.toString() ?? 'No Name',
-      brand: json['manufacturer']?.toString() ??
+      brand:
+          json['manufacturer']?.toString() ??
           json['manufacturer_name']?.toString() ??
           'Unknown Brand',
       price: _parsePrice(json['price'] ?? json['price_attribute']),
@@ -247,16 +264,19 @@ class Product {
       oldPrice: _parsePrice(json['price_without_reduction']),
       discount: _parseDiscount(json['reduction']),
       attributes: _parseAttributes(json),
-      stock: json['quantity'] is int
-          ? json['quantity'] as int
-          : int.tryParse(json['quantity']?.toString() ?? '0') ?? 0,
+      stock:
+          json['quantity'] is int
+              ? json['quantity'] as int
+              : int.tryParse(json['quantity']?.toString() ?? '0') ?? 0,
       images: images,
-      shortDescription: json['short_description']?.toString() ??
+      shortDescription:
+          json['short_description']?.toString() ??
           json['description_short']?.toString() ??
           '',
-      quantity: json['quantity'] is int
-          ? json['quantity'] as int
-          : int.tryParse(json['quantity']?.toString() ?? '0') ?? 0,
+      quantity:
+          json['quantity'] is int
+              ? json['quantity'] as int
+              : int.tryParse(json['quantity']?.toString() ?? '0') ?? 0,
       active: json['active']?.toString() == '1',
       combinations: combinations,
       categoryId: categoryId,
@@ -288,9 +308,10 @@ class Product {
       attributes: _parseAttributes(json),
       url: json['link']?.toString(),
       showPrice: true,
-      stock: json['stock'] is int
-          ? json['stock'] as int
-          : int.tryParse(json['stock']?.toString() ?? '0') ?? 0,
+      stock:
+          json['stock'] is int
+              ? json['stock'] as int
+              : int.tryParse(json['stock']?.toString() ?? '0') ?? 0,
       combinations: combinations,
       categoryId: _parseCategoryId(json),
     );
@@ -299,9 +320,10 @@ class Product {
   // Factory method for cart product parsing
   factory Product.fromCartJson(Map<String, dynamic> json) {
     return Product(
-      id: json['id_product'] is int
-          ? json['id_product'] as int
-          : int.tryParse(json['id_product']?.toString() ?? '') ?? 0,
+      id:
+          json['id_product'] is int
+              ? json['id_product'] as int
+              : int.tryParse(json['id_product']?.toString() ?? '') ?? 0,
       reference: json['reference']?.toString() ?? '',
       name: json['name']?.toString() ?? 'No Name',
       brand: json['manufacturer_name']?.toString() ?? 'Unknown Brand',
@@ -311,14 +333,17 @@ class Product {
       oldPrice: _parsePrice(json['price_without_reduction']),
       discount: _parseDiscount(json['reduction']),
       attributes: _parseAttributes(json),
-      stock: json['quantity_available'] is int
-          ? json['quantity_available'] as int
-          : int.tryParse(json['quantity_available']?.toString() ?? '0') ?? 0,
+      stock:
+          json['quantity_available'] is int
+              ? json['quantity_available'] as int
+              : int.tryParse(json['quantity_available']?.toString() ?? '0') ??
+                  0,
       images: _parseImages(json['images'] as List<dynamic>?),
       shortDescription: json['description_short']?.toString() ?? '',
-      quantity: json['cart_quantity'] is int
-          ? json['cart_quantity'] as int
-          : int.tryParse(json['cart_quantity']?.toString() ?? '0') ?? 0,
+      quantity:
+          json['cart_quantity'] is int
+              ? json['cart_quantity'] as int
+              : int.tryParse(json['cart_quantity']?.toString() ?? '0') ?? 0,
       active: json['active']?.toString() == '1',
       combinations: _parseCombinationsEnhanced(json),
       categoryId: _parseCategoryId(json),
@@ -364,18 +389,20 @@ class Product {
       print(" Found ${combinationsJson.length} raw combinations");
 
       // Filter out SKU entries and keep only color combinations
-      final colorCombinations = combinationsJson.where((combo) {
-        if (combo is! Map<String, dynamic>) return false;
+      final colorCombinations =
+          combinationsJson.where((combo) {
+            if (combo is! Map<String, dynamic>) return false;
 
-        final colorCode = combo['color']?.toString() ?? '';
-        final attributes = combo['attributes']?.toString() ?? '';
+            final colorCode = combo['color']?.toString() ?? '';
+            final attributes = combo['attributes']?.toString() ?? '';
 
-        // Keep entries that have color data and are not SKU entries
-        final hasColor = colorCode.isNotEmpty && colorCode != "#";
-        final isSku = attributes.contains("Sku") || attributes.contains("SKU");
+            // Keep entries that have color data and are not SKU entries
+            final hasColor = colorCode.isNotEmpty && colorCode != "#";
+            final isSku =
+                attributes.contains("Sku") || attributes.contains("SKU");
 
-        return hasColor && !isSku;
-      }).toList();
+            return hasColor && !isSku;
+          }).toList();
 
       print(" Filtered to ${colorCombinations.length} color combinations");
 
@@ -385,8 +412,10 @@ class Product {
           final combination = ProductCombination.fromJson(comboData);
 
           // Debug info
-          print("    ${combination.colorName}: ${combination.codeColeur} "
-              "(Qty: ${combination.quantity}, Available: ${combination.isAvailable})");
+          print(
+            "    ${combination.colorName}: ${combination.codeColeur} "
+            "(Qty: ${combination.qty}, Available: ${combination.isAvailable})",
+          );
 
           combinations.add(combination);
         } catch (e) {
@@ -402,21 +431,23 @@ class Product {
       final attributeId = json['id_product_attribute'];
       combinations.add(
         ProductCombination(
-          id: attributeId is int
-              ? attributeId
-              : int.tryParse(attributeId.toString()) ?? 0,
+          id_product_attribute:
+              attributeId is String ? attributeId : (attributeId.toString()),
           reference: json['reference']?.toString() ?? '',
-          quantity: json['quantity'] is int
-              ? json['quantity'] as int
-              : int.tryParse(json['quantity']?.toString() ?? '0') ?? 0,
-          attributes: json['attributes_small']?.toString() ??
+          qty:
+              json['qty'] is int
+                  ? json['qty'] as int
+                  : int.tryParse(json['qty']?.toString() ?? '0') ?? 0,
+          attributes:
+              json['attributes_small']?.toString() ??
               json['attributes']?.toString() ??
               '',
           price: _parsePrice(json['price_attribute'] ?? json['price']),
-          inStock: (json['quantity'] ?? 0) > 0,
-          defaultOn: json['default_on'] is int
-              ? json['default_on'] as int
-              : int.tryParse(json['default_on']?.toString() ?? '0') ?? 0,
+          inStock: (json['qty'] ?? 0) > 0,
+          defaultOn:
+              json['default_on'] is String
+                  ? json['default_on'] as String
+                  : (json['default_on']?.toString() ?? '0'),
           idAttributeGroup: json['id_attribute_group']?.toString() ?? '',
           idAttribute: json['id_attribute']?.toString() ?? '',
           codeColeur: json['code_coleur']?.toString() ?? '',
@@ -425,10 +456,10 @@ class Product {
       );
     }
 
-    print('✓ Found ${combinations.length} unique combinations');
+    print(' Found ${combinations.length} unique combinations');
     for (var combo in combinations) {
       print(
-        '  - Combination ID: ${combo.id}, Color: ${combo.colorName}, Quantity: ${combo.quantity}, Available: ${combo.isAvailable}',
+        '  - Combination ID: ${combo.id_product_attribute}, Color: ${combo.colorName}, Quantity: ${combo.qty}, Available: ${combo.isAvailable}',
       );
     }
 
@@ -436,7 +467,9 @@ class Product {
   }
 
   // Keep original method for backward compatibility
-  static List<ProductCombination> _parseCombinations(Map<String, dynamic> json) {
+  static List<ProductCombination> _parseCombinations(
+    Map<String, dynamic> json,
+  ) {
     return _parseCombinationsEnhanced(json);
   }
 
@@ -517,7 +550,6 @@ class Product {
   }
 
   static String _parseImageUrl(Map<String, dynamic> json) {
-    // Priority 1: Direct 'image' field from API
     if (json['image'] != null && json['image'].toString().isNotEmpty) {
       final imageUrl = json['image'].toString().trim();
       if (imageUrl != 'null' && imageUrl.isNotEmpty) {
@@ -749,7 +781,7 @@ class Product {
   }
 
   // Combination info
-  String getCombinationInfo(int attributeId) {
+  String getCombinationInfo(String attributeId) {
     final combo = getCombination(attributeId);
     return combo?.attributes ?? 'Default';
   }
@@ -784,7 +816,7 @@ class Product {
     print('Color Combinations: ${colorCombinations.length}');
     for (var combo in colorCombinations) {
       print(
-        '  - Color: ${combo.colorName}, ID: ${combo.id}, Quantity: ${combo.quantity}, Available: ${combo.isAvailable}',
+        '  - Color: ${combo.colorName}, ID: ${combo.id_product_attribute}, Quantity: ${combo.qty}, Available: ${combo.isAvailable}',
       );
     }
     print('Default Color: ${defaultColor?.colorName}');
@@ -819,26 +851,26 @@ class Product {
 }
 
 class ProductCombination {
-  final int id;
+  final String id_product_attribute;
   final String reference;
-  final int quantity;
+  final int qty;
   final String attributes;
   final double price;
   final bool inStock;
-  final int defaultOn;
+  final String defaultOn;
   final String idAttributeGroup;
   final String idAttribute;
   final String codeColeur;
   final String name;
 
   ProductCombination({
-    required this.id,
+    required this.id_product_attribute,
     required this.reference,
-    required this.quantity,
+    required this.qty,
     required this.attributes,
     required this.price,
     this.inStock = true,
-    this.defaultOn = 0,
+    this.defaultOn = '0',
     this.idAttributeGroup = '',
     this.idAttribute = '',
     this.codeColeur = '',
@@ -847,22 +879,26 @@ class ProductCombination {
 
   factory ProductCombination.fromJson(Map<String, dynamic> json) {
     return ProductCombination(
-      id: json['id_product_attribute'] is int
-          ? json['id_product_attribute'] as int
-          : int.tryParse(json['id_product_attribute']?.toString() ?? '') ?? 0,
+      id_product_attribute:
+          json['id_product_attribute'] is String
+              ? json['id_product_attribute'] as String
+              : (json['id_product_attribute']?.toString() ?? ''),
       reference: json['reference']?.toString() ?? '',
-      quantity: json['quantity'] is int
-          ? json['quantity'] as int
-          : int.tryParse(json['quantity']?.toString() ?? '0') ?? 0,
-      attributes: json['attributes_small']?.toString() ??
+      qty:
+          json['qty'] is int
+              ? json['qty'] as int
+              : int.tryParse(json['qty']?.toString() ?? '0') ?? 0,
+      attributes:
+          json['attributes_small']?.toString() ??
           json['attributes']?.toString() ??
           json['attribute_description']?.toString() ??
           '',
       price: Product._parsePrice(json['price_attribute'] ?? json['price']),
       inStock: (json['quantity'] ?? 0) > 0,
-      defaultOn: json['default_on'] is int
-          ? json['default_on'] as int
-          : int.tryParse(json['default_on']?.toString() ?? '0') ?? 0,
+      defaultOn:
+          json['default_on'] is String
+              ? json['default_on'] as String
+              : (json['default_on']?.toString() ?? '0'),
       idAttributeGroup: json['id_attribute_group']?.toString() ?? '',
       idAttribute: json['id_attribute']?.toString() ?? '',
       codeColeur: json['code_coleur']?.toString() ?? '',
@@ -870,16 +906,13 @@ class ProductCombination {
     );
   }
 
-  // IMPROVED: Better color detection
   bool get isColorCombination {
-    // Check if this has color data and is not a SKU entry
     final hasColorData = codeColeur.isNotEmpty && codeColeur != "#";
     final isSkuEntry = attributes.contains("Sku") || attributes.contains("SKU");
 
     return hasColorData && !isSkuEntry;
   }
 
-  // IMPROVED: More robust color name extraction
   String get colorName {
     // Extract from attributes like "لون - Blue" or "Color - White"
     if (attributes.contains(" - ")) {
@@ -888,29 +921,20 @@ class ProductCombination {
         return parts[1].trim();
       }
     }
-
-    // Fallback to name field if available
     if (name.isNotEmpty) return name;
-
-    // Final fallback
-    return "Color ${id}";
+    return "Color ${id_product_attribute}";
   }
 
-  // IMPROVED: Better color parsing
   Color get colorValue {
     if (codeColeur.isEmpty || codeColeur == "#") return Colors.grey;
-
     try {
       String hexColor = codeColeur.replaceAll('#', '');
-
-      // Handle different hex formats
       if (hexColor.length == 3) {
         hexColor =
             'FF${hexColor[0]}${hexColor[0]}${hexColor[1]}${hexColor[1]}${hexColor[2]}${hexColor[2]}';
       } else if (hexColor.length == 6) {
-        hexColor = 'FF$hexColor'; // Add alpha value
+        hexColor = 'FF$hexColor';
       } else if (hexColor.length == 8) {
-        // Already has alpha, use as-is
       } else {
         return Colors.grey;
       }
@@ -922,21 +946,13 @@ class ProductCombination {
     }
   }
 
-  // IMPROVED: Availability check
-  bool get isAvailable => quantity > 0;
-
-  // Check if this combination has color data
+  bool get isAvailable => qty > 0;
   bool get hasColor => codeColeur.isNotEmpty && name.isNotEmpty;
-
-  // Stock status alias for consistency
- // bool get inStock => isAvailable;
-
-  // Convert to map for serialization
   Map<String, dynamic> toJson() {
     return {
-      'id_product_attribute': id,
+      'id_product_attribute': id_product_attribute,
       'reference': reference,
-      'quantity': quantity,
+      'quantity': qty,
       'attributes': attributes,
       'price': price,
       'inStock': inStock,
@@ -949,22 +965,22 @@ class ProductCombination {
   }
 
   ProductCombination copyWith({
-    int? id,
+    String? id,
     String? reference,
-    int? quantity,
+    int? qty,
     String? attributes,
     double? price,
     bool? inStock,
-    int? defaultOn,
+    String? defaultOn,
     String? idAttributeGroup,
     String? idAttribute,
     String? codeColeur,
     String? name,
   }) {
     return ProductCombination(
-      id: id ?? this.id,
+      id_product_attribute: id ?? this.id_product_attribute,
       reference: reference ?? this.reference,
-      quantity: quantity ?? this.quantity,
+      qty: qty ?? this.qty,
       attributes: attributes ?? this.attributes,
       price: price ?? this.price,
       inStock: inStock ?? this.inStock,
@@ -978,7 +994,7 @@ class ProductCombination {
 
   @override
   String toString() {
-    return 'ProductCombination{id: $id, name: $name, available: $isAvailable, color: $codeColeur, quantity: $quantity}';
+    return 'ProductCombination{id: $id_product_attribute, name: $name, available: $isAvailable, color: $codeColeur, quantity: $qty}';
   }
 
   @override
@@ -986,10 +1002,10 @@ class ProductCombination {
       identical(this, other) ||
       other is ProductCombination &&
           runtimeType == other.runtimeType &&
-          id == other.id;
+          id_product_attribute == other.id_product_attribute;
 
   @override
-  int get hashCode => id.hashCode;
+  int get hashCode => id_product_attribute.hashCode;
 }
 
 extension FirstWhereOrNull<T> on Iterable<T> {
@@ -1001,6 +1017,8 @@ extension FirstWhereOrNull<T> on Iterable<T> {
     }
     return null;
   }
+
+  split(String s) {}
 }
 
 extension FirstOrNull<T> on Iterable<T> {
@@ -1012,21 +1030,26 @@ extension FirstOrNull<T> on Iterable<T> {
     }
   }
 }
+
 extension NullSafetyCheck on List? {
   bool get isNullOrEmpty => this == null || this!.isEmpty;
 }
+
 extension CartProductExtension on Product {
   bool get canAddToCart => inStock && active;
-  bool canAddColorToCart(int attributeId) {
+  bool canAddColorToCart(String attributeId) {
     return isInStockForColor(attributeId) && active;
   }
+
   int get maxCartQuantity {
     return stock;
   }
-  bool isValidQuantity(int quantity) {
-    return quantity > 0 && quantity <= maxCartQuantity;
+
+  bool isValidQuantity(int qty) {
+    return qty > 0 && qty <= maxCartQuantity;
   }
-  String getDisplayName([int? attributeId]) {
+
+  String getDisplayName([String? attributeId]) {
     if (attributeId != null && hasCombinations) {
       final combo = getCombination(attributeId);
       if (combo != null) {

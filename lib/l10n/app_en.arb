@@ -396,5 +396,11 @@
   "selectExistingAddress": "Select existing address",
   "loginAgain": "Login Again",
   "backToCart": "Back to Cart",
-  "loading": "Loading..."
+  "loading": "Loading...",
+  "firstNameRequired": "First name is required",
+  "lastNameRequired": "Last name is required",
+  "addressRequired": "Address is required",
+  "cityRequired": "City is required",
+  "stateRequired": "State is required",
+  "zipCodeRequired": "Zip code is required"
 }

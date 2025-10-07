@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -37,32 +38,30 @@ class CheckoutController {
       errorCode = '';
       isUsingStoredData = false;
 
-      print("🔄 Loading customer data from API...");
+      print(" Loading customer data from API...");
 
-      // 1. First, try to get fresh customer details from API
       final customerResponse = await ApiService.getCustomerDetails();
-      
+
       if (customerResponse['success'] != true) {
-        print("❌ API failed: ${customerResponse['message']}");
-        errorMessage = customerResponse['message'] ?? 'Failed to load customer details';
+        print(" API failed: ${customerResponse['message']}");
+        errorMessage =
+            customerResponse['message'] ?? 'Failed to load customer details';
         errorCode = customerResponse['code'] ?? 'UNKNOWN_ERROR';
         isUsingStoredData = true;
-        
-        // Even if API fails, we can still load addresses
+
         await _loadAddresses();
         return false;
       }
 
-      print("✅ Customer details loaded from API");
+      print(" Customer details loaded from API");
 
-      // 2. Load addresses from API
       await _loadAddresses();
 
       return true;
     } catch (e) {
       errorMessage = 'Failed to load customer data: $e';
       errorCode = 'EXCEPTION';
-      print("💥 Exception in loadCustomerData: $e");
+      print(" Exception in loadCustomerData: $e");
       return false;
     } finally {
       isLoading = false;
@@ -73,10 +72,10 @@ class CheckoutController {
     try {
       print("🔄 Loading addresses from API...");
       final addressesResponse = await ApiService.getCustomerAddresses();
-      
+
       if (addressesResponse['success'] == true) {
         addresses = addressesResponse['addresses'] ?? [];
-        
+
         if (addressesResponse['fromLocalStorage'] == true) {
           isUsingStoredData = true;
           print("📍 Using addresses from local storage");
@@ -87,7 +86,9 @@ class CheckoutController {
         // Auto-select the first address if available
         if (addresses.isNotEmpty) {
           selectedAddress = addresses.first;
-          print("✅ Auto-selected address: ${selectedAddress['firstname']} ${selectedAddress['lastname']}");
+          print(
+            " Auto-selected address: ${selectedAddress['firstname']} ${selectedAddress['lastname']}",
+          );
         } else {
           print("ℹ️ No addresses found");
         }
@@ -96,7 +97,7 @@ class CheckoutController {
         addresses = [];
       }
     } catch (e) {
-      print("💥 Error loading addresses: $e");
+      print(" Error loading addresses: $e");
       addresses = [];
     }
   }
@@ -124,7 +125,7 @@ class CheckoutController {
       if (result['success'] == true) {
         // Refresh addresses list
         await _loadAddresses();
-        
+
         // Select the newly created address
         if (result['id_address'] != null) {
           selectedAddress = addresses.firstWhere(
@@ -133,7 +134,7 @@ class CheckoutController {
           );
         }
 
-        print("✅ Address created successfully");
+        print(" Address created successfully");
         return true;
       } else {
         errorMessage = result['message'] ?? 'Failed to create address';
@@ -198,10 +199,449 @@ class _CheckoutState extends State<Checkout> {
   @override
   void initState() {
     super.initState();
-    _debugAuthStatus();
-    _debugStoredData();
-    _testTokenManually();
-    _initializeController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _debugAllStoredData();
+      _manualTokenCheck();
+      _checkTokenStorageOnStartup();
+      _initializeController();
+    });
+  }
+
+  Future<void> _manualTokenCheck() async {
+    try {
+      print("\n" + "=" * 50);
+      print("🛠️ MANUAL TOKEN CHECK");
+      print("=" * 50);
+
+      // Test SharedPreferences directly
+      final prefs = await SharedPreferences.getInstance();
+      final directToken = prefs.getString('auth_token');
+      final userId = prefs.getInt('user_id');
+      final userEmail = prefs.getString('user_email');
+      final userFirstName = prefs.getString('user_firstName');
+      final userLastName = prefs.getString('user_lastName');
+
+      print("🔧 Direct SharedPreferences Check:");
+      print(
+        "   - auth_token: ${directToken != null ? 'EXISTS (${directToken.length} chars)' : 'NULL'}",
+      );
+      print("   - user_id: $userId");
+      print("   - user_email: $userEmail");
+      print("   - user_firstName: $userFirstName");
+      print("   - user_lastName: $userLastName");
+
+      if (directToken != null) {
+        print("   - Token length: ${directToken.length}");
+        print(
+          "   - Token preview: ${directToken.substring(0, min(20, directToken.length))}...",
+        );
+        print(
+          "   - Token ends with: ...${directToken.substring(directToken.length - 10)}",
+        );
+
+        // Check token format
+        print("   - Contains spaces: ${directToken.contains(' ')}");
+        print(
+          "   - Contains quotes: ${directToken.contains('"') || directToken.contains("'")}",
+        );
+      }
+
+      // Test if we can make an API call with the token
+      if (directToken != null && directToken.isNotEmpty) {
+        print("\n🔐 TESTING API CALL WITH TOKEN:");
+        try {
+          final response = await http
+              .get(
+                Uri.parse(
+                  'https://tawasul-dev.app-staging.fr/public/getcustomerdetails',
+                ),
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': 'Bearer $directToken',
+                  'Accept': 'application/json',
+                },
+              )
+              .timeout(Duration(seconds: 10));
+
+          print("   - Status Code: ${response.statusCode}");
+          if (response.statusCode == 200) {
+            final responseData = json.decode(response.body);
+            print("   -  API CALL SUCCESSFUL");
+            print("   - Success: ${responseData['success']}");
+            if (responseData['success'] == true) {
+              print("   - Customer data received!");
+            } else {
+              print("   - API returned success: false");
+              print("   - Message: ${responseData['message']}");
+            }
+          } else {
+            print("   - API CALL FAILED: ${response.statusCode}");
+            print("   - Response: ${response.body}");
+          }
+        } catch (e) {
+          print("   -  API CALL ERROR: $e");
+        }
+      } else {
+        print("\n❌ NO TOKEN AVAILABLE FOR API TEST");
+      }
+
+      print("=" * 50 + "\n");
+    } catch (e) {
+      print(" Manual token check error: $e");
+    }
+  }
+
+  Future<void> _debugAllStoredData() async {
+    try {
+      print("\n" + "=" * 50);
+      print("📋 ALL STORED DATA IN SHAREDPREFERENCES");
+      print("=" * 50);
+
+      final prefs = await SharedPreferences.getInstance();
+      final allKeys = prefs.getKeys().toList()..sort();
+
+      print("Total keys stored: ${allKeys.length}");
+
+      for (var key in allKeys) {
+        final value = prefs.get(key);
+        if (value is String && value.length > 50) {
+          print(
+            "   - $key: ${value.substring(0, 50)}... (${value.length} chars)",
+          );
+        } else {
+          print("   - $key: $value");
+        }
+      }
+
+      print("=" * 50 + "\n");
+    } catch (e) {
+      print(" Debug stored data error: $e");
+    }
+  }
+
+  Future<void> _checkTokenStorageOnStartup() async {
+    try {
+      print("\n" + "=" * 50);
+      print("🔍 CHECKOUT STARTUP - TOKEN CHECK");
+      print("=" * 50);
+
+      final prefs = await SharedPreferences.getInstance();
+
+      // Check token storage
+      final token = prefs.getString('auth_token');
+      final userId = prefs.getInt('user_id');
+
+      print(" STARTUP STATUS:");
+      print(
+        "   - Token: ${token != null ? 'EXISTS (${token.length} chars)' : 'NULL'}",
+      );
+      print("   - User ID: $userId");
+
+      if (token == null) {
+        print(" CRITICAL: No auth token found at startup!");
+        print(" User needs to login again");
+
+        if (mounted) {
+          setState(() {
+            _hasError = true;
+            _errorMessage = 'Please login again to continue';
+          });
+        }
+      } else {
+        print(" Token found, user is logged in");
+      }
+
+      print("=" * 50 + "\n");
+    } catch (e) {
+      print(" Startup token check error: $e");
+    }
+  }
+
+  Future<void> _testApiStepByStep() async {
+    try {
+      print("\n" + "=" * 50);
+      print("STEP-BY-STEP API TEST");
+      print("=" * 50);
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      final userId = prefs.getInt('user_id');
+      print("1. 📋 SHARED PREFERENCES CHECK:");
+      print(
+        "   - Token: ${token != null ? 'EXISTS (${token.length} chars)' : 'NULL'}",
+      );
+      print("   - User ID: $userId");
+
+      if (token == null) {
+        print("❌ STOPPING TEST: No token found");
+        return;
+      }
+
+      print("\n2. 🌐 DIRECT HTTP TEST:");
+      try {
+        final response = await http
+            .get(
+              Uri.parse(
+                'https://tawasul-dev.app-staging.fr/public/getcustomerdetails',
+              ),
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer $token',
+                'Accept': 'application/json',
+              },
+            )
+            .timeout(Duration(seconds: 10));
+
+        print("   - Status: ${response.statusCode}");
+        print("   - Body length: ${response.body.length}");
+
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          print("   - Success: ${data['success']}");
+          if (data['success'] == true) {
+            print("🎉 DIRECT CALL SUCCESS!");
+          } else {
+            print("❌ Direct call failed: ${data['message']}");
+          }
+        } else {
+          print("❌ HTTP Error: ${response.statusCode}");
+          print("   - Response: ${response.body}");
+        }
+      } catch (e) {
+        print("❌ Direct call error: $e");
+      }
+
+      print("\n3. 🔧 APISERVICE METHOD TEST:");
+      final result = await ApiService.getCustomerDetails();
+      print("   - Success: ${result['success']}");
+      print("   - Message: ${result['message']}");
+      print("   - Code: ${result['code']}");
+
+      print("=" * 50 + "\n");
+    } catch (e) {
+      print(" Step-by-step test error: $e");
+    }
+  }
+
+  Future<void> _traceLoginTokenFlow() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      print("\n" + "=" * 50);
+      print("🔍 TRACING LOGIN TOKEN FLOW");
+      print("=" * 50);
+
+      // Check if we have login data
+      final token = prefs.getString('auth_token');
+      final loginTime = prefs.getString(
+        'login_time',
+      ); // You might want to add this
+
+      print("📋 LOGIN STATUS:");
+      print("  - Token exists: ${token != null}");
+      print("  - Token length: ${token?.length ?? 0}");
+
+      if (token == null) {
+        print("❌ USER IS NOT LOGGED IN - No token found");
+        print(
+          "💡 Solution: User needs to login first before accessing checkout",
+        );
+      } else {
+        print(" User appears to be logged in");
+        print("💡 Token: ${token.substring(0, min(30, token.length))}...");
+      }
+
+      print("=" * 50 + "\n");
+    } catch (e) {
+      print(" Token flow trace error: $e");
+    }
+  }
+
+  Future<void> _debugCustomerDetailsAPI() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      final userId = prefs.getInt('user_id');
+
+      print("=== CUSTOMER DETAILS API DEBUG ===");
+      print("User ID: $userId");
+      print("Token exists: ${token != null}");
+      print("Token length: ${token?.length ?? 0}");
+
+      if (token != null) {
+        print("Token preview: ${token.substring(0, min(30, token.length))}...");
+      }
+
+      // Test the API directly
+      final response = await http.get(
+        Uri.parse(
+          'https://tawasul-dev.app-staging.fr/public/getcustomerdetails',
+        ),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
+      print("Direct API Test:");
+      print("Status: ${response.statusCode}");
+      print("Response: ${response.body}");
+      print("===================================");
+    } catch (e) {
+      print("Debug API error: $e");
+    }
+  }
+
+  Future<void> _debugTokenAndCustomerAPI() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      print("\n" + "=" * 50);
+      print(" COMPREHENSIVE TOKEN & CUSTOMER API DEBUG");
+      print("=" * 50);
+
+      final token = prefs.getString('auth_token');
+      final userId = prefs.getInt('user_id');
+      final userEmail = prefs.getString('user_email');
+      final userFirstName = prefs.getString('user_firstName');
+      final userLastName = prefs.getString('user_lastName');
+
+      print(" STORED AUTH DATA:");
+      print("  - User ID: $userId");
+      print("  - User Email: $userEmail");
+      print("  - First Name: $userFirstName");
+      print("  - Last Name: $userLastName");
+      print("  - Token exists: ${token != null}");
+      print("  - Token length: ${token?.length ?? 0}");
+
+      if (token != null) {
+        print(
+          "  - Token preview: ${token.substring(0, min(30, token.length))}...",
+        );
+        print("  - Token ends with: ...${token.substring(token.length - 10)}");
+      }
+
+      // 2. Test if token is valid by making API call
+      if (token != null && token.isNotEmpty) {
+        print("\n🔐 TESTING API WITH TOKEN...");
+
+        try {
+          final response = await http
+              .get(
+                Uri.parse(
+                  'https://tawasul-dev.app-staging.fr/public/getcustomerdetails',
+                ),
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': 'Bearer $token',
+                  'Accept': 'application/json',
+                },
+              )
+              .timeout(Duration(seconds: 10));
+
+          print("📡 API RESPONSE:");
+          print("  - Status Code: ${response.statusCode}");
+          print("  - Response Headers: ${response.headers}");
+
+          if (response.statusCode == 200) {
+            try {
+              final responseData = json.decode(response.body);
+              print("  - Success: ${responseData['success']}");
+              print("  - Message: ${responseData['message']}");
+
+              if (responseData['success'] == true &&
+                  responseData['customer'] != null) {
+                final customer = responseData['customer'];
+                print("🎉 CUSTOMER DATA RECEIVED:");
+                print("  - ID: ${customer['id']}");
+                print(
+                  "  - Name: ${customer['firstname']} ${customer['lastname']}",
+                );
+                print("  - Email: ${customer['email']}");
+              } else {
+                print("❌ API returned success: false");
+                print("  - Full response: $responseData");
+              }
+            } catch (e) {
+              print("❌ JSON Parse Error: $e");
+              print("  - Raw response: ${response.body}");
+            }
+          } else if (response.statusCode == 401) {
+            print("❌ AUTHENTICATION FAILED - 401 Unauthorized");
+            print("  - The token is invalid or expired");
+          } else {
+            print("❌ SERVER ERROR: ${response.statusCode}");
+            print("  - Response: ${response.body}");
+          }
+        } catch (e) {
+          print("❌ NETWORK ERROR: $e");
+        }
+      } else {
+        print("\n❌ NO TOKEN FOUND - User might not be logged in properly");
+      }
+
+      // 3. Test the ApiService.getCustomerDetails method directly
+      print("\n🔧 TESTING ApiService.getCustomerDetails()...");
+      try {
+        final customerResult = await ApiService.getCustomerDetails();
+        print("  - Success: ${customerResult['success']}");
+        print("  - Message: ${customerResult['message']}");
+        print("  - Code: ${customerResult['code']}");
+
+        if (customerResult['success'] == true) {
+          print("🎉 ApiService SUCCESS:");
+          print("  - First Name: ${customerResult['firstName']}");
+          print("  - Last Name: ${customerResult['lastName']}");
+          print("  - Email: ${customerResult['email']}");
+        }
+      } catch (e) {
+        print("❌ ApiService Error: $e");
+      }
+
+      print("=" * 50 + "\n");
+    } catch (e) {
+      print(" DEBUG METHOD ERROR: $e");
+    }
+  }
+
+  Future<void> _verifyLoginTokenStorage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      print("\n" + "=" * 50);
+      print("🔐 VERIFYING LOGIN TOKEN STORAGE");
+      print("=" * 50);
+
+      // Get ALL keys from shared preferences to see what's actually stored
+      final allKeys = prefs.getKeys();
+      print("📋 ALL STORED KEYS:");
+      allKeys.forEach((key) {
+        if (key.contains('auth') ||
+            key.contains('token') ||
+            key.contains('user')) {
+          final value = prefs.get(key);
+          print("  - $key: $value");
+        }
+      });
+
+      // Specifically check auth_token
+      final authToken = prefs.getString('auth_token');
+      print("\n🎯 SPECIFIC AUTH TOKEN CHECK:");
+      print("  - auth_token key exists: ${prefs.containsKey('auth_token')}");
+      print(
+        "  - auth_token value: ${authToken != null ? 'EXISTS (${authToken.length} chars)' : 'NULL'}",
+      );
+
+      if (authToken != null) {
+        print(
+          "  - Token starts with: ${authToken.substring(0, min(20, authToken.length))}...",
+        );
+      }
+
+      print("=" * 50 + "\n");
+    } catch (e) {
+      print(" Token storage verification error: $e");
+    }
   }
 
   Future<void> _initializeController() async {
@@ -256,56 +696,63 @@ class _CheckoutState extends State<Checkout> {
   }
 
   Future<void> _loadCustomerData() async {
-  try {
-    await _loadCustomerIdAndEmail();
+    try {
+      await _loadCustomerIdAndEmail();
 
-    // Try to load fresh data from API
-    final success = await _checkoutController.loadCustomerData();
-    
-    if (!mounted) return;
+      print("🔄 Loading customer data...");
 
-    if (success) {
-      // Successfully loaded from API
-      _populateFormFromExistingData();
-    } else {
-      // API failed, use stored data with warning
+      // Try to load fresh data from API
+      final success = await _checkoutController.loadCustomerData();
+
+      if (!mounted) return;
+
+      if (success) {
+        // Successfully loaded from API
+        print(" Customer data loaded from API successfully");
+        _populateFormFromExistingData();
+      } else {
+        // API failed, use stored data with warning
+        print(
+          "⚠️ API failed, using stored data: ${_checkoutController.errorMessage}",
+        );
+
+        if (mounted) {
+          setState(() {
+            _hasError = false; // Don't block the UI
+            _userDataLoaded = true;
+          });
+        }
+        _populateFormWithStoredData();
+      }
+    } catch (e) {
+      print(" Error loading customer data: $e");
       if (mounted) {
         setState(() {
-          _hasError = false; // Don't block the UI
+          _hasError = false;
           _userDataLoaded = true;
         });
       }
       _populateFormWithStoredData();
     }
-  } catch (e) {
-    print("Error loading customer data: $e");
-    if (mounted) {
-      setState(() {
-        _hasError = false;
-        _userDataLoaded = true;
-      });
-    }
-    _populateFormWithStoredData();
   }
-}
 
-void _populateFormWithStoredData() async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    
-    setState(() {
-      firstNameController.text = prefs.getString('user_firstName') ?? '';
-      lastNameController.text = prefs.getString('user_lastName') ?? '';
-      phoneController.text = prefs.getString('user_phone') ?? '';
-      _customerEmail = prefs.getString('user_email') ?? '';
-    });
-    
-    print("📋 Using stored customer data");
-  } catch (e) {
-    print("Error loading stored data: $e");
-    _populateFormWithDefaults();
+  void _populateFormWithStoredData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      setState(() {
+        firstNameController.text = prefs.getString('user_firstName') ?? '';
+        lastNameController.text = prefs.getString('user_lastName') ?? '';
+        phoneController.text = prefs.getString('user_phone') ?? '';
+        _customerEmail = prefs.getString('user_email') ?? '';
+      });
+
+      print("📋 Using stored customer data");
+    } catch (e) {
+      print("Error loading stored data: $e");
+      _populateFormWithDefaults();
+    }
   }
-}
 
   void _populateFormWithDefaults() {
     if (mounted) {
@@ -1006,181 +1453,181 @@ void _populateFormWithStoredData() async {
 
   Future<void> _validateAndContinue() async {
     final t = AppLocalizations.of(context)!;
-
-    if (!mounted) return; 
+    if (!mounted) return;
 
     setState(() => _isLoading = true);
 
     try {
-      // Use the customer ID from storage
+      // Get customer ID
       final prefs = await SharedPreferences.getInstance();
-      final storageCustomerId = prefs.getInt('user_id') ?? _customerId;
+      final customerId = prefs.getInt('user_id') ?? _customerId;
+      final token = prefs.getString('auth_token');
 
-      if (storageCustomerId == 0) {
+      print("🔐 AUTH STATUS:");
+      print("   - Customer ID: $customerId");
+      print("   - Token exists: ${token != null}");
+
+      if (customerId == 0 || token == null) {
         if (mounted) {
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text(t.pleaseLoginFirst)));
         }
+        setState(() => _isLoading = false);
         return;
       }
 
-      // Validate required fields
-      if (firstNameController.text.isEmpty || lastNameController.text.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(t.pleaseFillAllRequiredFields)),
-          );
-        }
-        return;
-      }
-
-      // Phone validation is optional
-      if (phoneController.text.isNotEmpty &&
-          !phoneController.text.isNumeric()) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(t.pleaseEnterValidPhoneNumber)),
-          );
-        }
-        return;
-      }
-
-      final hasLocation = _selectedLocation != null;
-      final hasManualAddress = addressController.text.isNotEmpty;
-
-      if (!hasLocation && !hasManualAddress) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(t.pleaseSelectLocationOrEnterAddress)),
-          );
-        }
-        return;
-      }
-
-      if (cityController.text.isEmpty || selectedStateId == null) {
+      // Enhanced validation
+      final validationErrors = _validateForm();
+      if (validationErrors.isNotEmpty) {
         if (mounted) {
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(SnackBar(content: Text(t.pleaseSelectCityAndState)));
+          ).showSnackBar(SnackBar(content: Text(validationErrors.join('\n'))));
         }
+        setState(() => _isLoading = false);
         return;
       }
 
-      // Prepare address data
-      final addressData = {
-        'firstname': firstNameController.text.trim(),
-        'lastname': lastNameController.text.trim(),
-        'address1': _getPrimaryAddress(),
-        'city': cityController.text.trim(),
-        'postcode': zipCodeController.text.trim(),
-        'idState': selectedStateId!,
-        'phone':
-            phoneController.text.trim().isNotEmpty
-                ? phoneController.text.trim()
-                : null,
-        'address2':
-            additionalAddressController.text.trim().isNotEmpty
-                ? additionalAddressController.text.trim()
-                : null,
-        'alias': 'Home Address',
-      };
+      // Extract form data
+      final String firstname = firstNameController.text.trim();
+      final String lastname = lastNameController.text.trim();
+      final String address1 = _getPrimaryAddress();
+      final String address2 = additionalAddressController.text.trim();
+      final String city = cityController.text.trim();
+      final String postcode = zipCodeController.text.trim();
+      final int idState = selectedStateId!;
+      final String phone = phoneController.text.trim();
 
-      // Try to save address locally (since API is failing)
-      print('🔄 Saving address locally...');
-      final localResult = await LocalAddressService.saveLocalAddress(
-        addressData,
+      print("📝 ADDRESS DATA:");
+      print("   - Name: $firstname $lastname");
+      print("   - Address: $address1");
+      print("   - City: $city");
+      print("   - State ID: $idState");
+      print("   - Zip: $postcode");
+      print("   - Phone: ${phone.isNotEmpty ? phone : 'Not provided'}");
+
+      // Create address via API
+      print("🔄 CREATING ADDRESS VIA API...");
+      final apiResult = await ApiService.createAddress(
+        firstname: firstname,
+        lastname: lastname,
+        address1: address1,
+        address2: address2.isNotEmpty ? address2 : null,
+        city: city,
+        postcode: postcode,
+        idState: idState,
+        phone: phone.isNotEmpty ? phone : null,
       );
 
-      if (localResult['success'] == true) {
-        // Update the controller with the local address
-        if (mounted) {
-          setState(() {
-            _checkoutController.selectedAddress = localResult['address'];
-            _checkoutController.addresses.add(localResult['address']);
-          });
-        }
+      print("📨 API RESULT:");
+      print("   - Success: ${apiResult['success']}");
+      print("   - Message: ${apiResult['message']}");
+      print("   - From Local: ${apiResult['fromLocalStorage'] ?? false}");
 
-        // Prepare checkout data for next screen
-        final checkoutData = {
-          'firstName': firstNameController.text,
-          'lastName': lastNameController.text,
-          'phone': phoneController.text,
-          'address': _getPrimaryAddress(),
-          'additionalAddress': additionalAddressController.text,
-          'city': cityController.text,
-          'stateId': selectedStateId,
-          'stateName': _stateIdToName[selectedStateId],
-          'zipCode': zipCodeController.text,
-          'location': _selectedLocation,
-          'isBillingSame': isBillingSame,
-          'addressId': localResult['addressId'],
-          'usingStoredData': true,
-          'isLocalAddress': true,
-        };
+      int? newAddressId;
+      bool isLocal = false;
 
-        print("✅ Address saved locally, proceeding to checkout");
-        print("📦 Checkout data: $checkoutData");
+      if (apiResult['success'] == true) {
+        newAddressId = apiResult['id_address'] as int?;
+        isLocal = apiResult['fromLocalStorage'] == true;
 
-        if (mounted) {
-          // Navigate to next screen
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder:
-                  (context) => AddressSelection(
-                    selectedAddressId: localResult['addressId'],
-                    checkoutData: checkoutData,
-                  ),
-            ),
-          );
+        if (isLocal) {
+          print("⚠️ Using locally saved address: $newAddressId");
+        } else {
+          print("✅ API address created: $newAddressId");
         }
       } else {
-        // Even if local saving fails, proceed with the data we have
-        print('⚠️ Local address saving failed, but proceeding anyway...');
-
-        final checkoutData = {
-          'firstName': firstNameController.text,
-          'lastName': lastNameController.text,
-          'phone': phoneController.text,
-          'address': _getPrimaryAddress(),
-          'additionalAddress': additionalAddressController.text,
-          'city': cityController.text,
-          'stateId': selectedStateId,
-          'stateName': _stateIdToName[selectedStateId],
-          'zipCode': zipCodeController.text,
-          'location': _selectedLocation,
-          'isBillingSame': isBillingSame,
-          'addressId': null,
-          'usingStoredData': true,
-          'isLocalAddress': false,
-        };
+        // Show specific error message
+        final errorMsg = apiResult['message'] ?? 'Failed to create address';
+        print("❌ ADDRESS CREATION FAILED: $errorMsg");
 
         if (mounted) {
-          Navigator.push(
+          ScaffoldMessenger.of(
             context,
-            MaterialPageRoute(
-              builder:
-                  (context) => AddressSelection(
-                    selectedAddressId: null,
-                    checkoutData: checkoutData,
-                  ),
-            ),
-          );
+          ).showSnackBar(SnackBar(content: Text(errorMsg)));
         }
+        setState(() => _isLoading = false);
+        return;
       }
+
+      // Prepare navigation data
+      final checkoutData = <String, dynamic>{
+        'firstName': firstname,
+        'lastName': lastname,
+        'phone': phone,
+        'address': address1,
+        'additionalAddress': address2,
+        'city': city,
+        'stateId': idState,
+        'stateName': _stateIdToName[idState] ?? 'Unknown State',
+        'zipCode': postcode,
+        'location': _selectedLocation,
+        'isBillingSame': isBillingSame,
+        'addressId': newAddressId,
+        'usingStoredData': isLocal,
+        'isLocalAddress': isLocal,
+        'customerId': customerId,
+      };
+
+      print("🚀 NAVIGATING TO ADDRESS SELECTION...");
+      print("   - Address ID: $newAddressId");
+      print("   - Is Local: $isLocal");
+
+      if (!mounted) return;
+
+      // Navigate to address selection
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder:
+              (_) => AddressSelection(
+                selectedAddressId: newAddressId,
+                checkoutData: checkoutData,
+              ),
+        ),
+      );
+
+      print("✅ NAVIGATION COMPLETED");
     } catch (e) {
-      print('💥 Error in validateAndContinue: $e');
+      print("💥 VALIDATE AND CONTINUE ERROR: $e");
+      print("🔄 Stack trace: ${e.toString()}");
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("${t.anErrorOccurred}: ${e.toString()}")),
+          SnackBar(
+            content: Text("${t.anErrorOccurred}: ${e.toString()}"),
+            duration: Duration(seconds: 5),
+          ),
         );
       }
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
       }
+      print("🏁 VALIDATE AND CONTINUE COMPLETED");
     }
+  }
+
+  // Add this helper method for validation
+  List<String> _validateForm() {
+    final t = AppLocalizations.of(context)!;
+    final errors = <String>[];
+
+    if (firstNameController.text.isEmpty) errors.add(t.firstNameRequired);
+    if (lastNameController.text.isEmpty) errors.add(t.lastNameRequired);
+    if (addressController.text.isEmpty && _selectedLocation == null) {
+      errors.add(t.addressRequired);
+    }
+    if (cityController.text.isEmpty) errors.add(t.cityRequired);
+    if (selectedStateId == null) errors.add(t.stateRequired);
+    if (zipCodeController.text.isEmpty) errors.add(t.zipCodeRequired);
+
+    if (phoneController.text.isNotEmpty && !phoneController.text.isNumeric()) {
+      errors.add(t.pleaseEnterValidPhoneNumber);
+    }
+
+    return errors;
   }
 
   Future<bool> _saveOrUpdateAddress() async {
@@ -1227,7 +1674,7 @@ void _populateFormWithStoredData() async {
         _checkoutController.selectedAddress = localResult['address'];
         _checkoutController.addresses.add(localResult['address']);
 
-        print('✅ Address saved locally');
+        print(' Address saved locally');
         return true;
       } else {
         _checkoutController.errorMessage = localResult['message'];
@@ -1300,11 +1747,11 @@ void _populateFormWithStoredData() async {
             email: email ?? '',
           );
 
-          print("✅ Default user data stored");
+          print(" Default user data stored");
         }
       }
     } catch (e) {
-      print("💥 Error ensuring user data storage: $e");
+      print(" Error ensuring user data storage: $e");
     }
   }
 }

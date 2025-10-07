@@ -8,7 +8,7 @@ import 'package:tawasul_application/Provider/cart_provider.dart';
 import 'package:tawasul_application/Provider/order_provider.dart';
 import 'package:tawasul_application/Provider/product_provider.dart';
 import 'package:tawasul_application/Provider/user_provider.dart';
-import 'package:tawasul_application/controller/product_controller.dart';
+import 'package:tawasul_application/controller/product_controller.dart'; 
 import 'package:tawasul_application/view/home_page.dart';
 import 'package:tawasul_application/view/splash_screen.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';

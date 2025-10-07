@@ -380,8 +380,6 @@ class MyApp extends StatelessWidget {
       title: 'API Login Demo',
       theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
       home: CheckoutSuccess(orderId: '2135'),
-
-      // Localisation activée
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
     );
@@ -399,7 +397,7 @@ class CheckoutSuccess extends StatefulWidget {
 
 class _CheckoutSuccessState extends State<CheckoutSuccess> {
   final GlobalKey qrKey = GlobalKey();
-  final GlobalKey contentKey = GlobalKey(); // Renamed for clarity
+  final GlobalKey contentKey = GlobalKey();
   bool _isSaving = false;
 
   Future<bool> _checkPermission() async {
@@ -557,131 +555,124 @@ class _CheckoutSuccessState extends State<CheckoutSuccess> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Container(
-        color: Colors.white,
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Content that will be captured in PDF (excluding buttons)
-            RepaintBoundary(
-              key: contentKey,
-              child: Container(
-                color: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 20),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.green,
-                      ),
-                      padding: const EdgeInsets.all(16),
-                      child: Icon(Icons.check, color: Colors.white, size: 48),
-                    ),
-                    SizedBox(height: 20),
-
-                    Text(
-                      t.orderPlaced,
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-
-                    SizedBox(height: 10),
-
-                    RichText(
-                      textAlign: TextAlign.center,
-                      text: TextSpan(
-                        text: "${t.yourOrder} ",
-                        style: TextStyle(color: Colors.black54, fontSize: 14),
-                        children: [
-                          TextSpan(
-                            text: "#",
-                            style: TextStyle(color: Colors.blue),
-                          ),
-                          TextSpan(
-                            text: widget.orderId,
-                            style: TextStyle(
-                              color: Colors.blue,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          TextSpan(text: " ${t.wasPlacedSuccessfully}"),
-                        ],
-                      ),
-                    ),
-
-                    SizedBox(height: 8),
-                    Text(
-                      t.checkOrdersForDetails,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.black45, fontSize: 13),
-                    ),
-
-                    SizedBox(height: 30),
-
-                    RepaintBoundary(
-                      key: qrKey,
-                      child: Container(
-                        padding: EdgeInsets.all(10),
+      body: SingleChildScrollView(
+        child: Container(
+          color: Colors.white,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              RepaintBoundary(
+                key: contentKey,
+                child: Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black12,
-                              blurRadius: 5,
-                              offset: Offset(0, 2),
+                          shape: BoxShape.circle,
+                          color: Colors.green,
+                        ),
+                        padding: const EdgeInsets.all(16),
+                        child: Icon(Icons.check, color: Colors.white, size: 48),
+                      ),
+                      SizedBox(height: 20),
+
+                      Text(
+                        t.orderPlaced,
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+
+                      SizedBox(height: 10),
+
+                      RichText(
+                        textAlign: TextAlign.center,
+                        text: TextSpan(
+                          text: "${t.yourOrder} ",
+                          style: TextStyle(color: Colors.black54, fontSize: 14),
+                          children: [
+                            TextSpan(
+                              text: "# 1293",
+                              style: TextStyle(color: Colors.blue),
                             ),
+                            TextSpan(
+                              text: widget.orderId,
+                              style: TextStyle(
+                                color: Colors.blue,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            TextSpan(text: " ${t.wasPlacedSuccessfully}"),
                           ],
                         ),
-                        child: QrImageView(
-                          data: widget.orderId,
-                          version: QrVersions.auto,
-                          size: 160.0,
-                          backgroundColor: Colors.white,
+                      ),
+
+                      SizedBox(height: 8),
+                      Text(
+                        t.checkOrdersForDetails,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.black45, fontSize: 13),
+                      ),
+
+                      SizedBox(height: 30),
+
+                      RepaintBoundary(
+                        key: qrKey,
+                        child: Container(
+                          padding: EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black12,
+                                blurRadius: 5,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: QrImageView(
+                            data: widget.orderId,
+                            version: QrVersions.auto,
+                            size: 160.0,
+                            backgroundColor: Colors.white,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
 
-            SizedBox(height: 30),
+              SizedBox(height: 20),
 
-            // _buildButton(
-            //   color: Colors.blue,
-            //   icon: Icons.download,
-            //   text: t.download,
-            //   onTap: _saveQrToGallery,
-            // ),
-            SizedBox(height: 15),
+              _buildButton(
+                color: Colors.orange,
+                icon: Icons.picture_as_pdf,
+                text: t.download,
+                onTap: _captureAndSavePDF,
+              ),
 
-            _buildButton(
-              color: Colors.orange,
-              icon: Icons.picture_as_pdf,
-              text: t.download,
-              onTap: _captureAndSavePDF,
-            ),
+              SizedBox(height: 15),
 
-            SizedBox(height: 15),
-
-            _buildButton(
-              color: Colors.grey[200]!,
-              icon: Icons.home,
-              text: t.backToHomePage,
-              textColor: Colors.blue,
-              onTap:
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => HomePage()),
-                  ),
-            ),
-          ],
+              _buildButton(
+                color: Colors.grey[200]!,
+                icon: Icons.home,
+                text: t.backToHomePage,
+                textColor: Colors.blue,
+                onTap:
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => HomePage()),
+                    ),
+              ),
+            ],
+          ),
         ),
       ),
     );

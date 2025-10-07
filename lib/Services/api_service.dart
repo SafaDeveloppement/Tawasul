@@ -1,13 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer' as developer;
 import 'dart:math';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tawasul_application/Services/local_address_service.dart';
-import 'package:tawasul_application/Services/request_debugger.dart';
-import 'package:tawasul_application/controller/address_controller.dart';
-import 'package:tawasul_application/model/address_model.dart';
+import 'package:tawasul_application/Services/toast_service.dart';
 import 'package:tawasul_application/model/carrier_model.dart';
 import 'package:tawasul_application/model/cart_model.dart';
 import 'package:tawasul_application/model/product_model.dart';
@@ -20,15 +17,53 @@ class ApiService {
   static const String baseUrl = "https://tawasul-dev.app-staging.fr";
   static const int timeoutSeconds = 30;
 
-  // Add these class-level variables at the top of ApiService class
   static List<StateModel> _statesList = [];
   static Map<int, String> _stateIdToName = {};
   static Map<String, int> _stateNameToId = {};
   static bool _statesLoaded = false;
 
   static Future<String?> _getAuthToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('auth_token');
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+
+      print(" TOKEN RETRIEVAL DEBUG:");
+      print("   - Token exists: ${token != null}");
+      print("   - Token length: ${token?.length ?? 0}");
+
+      if (token != null) {
+        // Validate token format
+        if (token.isEmpty) {
+          print(" ERROR: Token is empty string");
+          return null;
+        }
+
+        // Check for common storage issues
+        if (token.contains('"') || token.contains("'")) {
+          print("  WARNING: Token may be wrapped in quotes");
+          // Clean the token
+          final cleanedToken =
+              token.replaceAll('"', '').replaceAll("'", '').trim();
+          if (cleanedToken.isNotEmpty) {
+            // Update storage with cleaned token
+            await prefs.setString('auth_token', cleanedToken);
+            print(" Cleaned token stored");
+            return cleanedToken;
+          }
+        }
+
+        print(
+          "   - Token preview: ${token.substring(0, min(20, token.length))}...",
+        );
+        return token;
+      }
+
+      print(" No token found in SharedPreferences");
+      return null;
+    } catch (e) {
+      print(" Error retrieving token: $e");
+      return null;
+    }
   }
 
   static Future<Map<String, String>> _getAuthHeaders() async {
@@ -39,170 +74,117 @@ class ApiService {
 
       Map<String, String> headers = {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
         'Accept-Language': language,
       };
 
       if (token != null && token.isNotEmpty) {
-        headers['Authorization'] = 'Bearer $token';
+        // Check if token already has "Bearer"
+        headers['Authorization'] =
+            token.startsWith('Bearer ') ? token : 'Bearer $token';
+        print(" Authorization header added with token");
+      } else {
+        print(" No token available for Authorization header");
       }
 
       return headers;
     } catch (e) {
-      return {'Content-Type': 'application/json'};
+      print(" Error creating auth headers: $e");
+      return {'Content-Type': 'application/json', 'Accept': 'application/json'};
     }
   }
 
-  static Future<Map<String, String>> _getHeaders() async {
-    try {
-      final token = await _getAuthToken();
-      final prefs = await SharedPreferences.getInstance();
-      final language = prefs.getString('language') ?? 'en';
-
-      Map<String, String> headers = {
-        'Content-Type': 'application/json',
-        'Accept-Language': language,
-      };
-
-      if (token != null && token.isNotEmpty) {
-        headers['Authorization'] = 'Bearer $token';
-      }
-
-      return headers;
-    } catch (e) {
-      return {'Content-Type': 'application/json'};
-    }
-  }
-
-  /*                           LOGIN                                             */
+  /* ------------------------- LOGIN  ------------------------- */
   static Future<Map<String, dynamic>> login(
     String email,
     String password,
   ) async {
     try {
-      print("🚀 STARTING LOGIN PROCESS");
+      print(" STARTING LOGIN PROCESS");
       print("📧 Email: $email");
 
-      // Create a multipart request instead of regular http post
       var request = await http.MultipartRequest(
         'POST',
         Uri.parse('$baseUrl/public/login'),
       );
 
-      // Add form fields
       request.fields['email'] = email.trim();
       request.fields['password'] = password.trim();
-
-      // Set headers
       request.headers['Accept'] = 'application/json';
 
-      print("🌐 Making API call to: $baseUrl/public/login");
-      print("📦 Request fields: ${request.fields}");
+      print(" Making API call to: $baseUrl/public/login");
 
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 
-      // COMPREHENSIVE RESPONSE DEBUGGING
-      print("\n ========== LOGIN RESPONSE DEBUG ==========");
-      print("📍 Response Status Code: ${response.statusCode}");
-      print("📍 Response Headers:");
-      response.headers.forEach((key, value) {
-        print("  $key: $value");
-      });
-      print("📍 Raw Response Body:");
-      print("  ${response.body}");
-      print("📍 Response Body Length: ${response.body.length} characters");
-      print(" ==========================================\n");
+      print("Response Status Code: ${response.statusCode}");
 
       if (response.body.isEmpty) {
-        print(" EMPTY RESPONSE BODY FROM SERVER");
         return {'success': false, 'message': 'Empty response from server'};
       }
 
-      // Try to parse the response
       Map<String, dynamic> responseData;
       try {
         responseData = jsonDecode(response.body);
-        print("Successfully parsed JSON response");
-        print("📊 ALL RESPONSE KEYS: ${responseData.keys.toList()}");
-
-        // Print ALL key-value pairs in the response
-        print("📊 COMPLETE RESPONSE DATA:");
-        responseData.forEach((key, value) {
-          if (value is String && value.length > 100) {
-            print("  $key: ${value.substring(0, 100)}... (truncated)");
-          } else {
-            print("  $key: $value");
-          }
-        });
+        print(" Successfully parsed JSON response");
       } catch (e) {
-        print(" FAILED TO PARSE JSON RESPONSE: $e");
-        print("📝 Raw response that failed to parse: ${response.body}");
+        print(" Failed to parse JSON: $e");
         return {
           'success': false,
           'message': 'Invalid response format from server: $e',
         };
       }
 
-      if (response.statusCode == 200) {
-        if (responseData['success'] == true && responseData['token'] != null) {
-          print("🎉 LOGIN SUCCESSFUL WITH TOKEN!");
-          print("🔑 Token received: ${responseData['token'] != null}");
-          print("🔑 Token length: ${responseData['token']?.length ?? 0}");
-          print(
-            "🔑 Token preview: ${responseData['token'] != null ? responseData['token']!.substring(0, min(30, responseData['token']!.length)) + '...' : 'null'}",
-          );
+      // In the login success section, after storing the token:
+      if (responseData['success'] == true && responseData['token'] != null) {
+        print("LOGIN SUCCESSFUL WITH TOKEN!");
 
-          // Store the token
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('auth_token', responseData['token']!);
+        final token = responseData['token']!.trim();
+        print("Raw token received: ${token.length} chars");
 
-          // Verify storage
-          final storedToken = prefs.getString('auth_token');
-          print("💾 Token storage verification:");
-          print("  - Stored successfully: ${storedToken != null}");
-          print("  - Stored token length: ${storedToken?.length ?? 0}");
-          print(
-            "  - Stored token matches: ${storedToken == responseData['token']}",
-          );
+        // Store in SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
 
-          return {
-            'success': true,
-            'token': responseData['token'],
-            'message': 'Login successful',
-          };
-        } else {
-          print(" LOGIN FAILED OR NO TOKEN");
-          print("  - success: ${responseData['success']}");
-          print("  - token exists: ${responseData['token'] != null}");
-          print("  - message: ${responseData['message']}");
+        // Clear any existing tokens first
+        await prefs.remove('auth_token');
+        await prefs.setString('auth_token', token);
 
-          return {
-            'success': false,
-            'message':
-                responseData['message'] ?? 'Login failed - no token received',
-            'responseData': responseData,
-          };
+        // Store user ID
+        if (responseData['id_customer'] != null) {
+          await prefs.setInt('user_id', responseData['id_customer']);
         }
+
+        // IMMEDIATE VERIFICATION
+        await Future.delayed(Duration(milliseconds: 100)); // Let storage commit
+        final storedToken = prefs.getString('auth_token');
+
+        print(" STORAGE VERIFICATION:");
+        print("   - Token stored successfully: ${storedToken != null}");
+        print(
+          "   - Token length matches: ${storedToken?.length == token.length}",
+        );
+        print("   - Token value matches: ${storedToken == token}");
+
+        if (storedToken == null) {
+          print(" CRITICAL: Token storage failed!");
+          // Try alternative storage method
+          await prefs.setString('auth_token', token);
+          final retryToken = prefs.getString('auth_token');
+          print("   - Retry result: ${retryToken != null}");
+        }
+
+        return {'success': true, 'token': token, 'message': 'Login successful'};
       } else {
-        print(" HTTP ERROR: ${response.statusCode}");
+        print(" HTTP Error: ${response.statusCode}");
         return {
           'success': false,
           'message':
-              responseData['message'] ??
-              responseData['error'] ??
-              'Server error: ${response.statusCode}',
-          'statusCode': response.statusCode,
-          'responseData': responseData,
+              responseData['message'] ?? 'Server error: ${response.statusCode}',
         };
       }
     } catch (e) {
-      print(" LOGIN EXCEPTION: $e");
-      print("📝 Error type: ${e.runtimeType}");
-      return {
-        'success': false,
-        'message': 'Failed to connect to server: $e',
-        'errorType': e.runtimeType.toString(),
-      };
+      print(" Login exception: $e");
+      return {'success': false, 'message': 'Failed to connect to server: $e'};
     }
   }
 
@@ -352,7 +334,7 @@ class ApiService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/public/getproducts?code=$categoryCode'),
-        headers: await _getHeaders(),
+        headers: await _getAuthHeaders(),
       );
 
       print(
@@ -497,7 +479,7 @@ class ApiService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/public/getproducts?code=$categoryCode'),
-        headers: await _getHeaders(),
+        headers: await _getAuthHeaders(),
       );
 
       if (response.statusCode == 200) {
@@ -595,7 +577,7 @@ class ApiService {
       print("Fetching newest products from: $uri");
 
       final response = await http
-          .get(uri, headers: await _getHeaders())
+          .get(uri, headers: await _getAuthHeaders())
           .timeout(Duration(seconds: timeoutSeconds));
 
       print("Newest products API response status: ${response.statusCode}");
@@ -678,7 +660,7 @@ class ApiService {
 
       // First, get all categories
       final categories = await getCategories();
-      print("📋 Found ${categories.length} total categories");
+      print(" Found ${categories.length} total categories");
 
       // Get all category IDs (including subcategories)
       final allCategoryIds = <int>[];
@@ -693,7 +675,7 @@ class ApiService {
 
       collectCategoryIds(categories);
 
-      print("🎯 Available category IDs: ${allCategoryIds.length}");
+      print(" Available category IDs: ${allCategoryIds.length}");
 
       if (allCategoryIds.isEmpty) {
         print(" No categories found!");
@@ -737,7 +719,7 @@ class ApiService {
             print(
               "Added ${productsToTake.length} products from category $categoryId",
             );
-            print("🎯 Still need $productsNeeded more products");
+            print(" Still need $productsNeeded more products");
 
             // ADDED: Break immediately if we have enough
             if (productsNeeded <= 0) {
@@ -811,11 +793,11 @@ class ApiService {
             Uri.parse(
               '$baseUrl/public/getproductdetail?id_product=$productId&id_lang_app=$languageId',
             ),
-            headers: await _getHeaders(),
+            headers: await _getAuthHeaders(),
           )
           .timeout(Duration(seconds: timeoutSeconds));
 
-      print("🔍 Product detail API response status: ${response.statusCode}");
+      print(" Product detail API response status: ${response.statusCode}");
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
@@ -891,8 +873,6 @@ class ApiService {
       for (int catId in relatedCategoryIds) {
         try {
           final products = await getProductsByCategoryCode(catId);
-
-          // Filter out the current product and add to list
           final filteredProducts =
               products
                   .where((product) => product.id != excludeProductId)
@@ -901,7 +881,6 @@ class ApiService {
 
           print("Found ${filteredProducts.length} products in category $catId");
 
-          // If we have enough products, break early
           if (allSimilarProducts.length >= limit) {
             break;
           }
@@ -909,8 +888,6 @@ class ApiService {
           print("Error fetching products from category $catId: $e");
         }
       }
-
-      // Remove duplicates and limit the results
       final uniqueProducts =
           allSimilarProducts
               .fold<Map<int, Product>>({}, (map, product) {
@@ -1018,7 +995,7 @@ class ApiService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/public/getproducts?code=$categoryId'),
-        headers: await _getHeaders(),
+        headers: await _getAuthHeaders(),
       );
 
       print(
@@ -1110,13 +1087,104 @@ class ApiService {
     }
   }
 
+  /* ------------------------- DEBUG TOKEN STORAGE ------------------------- */
+  static Future<void> debugTokenStorage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      print("\n" + "=" * 50);
+      print(" DEBUG TOKEN STORAGE");
+      print("=" * 50);
+
+      // Check ALL stored data
+      print(" ALL STORED DATA:");
+      final allKeys = prefs.getKeys().toList()..sort();
+      for (var key in allKeys) {
+        final value = prefs.get(key);
+        print("   - $key: $value");
+      }
+
+      // Specifically check auth_token
+      final authToken = prefs.getString('auth_token');
+      print("\n AUTH TOKEN STATUS:");
+      print("   - auth_token exists: ${authToken != null}");
+      print("   - auth_token value: $authToken");
+      print("   - auth_token length: ${authToken?.length ?? 0}");
+
+      print("=" * 50 + "\n");
+    } catch (e) {
+      print(" Debug token storage error: $e");
+    }
+  }
+
+  /* ------------------------- CHECK TOKEN FORMAT ------------------------- */
+  static Future<void> _checkTokenFormat(String token) async {
+    try {
+      print("\n" + "=" * 50);
+      print(" TOKEN FORMAT ANALYSIS");
+      print("=" * 50);
+
+      print(" Token Analysis:");
+      print("   - Total length: ${token.length}");
+      print("   - Contains spaces: ${token.contains(' ')}");
+      print("   - Contains newlines: ${token.contains('\n')}");
+      print(
+        "   - Contains quotes: ${token.contains('"') || token.contains("'")}",
+      );
+      print("   - Starts with: ${token.substring(0, min(10, token.length))}");
+      print(
+        "   - Ends with: ${token.substring(token.length - min(10, token.length))}",
+      );
+
+      // Check if it's a JWT token (should have 3 parts separated by dots)
+      final parts = token.split('.');
+      print("   - JWT parts: ${parts.length}");
+      if (parts.length == 3) {
+        print("   - JWT header: ${parts[0].length} chars");
+        print("   - JWT payload: ${parts[1].length} chars");
+        print("   - JWT signature: ${parts[2].length} chars");
+      }
+
+      // Check for common issues
+      if (token.startsWith('"') && token.endsWith('"')) {
+        print("  WARNING: Token is wrapped in quotes!");
+      }
+      if (token.contains('\n')) {
+        print("  WARNING: Token contains newlines!");
+      }
+      if (token.contains(' ')) {
+        print("  WARNING: Token contains spaces!");
+      }
+
+      print("=" * 50 + "\n");
+    } catch (e) {
+      print(" Token format analysis error: $e");
+    }
+  }
+
   /* ------------------------- GET CUSTOMER DETAILS ------------------------- */
+
   static Future<Map<String, dynamic>> getCustomerDetails() async {
     try {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       final String? token = prefs.getString('auth_token');
 
+      print("\n" + "=" * 50);
+      print(" GET CUSTOMER DETAILS - START");
+      print("=" * 50);
+
       if (token == null || token.isEmpty) {
+        print(" TOKEN ISSUE:");
+        print("   - Token is null: ${token == null}");
+        print("   - Token is empty: ${token != null && token.isEmpty}");
+
+        print(" ALL STORED KEYS:");
+        final allKeys = prefs.getKeys();
+        allKeys.forEach((key) {
+          final value = prefs.get(key);
+          print("   - $key: $value");
+        });
+
         return {
           'success': false,
           'message': 'Authentication token not found',
@@ -1124,30 +1192,64 @@ class ApiService {
         };
       }
 
-      print("🔐 Making API call with token length: ${token.length}");
+      print(" TOKEN FOUND:");
+      print("   - Token length: ${token.length}");
+      print(
+        "   - Token preview: ${token.substring(0, min(30, token.length))}...",
+      );
+      print("   - Token ends with: ...${token.substring(token.length - 20)}");
+
+      await _checkTokenFormat(token);
+
+      final url = '$baseUrl/public/getcustomerdetails';
+      print(" MAKING API CALL:");
+      print("   - URL: $url");
+
+      final headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      };
+      print("   - Headers: $headers");
+
+      final stopwatch = Stopwatch()..start();
 
       final response = await http
-          .get(
-            Uri.parse('$baseUrl/public/getcustomerdetails'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $token',
-              'Accept': 'application/json',
-            },
-          )
+          .get(Uri.parse(url), headers: headers)
           .timeout(Duration(seconds: timeoutSeconds));
 
-      print("📡 Customer Details API Response: ${response.statusCode}");
+      stopwatch.stop();
+
+      print(" API RESPONSE:");
+      print("Responseeeee : $response");
+      print("   - Status Code: ${response.statusCode}");
+      print("   - Response Time: ${stopwatch.elapsedMilliseconds}ms");
+      print("   - Content-Type: ${response.headers['content-type']}");
+      print("   - Content-Length: ${response.headers['content-length']}");
+
+      print("   - ALL HEADERS:");
+      response.headers.forEach((key, value) {
+        print("     $key: $value");
+      });
 
       if (response.statusCode == 200) {
+        print(" HTTP 200 OK");
         final Map<String, dynamic> responseData = json.decode(response.body);
+        print("   - JSON Success: ${responseData['success']}");
+        print("   - Response keys: ${responseData.keys.toList()}");
 
         if (responseData['success'] == true &&
             responseData['customer'] != null) {
           final customer = responseData['customer'];
+          print(" CUSTOMER DATA SUCCESS:");
+          print("   - Customer ID: ${customer['id']}");
+          print("   - Name: ${customer['firstname']} ${customer['lastname']}");
+          print("   - Email: ${customer['email']}");
 
-          // Store the fresh data for future use
           await _storeCustomerData(customer);
+
+          print(" GET CUSTOMER DETAILS - COMPLETED SUCCESSFULLY");
+          print("=" * 50 + "\n");
 
           return {
             'success': true,
@@ -1160,21 +1262,44 @@ class ApiService {
             'id_state': customer['geoloc_id_state'],
           };
         } else {
+          print(" API RESPONSE ISSUE:");
+          print("   - Success field: ${responseData['success']}");
+          print(
+            "   - Customer field exists: ${responseData['customer'] != null}",
+          );
+          print("   - Message: ${responseData['message']}");
+          print("   - Full response: $responseData");
+
+          print(" GET CUSTOMER DETAILS - FAILED (API response issue)");
+          print("=" * 50 + "\n");
+
           return {
             'success': false,
-            'message': 'Invalid response format from server',
+            'message':
+                responseData['message'] ?? 'Invalid response from server',
             'code': 'INVALID_RESPONSE',
           };
         }
       } else if (response.statusCode == 401) {
-        // Clear invalid token
-        await prefs.remove('auth_token');
+        print(" AUTHENTICATION FAILED - 401 Unauthorized");
+        print("   - Response body: ${response.body}");
+
+        print(" GET CUSTOMER DETAILS - FAILED (401 Unauthorized)");
+        print("=" * 50 + "\n");
+
         return {
           'success': false,
           'message': 'Authentication failed. Please login again.',
           'code': 'AUTH_FAILED',
         };
       } else {
+        print(" SERVER ERROR:");
+        print("   - Status: ${response.statusCode}");
+        print("   - Body: ${response.body}");
+
+        print(" GET CUSTOMER DETAILS - FAILED (Server error)");
+        print("=" * 50 + "\n");
+
         return {
           'success': false,
           'message': 'Server error: ${response.statusCode}',
@@ -1182,7 +1307,13 @@ class ApiService {
         };
       }
     } catch (e) {
-      print("❌ Error in getCustomerDetails: $e");
+      print(" EXCEPTION IN GET CUSTOMER DETAILS:");
+      print("   - Error: $e");
+      print("   - Error type: ${e.runtimeType}");
+
+      print(" GET CUSTOMER DETAILS - FAILED (Exception)");
+      print("=" * 50 + "\n");
+
       return {
         'success': false,
         'message': 'Failed to connect: $e',
@@ -1202,9 +1333,9 @@ class ApiService {
       await prefs.setString('user_lastName', customer['lastname'] ?? '');
       await prefs.setString('user_phone', customer['phone_number'] ?? '');
 
-      print("💾 Customer data stored successfully");
+      print(" Customer data stored successfully");
     } catch (e) {
-      print("❌ Error storing customer data: $e");
+      print(" Error storing customer data: $e");
     }
   }
 
@@ -1233,7 +1364,7 @@ class ApiService {
           )
           .timeout(Duration(seconds: timeoutSeconds));
 
-      print("📡 Addresses API Response: ${response.statusCode}");
+      print(" Addresses API Response: ${response.statusCode}");
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = json.decode(response.body);
@@ -1267,7 +1398,7 @@ class ApiService {
         };
       }
     } catch (e) {
-      print("❌ Error fetching addresses: $e");
+      print(" Error fetching addresses: $e");
 
       // Try to get addresses from local storage as fallback
       try {
@@ -1304,6 +1435,10 @@ class ApiService {
       final String? token = prefs.getString('auth_token');
       final int? customerId = prefs.getInt('user_id');
 
+      print("CREATE ADDRESS - AUTH CHECK:");
+      print("   - Token: ${token != null ? 'EXISTS' : 'NULL'}");
+      print("   - Customer ID: $customerId");
+
       if (token == null || customerId == null) {
         return {
           'success': false,
@@ -1330,7 +1465,9 @@ class ApiService {
         '$baseUrl/public/createaddress',
       ).replace(queryParameters: queryParams);
 
-      print("📤 Creating address via API: $uri");
+      print(" CREATE ADDRESS API CALL:");
+      print("   - URL: $uri");
+      print("   - Headers with Authorization: Bearer token");
 
       final response = await http
           .post(
@@ -1343,15 +1480,24 @@ class ApiService {
           )
           .timeout(Duration(seconds: timeoutSeconds));
 
-      print("📡 Create Address API Response: ${response.statusCode}");
+      print("CREATE ADDRESS RESPONSE:");
+      print("   - Status Code: ${response.statusCode}");
+      print("   - Response Body: ${response.body}");
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = json.decode(response.body);
 
+        print(" RESPONSE ANALYSIS:");
+        print("   - Success: ${responseData['success']}");
+        print("   - Message: ${responseData['message']}");
+        print("   - ID Address: ${responseData['id_address']}");
+
         if (responseData['success'] == true) {
-          // Also store locally for backup
+          final newAddressId = responseData['id_address'];
+          print(" ADDRESS CREATED SUCCESSFULLY: $newAddressId");
+
           final addressData = {
-            'id_address': responseData['id_address'],
+            'id_address': newAddressId,
             'firstname': firstname,
             'lastname': lastname,
             'address1': address1,
@@ -1362,7 +1508,7 @@ class ApiService {
             'phone': phone ?? '',
             'phone_mobile': phone ?? '',
             'country': 'Libya',
-            'state': getStateNameById(idState), // FIXED: Using the new method
+            'state': getStateNameById(idState),
           };
 
           await LocalAddressService.saveLocalAddress(addressData);
@@ -1371,29 +1517,35 @@ class ApiService {
             'success': true,
             'message':
                 responseData['message'] ?? 'Address created successfully',
-            'id_address': responseData['id_address'],
+            'id_address': newAddressId,
             'address': responseData['address'],
           };
         } else {
-          return {
-            'success': false,
-            'message': responseData['message'] ?? 'Failed to create address',
-          };
+          // API returned success: false - analyze why
+          final errorMessage =
+              responseData['message'] ?? 'Failed to create address';
+          print(" API CREATION FAILED: $errorMessage");
+
+          return {'success': false, 'message': errorMessage, 'api_error': true};
         }
       } else if (response.statusCode == 401) {
+        print(" AUTHENTICATION FAILED - 401");
         await prefs.remove('auth_token');
         return {
           'success': false,
           'message': 'Authentication failed. Please login again.',
+          'auth_error': true,
         };
       } else {
+        print(" SERVER ERROR: ${response.statusCode}");
         return {
           'success': false,
           'message': 'Server error: ${response.statusCode}',
+          'server_error': true,
         };
       }
     } catch (e) {
-      print("❌ Error creating address: $e");
+      print(" CREATE ADDRESS EXCEPTION: $e");
 
       // Fallback to local storage
       try {
@@ -1407,7 +1559,7 @@ class ApiService {
           'id_state': idState,
           'phone': phone ?? '',
           'alias': alias,
-          'state': getStateNameById(idState), // FIXED: Using the new method
+          'state': getStateNameById(idState),
         };
 
         final localResult = await LocalAddressService.saveLocalAddress(
@@ -1423,7 +1575,10 @@ class ApiService {
             'fromLocalStorage': true,
           };
         } else {
-          return {'success': false, 'message': 'Failed to create address: $e'};
+          return {
+            'success': false,
+            'message': 'Failed to create address locally: $e',
+          };
         }
       } catch (localError) {
         return {'success': false, 'message': 'Failed to connect to server: $e'};
@@ -1515,6 +1670,181 @@ class ApiService {
     } catch (e) {
       print(" Error updating address: $e");
       return {'success': false, 'message': 'Failed to connect to server: $e'};
+    }
+  }
+
+  /* ------------------------- GET ADDRESS BY ID ------------------------- */
+  static Future<Map<String, dynamic>> getAddressById(int addressId) async {
+    try {
+      final headers = await _getAuthHeaders();
+
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/public/getadressebyid?id_address=$addressId'),
+            headers: headers,
+          )
+          .timeout(Duration(seconds: timeoutSeconds));
+
+      print("Get address by ID response: ${response.statusCode}");
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = json.decode(response.body);
+        return responseData;
+      } else {
+        return {
+          'success': false,
+          'message': 'Server error: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      print("Error getting address by ID: $e");
+      return {'success': false, 'message': 'Failed to connect to server: $e'};
+    }
+  }
+
+  /* ------------------------- DELETE ADDRESS ------------------------- */
+  static Future<Map<String, dynamic>> deleteAddress(
+    String addressIdentifier,
+  ) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final addressId = int.tryParse(addressIdentifier);
+
+      if (addressId == null) {
+        return {'success': false, 'message': 'Invalid address ID'};
+      }
+
+      final response = await http
+          .delete(
+            Uri.parse('$baseUrl/public/deleteaddress?id_address=$addressId'),
+            headers: headers,
+          )
+          .timeout(Duration(seconds: timeoutSeconds));
+
+      print("Delete address response: ${response.statusCode}");
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = json.decode(response.body);
+        return responseData;
+      } else {
+        return {
+          'success': false,
+          'message': 'Server error: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      print("Error deleting address: $e");
+      return {'success': false, 'message': 'Failed to connect to server: $e'};
+    }
+  }
+
+  /* ------------------------- ADD ADDRESS ------------------------- */
+  // static Future<bool> addAddress(Map<String, dynamic> addressData) async {
+  //   try {
+  //     final result = await createAddress(
+  //       firstname: addressData['firstname'] ?? '',
+  //       lastname: addressData['lastname'] ?? '',
+  //       address1: addressData['address1'] ?? '',
+  //       city: addressData['city'] ?? '',
+  //       postcode: addressData['postcode'] ?? '',
+  //       idState: addressData['id_state'] ?? addressData['idState'] ?? 0,
+  //       phone: addressData['phone'] ?? addressData['phone_mobile'] ?? '',
+  //       address2: addressData['address2'] ?? '',
+  //     );
+
+  //     return result['success'] == true;
+  //   } catch (e) {
+  //     print("Error adding address: $e");
+  //     return false;
+  //   }
+  // }
+
+  /* ------------------------- ADD ADDRESS ------------------------- */
+  static Future<bool> addAddress(Map<String, dynamic> addressData) async {
+    try {
+      print("🔄 ADD ADDRESS - PROCESSING DATA:");
+      print("   - Full address data: $addressData");
+
+      // Extract and validate required fields
+      final String firstname =
+          addressData['firstname']?.toString().trim() ?? '';
+      final String lastname = addressData['lastname']?.toString().trim() ?? '';
+      final String address1 = addressData['address1']?.toString().trim() ?? '';
+      final String city = addressData['city']?.toString().trim() ?? '';
+      final String postcode = addressData['postcode']?.toString().trim() ?? '';
+
+      // Handle idState - it could be String or int
+      int idState = 0;
+      if (addressData['id_state'] != null) {
+        idState =
+            addressData['id_state'] is int
+                ? addressData['id_state']
+                : int.tryParse(addressData['id_state'].toString()) ?? 0;
+      } else if (addressData['idState'] != null) {
+        idState =
+            addressData['idState'] is int
+                ? addressData['idState']
+                : int.tryParse(addressData['idState'].toString()) ?? 0;
+      }
+
+      final String? phone = addressData['phone']?.toString().trim();
+      final String? address2 = addressData['address2']?.toString().trim();
+
+      print("📝 EXTRACTED ADDRESS DATA:");
+      print("   - Firstname: '$firstname'");
+      print("   - Lastname: '$lastname'");
+      print("   - Address1: '$address1'");
+      print("   - City: '$city'");
+      print("   - Postcode: '$postcode'");
+      print("   - ID State: $idState");
+      print("   - Phone: '$phone'");
+      print("   - Address2: '$address2'");
+
+      // Validate required fields
+      if (firstname.isEmpty) {
+        print(" VALIDATION FAILED: Firstname is empty");
+        return false;
+      }
+      if (lastname.isEmpty) {
+        print(" VALIDATION FAILED: Lastname is empty");
+        return false;
+      }
+      if (address1.isEmpty) {
+        print(" VALIDATION FAILED: Address1 is empty");
+        return false;
+      }
+      if (city.isEmpty) {
+        print(" VALIDATION FAILED: City is empty");
+        return false;
+      }
+      if (postcode.isEmpty) {
+        print(" VALIDATION FAILED: Postcode is empty");
+        return false;
+      }
+      if (idState == 0) {
+        print(" VALIDATION FAILED: ID State is invalid");
+        return false;
+      }
+
+      final result = await createAddress(
+        firstname: firstname,
+        lastname: lastname,
+        address1: address1,
+        city: city,
+        postcode: postcode,
+        idState: idState,
+        phone: phone?.isNotEmpty == true ? phone : null,
+        address2: address2?.isNotEmpty == true ? address2 : null,
+      );
+
+      print("📨 ADD ADDRESS RESULT:");
+      print("   - Success: ${result['success']}");
+      print("   - Message: ${result['message']}");
+
+      return result['success'] == true;
+    } catch (e) {
+      print(" ERROR IN ADD ADDRESS: $e");
+      return false;
     }
   }
 
@@ -1623,12 +1953,15 @@ class ApiService {
       final uri = Uri.parse(
         '$baseUrl/public/updatecart',
       ).replace(queryParameters: params);
-      final response = await http.get(uri);
+
+      final headers = await _getAuthHeaders();
+
+      final response = await http.get(uri, headers: headers);
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {
-        throw Exception('Failed to update cart: ${response.statusCode}');
+        throw Exception('Failed to update cart: ${response.body}');
       }
     } catch (e) {
       print('Update cart API error: $e');
@@ -1690,7 +2023,7 @@ class ApiService {
         return {'success': true, 'states': _statesList};
       }
 
-      print("🔄 Loading states from API...");
+      print(" Loading states from API...");
 
       final response = await http
           .get(
@@ -1702,7 +2035,7 @@ class ApiService {
           )
           .timeout(Duration(seconds: timeoutSeconds));
 
-      print("📡 States API Response: ${response.statusCode}");
+      print(" States API Response: ${response.statusCode}");
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = json.decode(response.body);
@@ -1721,7 +2054,7 @@ class ApiService {
 
           _statesLoaded = true;
 
-          print("✅ ${_statesList.length} states loaded successfully");
+          print(" ${_statesList.length} states loaded successfully");
 
           return {'success': true, 'states': _statesList};
         } else {
@@ -1737,7 +2070,7 @@ class ApiService {
         };
       }
     } catch (e) {
-      print("❌ Error loading states: $e");
+      print(" Error loading states: $e");
 
       // Try to load from local storage
       try {
@@ -1754,7 +2087,7 @@ class ApiService {
           };
         }
       } catch (localError) {
-        print("❌ Error loading local states: $localError");
+        print(" Error loading local states: $localError");
       }
 
       return {'success': false, 'message': 'Failed to load states: $e'};
@@ -1795,9 +2128,9 @@ class ApiService {
       final prefs = await SharedPreferences.getInstance();
       final statesJson = states.map((state) => state.toJson()).toList();
       await prefs.setString('app_states', json.encode(statesJson));
-      print("💾 ${states.length} states stored locally");
+      print(" ${states.length} states stored locally");
     } catch (e) {
-      print("❌ Error storing states locally: $e");
+      print(" Error storing states locally: $e");
     }
   }
 
@@ -1815,7 +2148,7 @@ class ApiService {
         return states;
       }
     } catch (e) {
-      print("❌ Error loading states from local storage: $e");
+      print(" Error loading states from local storage: $e");
     }
 
     return [];
@@ -2516,7 +2849,9 @@ class ApiService {
   // Get addresses
   static Future<List<dynamic>> getAddresses() async {
     try {
-      final token = await _getAuthToken();
+      final token_test = await _getAuthToken();
+      final token = token_test?.trim();
+      showToast('Token: $token');
       final res = await http.get(
         Uri.parse('$baseUrl/Address'),
         headers: {
@@ -2533,70 +2868,6 @@ class ApiService {
     } catch (e) {
       print('getAddresses error: $e');
       return [];
-    }
-  }
-
-  // Add address -> POST
-  static Future<bool> addAddress(Map<String, dynamic> body) async {
-    try {
-      final token = await _getAuthToken();
-
-      final requestBody = {
-        'address1': body['address1'],
-        'address2': body['address2'] ?? '',
-        'lastName': body['lastName'],
-        'firstName': body['firstName'],
-        'city': body['city'],
-        'postcode': body['postcode'] ?? '',
-        'phone': body['phoneNumber'] ?? '',
-      };
-
-      print('Sending add address request: ${json.encode(requestBody)}');
-
-      final res = await http.post(
-        Uri.parse('$baseUrl/newAddress'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: json.encode(requestBody),
-      );
-
-      print('Add address response: ${res.statusCode} - ${res.body}');
-
-      if (res.statusCode == 200) {
-        final responseData = json.decode(res.body);
-        return responseData['message'] == 'success';
-      }
-      return false;
-    } catch (e) {
-      print('addAddress error: $e');
-      return false;
-    }
-  }
-
-  // Delete address -> DELETE
-  static Future<bool> deleteAddress(String code) async {
-    try {
-      final token = await _getAuthToken();
-
-      print('Sending delete address request for code: $code');
-
-      final res = await http.delete(
-        Uri.parse('$baseUrl/deleteAddress'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: json.encode({'code': code}),
-      );
-
-      print('Delete address response: ${res.statusCode} - ${res.body}');
-
-      return res.statusCode == 200;
-    } catch (e) {
-      print('deleteAddress error: $e');
-      return false;
     }
   }
 
