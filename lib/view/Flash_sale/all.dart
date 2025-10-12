@@ -418,9 +418,9 @@ import 'package:tawasul_application/Services/api_service.dart';
 
 class All extends StatefulWidget {
   final String categoryName;
-  final String shopId;
+  //final String shopId;
 
-  const All({super.key, required this.categoryName, required this.shopId});
+  const All({super.key, required this.categoryName, }); //required this.shopId
 
   @override
   State<All> createState() => _AllState();
@@ -434,7 +434,7 @@ class _AllState extends State<All> {
   void initState() {
     super.initState();
     print(
-      "Initializing All page with category name: ${widget.categoryName}, shop: ${widget.shopId}",
+      "Initializing All page with category name: ${widget.categoryName}", //shop: ${widget.shopId}
     );
 
     _loadProducts();
@@ -456,8 +456,8 @@ class _AllState extends State<All> {
         // Fetch random products from various categories
         print("Fetching RANDOM products from categories...");
         await productController.fetchRandomProductsFromCategories(
-          numberOfProducts: 30, // You can adjust this number
-          shopId: widget.shopId,
+          numberOfProducts: 30, 
+          //shopId: widget.shopId,
         );
       } else {
         // Fetch products by specific category name
@@ -541,10 +541,10 @@ class _AllState extends State<All> {
                 "Fetching from various categories",
                 style: TextStyle(fontSize: 12.sp, color: Colors.grey),
               ),
-              Text(
-                "Shop: ${widget.shopId}",
-                style: TextStyle(fontSize: 12.sp, color: Colors.grey),
-              ),
+              // Text(
+              //   "Shop: ${widget.shopId}",
+              //   style: TextStyle(fontSize: 12.sp, color: Colors.grey),
+              // ),
             ],
           ),
         ),
@@ -609,11 +609,11 @@ class _AllState extends State<All> {
               "Category: ${widget.categoryName}",
               style: TextStyle(fontSize: 12.sp, color: Colors.grey),
             ),
-            Text(
-              "Shop: ${widget.shopId}",
-              style: TextStyle(fontSize: 12.sp, color: Colors.grey),
-            ),
-            SizedBox(height: 16.h),
+            // Text(
+            //   "Shop: ${widget.shopId}",
+            //   style: TextStyle(fontSize: 12.sp, color: Colors.grey),
+            // ),
+            // SizedBox(height: 16.h),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [

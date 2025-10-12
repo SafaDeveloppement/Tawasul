@@ -365,17 +365,8 @@ class _HomePageState extends State<HomePage> {
         );
       case FlashSaleFilter.brands:
         return const brands.Brands();
-      // case FlashSaleFilter.all:
-      //   return Consumer<ProductController>(
-      //     builder: (context, productController, child) {
-      //       if (productController.allProducts.isEmpty) {
-      //         return Center(child: Text("No products available"));
-      //       }
-      //       return Center(child: Text("No products available"));
-      //     },
-      //   );
       case FlashSaleFilter.all:
-        return All(categoryName: 'All Products', shopId: '4');
+        return All(categoryName: 'All Products');
     }
   }
 

@@ -1,652 +1,1515 @@
+/////////////////////////////////////////////////////////////////////////
+
+// import 'dart:convert';
+// import 'package:flutter/material.dart';
+// import 'package:flutter_screenutil/flutter_screenutil.dart';
+// import 'package:http/http.dart' as http;
+// import 'package:shared_preferences/shared_preferences.dart';
+// import 'package:tawasul_application/Services/api_service.dart';
+// import 'package:tawasul_application/l10n/app_localizations.dart';
+// import 'package:tawasul_application/view/Checkout/checkout.dart';
+// import 'package:tawasul_application/view/Connexion/login.dart';
+// import 'package:tawasul_application/view/home_page.dart';
+
+// const String baseUrl = "https://tawasul-dev.app-staging.fr";
+
+// class CartResponse {
+//   final String idCart;
+//   final List<CartItem> products;
+
+//   CartResponse({required this.idCart, required this.products});
+
+//   factory CartResponse.fromJson(Map<String, dynamic> json) {
+//     final productsData = json['products'];
+//     List<CartItem> productList = [];
+
+//     if (productsData is List) {
+//       productList = productsData.map((e) => CartItem.fromJson(e)).toList();
+//     }
+
+//     return CartResponse(
+//       idCart: json['id_cart'].toString(),
+//       products: productList,
+//     );
+//   }
+// }
+
+// class CartItem {
+//   final String name;
+//   final String image;
+//   final int quantity;
+//   final double price;
+
+//   CartItem({
+//     required this.name,
+//     required this.image,
+//     required this.quantity,
+//     required this.price,
+//   });
+
+//   factory CartItem.fromJson(Map<String, dynamic> json) {
+//     return CartItem(
+//       name: json['name'] ?? '',
+//       image: json['image'] ?? '',
+//       quantity: int.tryParse(json['cart_quantity']?.toString() ?? '0') ?? 0,
+//       price: double.tryParse(json['unit_price']?.toString() ?? '0.0') ?? 0.0,
+//     );
+//   }
+// }
+
+// class ShoppingCart extends StatefulWidget {
+//   final String? cartId;
+
+//   const ShoppingCart({super.key, this.cartId});
+
+//   @override
+//   State<ShoppingCart> createState() => _ShoppingCartState();
+// }
+
+// class _ShoppingCartState extends State<ShoppingCart> {
+//   Future<List<CartResponse>>? _futureCartItems;
+//   late ShoppingCartController _shoppingCartController;
+
+//   @override
+//   void initState() {
+//     super.initState();
+//     _loadCart();
+//     _shoppingCartController = ShoppingCartController();
+//   }
+
+//   Future<void> _loadCart() async {
+//     final prefs = await SharedPreferences.getInstance();
+//     final cartId = prefs.getString('cart_id');
+//     if (cartId != null && cartId.isNotEmpty) {
+//       setState(() {
+//         _futureCartItems = getCartById(cartId);
+//       });
+//     } else {
+//       print("No cart ID found");
+//     }
+//   }
+
+//   Future<List<CartResponse>> getCartById(String? cartId) async {
+//     if (cartId == null || cartId.isEmpty) {
+//       print(" Cart ID is missing, cannot fetch cart");
+//       return [];
+//     }
+
+//     try {
+//       final uri = Uri.parse(
+//         "$baseUrl/public/getproductcart",
+//       ).replace(queryParameters: {'id_cart': cartId});
+
+//       final response = await http.get(uri);
+
+//       if (response.statusCode == 200) {
+//         final jsonData = jsonDecode(response.body);
+//         print(" API Response: $jsonData");
+
+//         if (jsonData is List) {
+//           return jsonData.map((e) => CartResponse.fromJson(e)).toList();
+//         } else if (jsonData is Map<String, dynamic>) {
+//           return [CartResponse.fromJson(jsonData)];
+//         } else {
+//           throw Exception("Unexpected JSON format");
+//         }
+//       } else {
+//         throw Exception("Failed to load cart: ${response.statusCode}");
+//       }
+//     } catch (e) {
+//       print(" Get cart by ID error: $e");
+//       throw Exception("Error loading cart: $e");
+//     }
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     final t = AppLocalizations.of(context)!;
+
+//     return Scaffold(
+//       appBar: AppBar(
+//         backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+//         leading: Padding(
+//           padding: EdgeInsets.only(
+//             left: Directionality.of(context) == TextDirection.rtl ? 0 : 12.w,
+//             right: Directionality.of(context) == TextDirection.rtl ? 12.w : 0,
+//           ),
+//           child: GestureDetector(
+//             onTap: () {
+//               Navigator.push(
+//                 context,
+//                 MaterialPageRoute(builder: (context) => HomePage()),
+//               );
+//             },
+//             child: Container(
+//               width: 36.w,
+//               height: 36.w,
+//               decoration: const BoxDecoration(
+//                 color: Color(0xFF008AD2),
+//                 shape: BoxShape.circle,
+//               ),
+//               child: Center(
+//                 child: Icon(
+//                   Icons.arrow_back_ios_new,
+//                   color: Colors.white,
+//                   size: 20.sp,
+//                 ),
+//               ),
+//             ),
+//           ),
+//         ),
+//         title: Text(
+//           t.shoppingCart,
+//           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+//         ),
+//         actions: [
+//           Image.asset(
+//             "assets/images/tawasul_logo.png",
+//             height: 35,
+//             width: 35,
+//             errorBuilder:
+//                 (context, error, stackTrace) =>
+//                     Icon(Icons.account_circle, size: 80),
+//           ),
+//         ],
+//       ),
+//       body: FutureBuilder<List<CartResponse>>(
+//         future: _futureCartItems,
+//         builder: (context, snapshot) {
+//           if (snapshot.connectionState == ConnectionState.waiting) {
+//             return const Center(child: CircularProgressIndicator());
+//           }
+
+//           if (snapshot.hasError) {
+//             return Center(
+//               child: Text(
+//                 "Error: ${snapshot.error}",
+//                 style: const TextStyle(color: Colors.red),
+//                 textAlign: TextAlign.center,
+//               ),
+//             );
+//           }
+
+//           if (!snapshot.hasData || snapshot.data!.isEmpty) {
+//             return const Center(child: Text(" Your cart is empty."));
+//           }
+
+//           final cartItems = snapshot.data!.expand((c) => c.products).toList();
+
+//           return Column(
+//             children: [
+//               ListView.builder(
+//                 itemCount: cartItems.length,
+//                 itemBuilder: (context, index) {
+//                   final item = cartItems[index];
+//                   return Card(
+//                     margin: const EdgeInsets.symmetric(
+//                       horizontal: 10,
+//                       vertical: 6,
+//                     ),
+//                     shape: RoundedRectangleBorder(
+//                       borderRadius: BorderRadius.circular(12),
+//                     ),
+//                     elevation: 2, ////////////////3
+//                     child: ListTile(
+//                       leading: Image.network(
+//                         item.image,
+//                         width: 80,
+//                         height: 80,
+//                         fit: BoxFit.cover,
+//                         errorBuilder:
+//                             (context, error, stackTrace) =>
+//                                 const Icon(Icons.image_not_supported),
+//                       ),
+//                       title: Text(
+//                         item.name,
+//                         style: const TextStyle(fontWeight: FontWeight.bold),
+//                       ),
+//                       subtitle: Text(
+//                         "Qty: ${item.quantity} • ${item.price.toStringAsFixed(2)} LYD",
+//                       ),
+//                       trailing: Text(
+//                         "${(item.quantity * item.price).toStringAsFixed(2)} LYD",
+//                         style: const TextStyle(
+//                           fontWeight: FontWeight.bold,
+//                           color: Colors.green,
+//                         ),
+//                       ),
+//                     ),
+//                   );
+//                 },
+//               ),
+//               SizedBox(height: 40),
+//               // Checkout Button
+//               Padding(
+//                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
+//                 child: ElevatedButton(
+//                   onPressed:
+//                       _shoppingCartController.isLoading
+//                           ? null
+//                           : () async {
+//                             setState(
+//                               () => _shoppingCartController.isLoading = true,
+//                             );
+
+//                             try {
+//                               // 1️⃣ Check if customer is logged in by calling API
+//                               final isLoggedIn =
+//                                   await _shoppingCartController
+//                                       .loadCustomerData();
+
+//                               if (isLoggedIn) {
+//                                 // 2️⃣ If logged in → navigate to Checkout
+//                                 // await _shoppingCartController.syncCartWithServer();
+//                                 Navigator.push(
+//                                   context,
+//                                   MaterialPageRoute(
+//                                     builder: (_) => const Checkout(),
+//                                   ),
+//                                 );
+//                               } else {
+//                                 // 3️⃣ If not logged in → redirect to Login
+//                                 final loggedIn = await Navigator.push(
+//                                   context,
+//                                   MaterialPageRoute(
+//                                     builder: (_) => const Login(),
+//                                   ),
+//                                 );
+
+//                                 // 4️⃣ When user returns from login, recheck login state
+//                                 if (loggedIn == true) {
+//                                   final recheck =
+//                                       await _shoppingCartController
+//                                           .loadCustomerData();
+//                                   if (recheck) {
+//                                     // await _shoppingCartController.syncCartWithServer();
+//                                     Navigator.push(
+//                                       context,
+//                                       MaterialPageRoute(
+//                                         builder: (_) => const Checkout(),
+//                                       ),
+//                                     );
+//                                   }
+//                                 }
+//                               }
+//                             } catch (e) {
+//                               print("❌ Checkout Error: $e");
+//                             } finally {
+//                               setState(
+//                                 () => _shoppingCartController.isLoading = false,
+//                               );
+//                             }
+//                           },
+//                   style: ElevatedButton.styleFrom(
+//                     minimumSize: const Size(double.infinity, 50),
+//                     backgroundColor: const Color(0xFF008AD2),
+//                     foregroundColor: Colors.white,
+//                     shape: RoundedRectangleBorder(
+//                       borderRadius: BorderRadius.circular(12),
+//                     ),
+//                     elevation: 2,
+//                   ),
+//                   child:
+//                       _shoppingCartController.isLoading
+//                           ? const SizedBox(
+//                             width: 20,
+//                             height: 20,
+//                             child: CircularProgressIndicator(
+//                               strokeWidth: 2,
+//                               color: Colors.white,
+//                             ),
+//                           )
+//                           : Text(
+//                             t.checkout,
+//                             style: const TextStyle(
+//                               fontSize: 16,
+//                               fontWeight: FontWeight.w600,
+//                             ),
+//                           ),
+//                 ),
+//               ),
+
+//               const SizedBox(height: 10),
+
+//               // Clear Cart Button
+//               Padding(
+//                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
+//                 child: OutlinedButton(
+//                   onPressed:
+//                       _shoppingCartController.isLoading
+//                           ? null
+//                           : () {
+//                             _showClearCartDialog(context);
+//                           },
+//                   style: OutlinedButton.styleFrom(
+//                     minimumSize: const Size(double.infinity, 50),
+//                     foregroundColor: Colors.red,
+//                     side: const BorderSide(color: Colors.red),
+//                     shape: RoundedRectangleBorder(
+//                       borderRadius: BorderRadius.circular(12),
+//                     ),
+//                   ),
+//                   child: Text(
+//                     t.clear,
+//                     style: const TextStyle(
+//                       fontSize: 16,
+//                       fontWeight: FontWeight.w600,
+//                     ),
+//                   ),
+//                 ),
+//               ),
+//             ],
+//           );
+//         },
+//       ),
+//     );
+//   }
+
+//   void _showClearCartDialog(BuildContext context) {
+//     showDialog(
+//       context: context,
+//       builder: (BuildContext context) {
+//         return AlertDialog(
+//           shape: RoundedRectangleBorder(
+//             borderRadius: BorderRadius.circular(16),
+//           ),
+//           title: const Text(
+//             "Clear Cart",
+//             style: TextStyle(fontWeight: FontWeight.bold),
+//           ),
+//           content: const Text(
+//             "Are you sure you want to remove all items from your cart?",
+//           ),
+//           actions: [
+//             TextButton(
+//               onPressed: () {
+//                 Navigator.pop(context); // Close the dialog
+//               },
+//               child: const Text("Cancel"),
+//             ),
+//             ElevatedButton(
+//               style: ElevatedButton.styleFrom(
+//                 backgroundColor: Colors.red,
+//                 foregroundColor: Colors.white,
+//               ),
+//               onPressed: () {
+//                 Navigator.pop(context); // Close the dialog first
+//                 _clearCartItems(); // Then clear the cart in UI
+//               },
+//               child: const Text("Clear"),
+//             ),
+//           ],
+//         );
+//       },
+//     );
+//   }
+
+//   void _clearCartItems() {
+//     setState(() {
+//       // You can either store the cart items list here or in your controller
+//       // Example if your controller holds it:
+//       _shoppingCartController.cartItems.clear();
+
+//       // or if cart items are stored in a local variable:
+//       // _cartItems.clear();
+//     });
+
+//     ScaffoldMessenger.of(context).showSnackBar(
+//       const SnackBar(
+//         content: Text("Cart cleared successfully."),
+//         duration: Duration(seconds: 2),
+//       ),
+//     );
+//   }
+// }
+
+// class ShoppingCartController {
+//   int? customerId; // make it nullable
+//   List<dynamic> addresses = [];
+//   dynamic selectedAddress;
+//   bool isLoading = false;
+//   String errorMessage = '';
+//   String errorCode = '';
+//   bool isUsingStoredData = false;
+//   List<CartResponse> cartItems = [];
+
+//   ShoppingCartController({this.customerId});
+
+//   Future<bool> loadCustomerData() async {
+//     try {
+//       isLoading = true;
+//       errorMessage = '';
+//       errorCode = '';
+//       isUsingStoredData = false;
+
+//       print("Loading customer data from API...");
+
+//       final customerResponse = await ApiService.getCustomerDetails();
+
+//       if (customerResponse['success'] == true) {
+//         //  update the ID after login check
+//         customerId = customerResponse['id'];
+//         print("Customer ID set to $customerId");
+//         return true;
+//       } else {
+//         print("API failed: ${customerResponse['message']}");
+//         errorMessage =
+//             customerResponse['message'] ?? 'Failed to load customer details';
+//         errorCode = customerResponse['code'] ?? 'UNKNOWN_ERROR';
+//         isUsingStoredData = true;
+//         return false;
+//       }
+//     } catch (e) {
+//       errorMessage = 'Failed to load customer data: $e';
+//       errorCode = 'EXCEPTION';
+//       print("Exception in loadCustomerData: $e");
+//       return false;
+//     } finally {
+//       isLoading = false;
+//     }
+//   }
+// }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:tawasul_application/Provider/cart_provider.dart';
+import 'package:tawasul_application/Services/api_service.dart';
 import 'package:tawasul_application/view/Checkout/checkout.dart';
 import 'package:tawasul_application/view/Connexion/login.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:tawasul_application/view/home_page.dart';
 
+const String baseUrl = "https://tawasul-dev.app-staging.fr";
+
+class CartResponse {
+  final String idCart;
+  final List<CartItem> products;
+
+  CartResponse({required this.idCart, required this.products});
+
+  factory CartResponse.fromJson(Map<String, dynamic> json) {
+    final productsData = json['products'];
+    List<CartItem> productList = [];
+
+    if (productsData is List) {
+      productList = productsData.map((e) => CartItem.fromJson(e)).toList();
+    }
+
+    return CartResponse(
+      idCart: json['id_cart'].toString(),
+      products: productList,
+    );
+  }
+}
+
+class CartItem {
+  final String name;
+  final String image;
+  final int quantity;
+  final double price;
+
+  CartItem({
+    required this.name,
+    required this.image,
+    required this.quantity,
+    required this.price,
+  });
+
+  factory CartItem.fromJson(Map<String, dynamic> json) {
+    return CartItem(
+      name: json['name'] ?? '',
+      image: json['id_image'] ?? '',
+      quantity: int.tryParse(json['cart_quantity']?.toString() ?? '0') ?? 0,
+      price: double.tryParse(json['unit_price']?.toString() ?? '0.0') ?? 0.0,
+    );
+  }
+}
+
 class ShoppingCart extends StatefulWidget {
-  const ShoppingCart({super.key});
+  final String? cartId;
+
+  const ShoppingCart({super.key, this.cartId});
 
   @override
   State<ShoppingCart> createState() => _ShoppingCartState();
 }
 
 class _ShoppingCartState extends State<ShoppingCart> {
-  Future<bool> _isUserLoggedIn() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
-      return token != null && token.isNotEmpty;
-    } catch (e) {
-      return false;
-    }
-  }
+  late Future<List<CartResponse>> _futureCartItems;
+  final ShoppingCartController _shoppingCartController =
+      ShoppingCartController();
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final cartProvider = Provider.of<CartProvider>(context, listen: false);
-      cartProvider.refreshCart();
-    });
+    _loadCart();
+  }
+
+  Future<void> _loadCart() async {
+    final prefs = await SharedPreferences.getInstance();
+    final cartId = prefs.getString('cart_id');
+    if (cartId != null && cartId.isNotEmpty) {
+      setState(() {
+        _futureCartItems = getCartById(cartId);
+      });
+    } else {
+      print("No cart ID found");
+    }
+  }
+
+  Future<List<CartResponse>> getCartById(String? cartId) async {
+    if (cartId == null || cartId.isEmpty) {
+      print(" Cart ID is missing, cannot fetch cart");
+      return [];
+    }
+
+    try {
+      final uri = Uri.parse(
+        "$baseUrl/public/getproductcart",
+      ).replace(queryParameters: {'id_cart': cartId});
+
+      final response = await http.get(uri);
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        print(" API Response: $jsonData");
+
+        if (jsonData is List) {
+          return jsonData.map((e) => CartResponse.fromJson(e)).toList();
+        } else if (jsonData is Map<String, dynamic>) {
+          return [CartResponse.fromJson(jsonData)];
+        } else {
+          throw Exception("Unexpected JSON format");
+        }
+      } else {
+        throw Exception("Failed to load cart: ${response.statusCode}");
+      }
+    } catch (e) {
+      print(" Get cart by ID error: $e");
+      throw Exception("Error loading cart: $e");
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final t = AppLocalizations.of(context)!;
-    final cartProvider = Provider.of<CartProvider>(context);
-
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Column(
-            children: [
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => HomePage()),
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Color(0xFF008AD2),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back_ios_new,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 80),
-                  Center(
-                    child: Text(
-                      t.shoppingCart,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        leading: Padding(
+          padding: EdgeInsets.only(
+            left: Directionality.of(context) == TextDirection.rtl ? 0 : 12,
+            right: Directionality.of(context) == TextDirection.rtl ? 12 : 0,
+          ),
+          child: GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => HomePage()),
+              );
+            },
+            child: Container(
+              width: 28,
+              height: 28,
+              decoration: const BoxDecoration(
+                color: Color(0xFF008AD2),
+                shape: BoxShape.circle,
               ),
-              const SizedBox(height: 30),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  "${cartProvider.totalItems}x Items",
-                  style: const TextStyle(color: Color(0xFF515C6F)),
+              child: Center(
+                child: Icon(
+                  Icons.arrow_back_ios_new,
+                  color: Colors.white,
+                  size: 24,
                 ),
               ),
-              const SizedBox(height: 30),
+            ),
+          ),
+        ),
+        title: Center(
+          child: Text(
+            "Shopping Cart",
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+          ),
+        ),
+        actions: [
+          Padding(
+            padding: EdgeInsets.only(
+              left: Directionality.of(context) == TextDirection.rtl ? 12 : 0,
+              right: Directionality.of(context) == TextDirection.rtl ? 0 : 12,
+            ),
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => HomePage()),
+                );
+              },
+              child: Image.asset(
+                "assets/images/tawasul_logo.png",
+                height: 40,
+                width: 40,
+                errorBuilder:
+                    (context, error, stackTrace) =>
+                        const Icon(Icons.account_circle, size: 35),
+              ),
+            ),
+          ),
+        ],
+      ),
+
+      body: FutureBuilder<List<CartResponse>>(
+        future: _futureCartItems,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                "Error: ${snapshot.error}",
+                style: const TextStyle(color: Colors.red),
+                textAlign: TextAlign.center,
+              ),
+            );
+          }
+
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text(" Your cart is empty."));
+          }
+
+          final cartItems = snapshot.data!.expand((c) => c.products).toList();
+
+          return Column(
+            children: [
               Expanded(
-                child:
-                    cartProvider.cartItems.isEmpty
-                        ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.shopping_cart_outlined,
-                                size: 80,
-                                color: Colors.grey[400],
-                              ),
-                              const SizedBox(height: 20),
-                              Text(
-                                'Your cart is empty',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                'Add some products to get started',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[500],
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                        : ListView.separated(
-                          itemCount: cartProvider.cartItems.length,
-                          separatorBuilder:
-                              (_, __) => const SizedBox(height: 20),
-                          itemBuilder: (context, index) {
-                            final item = cartProvider.cartItems[index];
-                            return Container(
+                child: ListView.builder(
+                  itemCount: cartItems.length,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 8,
+                  ),
+                  itemBuilder: (context, index) {
+                    final item = cartItems[index];
+                    return Card(
+                      margin: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 4,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      elevation: 6,
+                      color: const Color.fromARGB(255, 255, 255, 255),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Row(
+                          children: [
+                            // Product Image with border
+                            Container(
+                              width: 100,
+                              height: 100,
                               decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: const Color.fromARGB(
+                                    255,
+                                    193,
+                                    212,
+                                    246,
+                                  ),
+                                  width: 2,
+                                ),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(14),
+                                child: Image.network(
+                                  item.image,
+                                  fit: BoxFit.cover,
+                                  errorBuilder:
+                                      (context, error, stackTrace) =>
+                                          const Icon(
+                                            Icons.image_not_supported,
+                                            size: 60,
+                                          ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            // Product Info
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    item.name,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18,
+                                      color: Colors.black87,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    "Qty: ${item.quantity}",
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.black54,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color.fromARGB(
+                                        255,
+                                        255,
+                                        255,
+                                        255,
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      "${(item.quantity * item.price).toStringAsFixed(2)} LYD",
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        color: Color(0xFF0984E3),
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(8),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Product Image
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child:
-                                          item.product.image.isNotEmpty
-                                              ? Image.network(
-                                                item.product.image,
-                                                width: 100,
-                                                height: 100,
-                                                fit: BoxFit.cover,
-                                                errorBuilder: (
-                                                  context,
-                                                  error,
-                                                  stackTrace,
-                                                ) {
-                                                  return Container(
-                                                    width: 100,
-                                                    height: 100,
-                                                    color: Colors.grey[200],
-                                                    child: Icon(
-                                                      Icons.error,
-                                                      color: Colors.grey[400],
-                                                    ),
-                                                  );
-                                                },
-                                                loadingBuilder: (
-                                                  context,
-                                                  child,
-                                                  loadingProgress,
-                                                ) {
-                                                  if (loadingProgress == null) {
-                                                    return child;
-                                                  }
-                                                  return Container(
-                                                    width: 100,
-                                                    height: 100,
-                                                    color: Colors.grey[200],
-                                                    child: Center(
-                                                      child: CircularProgressIndicator(
-                                                        value:
-                                                            loadingProgress
-                                                                        .expectedTotalBytes !=
-                                                                    null
-                                                                ? loadingProgress
-                                                                        .cumulativeBytesLoaded /
-                                                                    loadingProgress
-                                                                        .expectedTotalBytes!
-                                                                : null,
-                                                      ),
-                                                    ),
-                                                  );
-                                                },
-                                              )
-                                              : Container(
-                                                width: 100,
-                                                height: 100,
-                                                color: Colors.grey[200],
-                                                child: Icon(
-                                                  Icons.image,
-                                                  color: Colors.grey[400],
-                                                ),
-                                              ),
-                                    ),
-                                    const SizedBox(width: 8),
-
-                                    // Product Details
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            item.product.name,
-                                            style: const TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.black87,
-                                            ),
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          const SizedBox(height: 4),
-
-                                          // Product attributes
-                                          if (item.selectedColor != null)
-                                            Text(
-                                              "Color: ${item.selectedColor}",
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.grey[600],
-                                              ),
-                                            ),
-
-                                          const SizedBox(height: 8),
-
-                                          // Quantity Controls
-                                          Row(
-                                            children: [
-                                              GestureDetector(
-                                                onTap: () async {
-                                                  try {
-                                                    await cartProvider
-                                                        .updateQuantity(
-                                                          productId:
-                                                              item.product.idProduct,
-                                                          productAttributeId:
-                                                              item.idProductAttribute ??
-                                                              0,
-                                                          newQuantity:
-                                                              item.quantity - 1,
-                                                        );
-                                                  } catch (e) {
-                                                    _showErrorSnackBar(
-                                                      context,
-                                                      e.toString(),
-                                                    );
-                                                  }
-                                                },
-                                                child: Container(
-                                                  width: 32,
-                                                  height: 32,
-                                                  decoration: BoxDecoration(
-                                                    shape: BoxShape.circle,
-                                                    color: Colors.grey[200],
-                                                    border: Border.all(
-                                                      color: Colors.grey[300]!,
-                                                    ),
-                                                  ),
-                                                  child: Icon(
-                                                    Icons.remove,
-                                                    size: 16,
-                                                    color: Colors.grey[700],
-                                                  ),
-                                                ),
-                                              ),
-
-                                              // Quantity Display
-                                              Padding(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 16,
-                                                    ),
-                                                child: Text(
-                                                  '${item.quantity}',
-                                                  style: const TextStyle(
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                                ),
-                                              ),
-
-                                              // Increase Quantity
-                                              GestureDetector(
-                                                onTap: () async {
-                                                  try {
-                                                    await cartProvider
-                                                        .updateQuantity(
-                                                          productId:
-                                                              item.product.idProduct,
-                                                          productAttributeId:
-                                                              item.idProductAttribute ??
-                                                              0,
-                                                          newQuantity:
-                                                              item.quantity + 1,
-                                                        );
-                                                  } catch (e) {
-                                                    _showErrorSnackBar(
-                                                      context,
-                                                      e.toString(),
-                                                    );
-                                                  }
-                                                },
-                                                child: Container(
-                                                  width: 32,
-                                                  height: 32,
-                                                  decoration: BoxDecoration(
-                                                    shape: BoxShape.circle,
-                                                    color: Colors.grey[200],
-                                                    border: Border.all(
-                                                      color: Colors.grey[300]!,
-                                                    ),
-                                                  ),
-                                                  child: Icon(
-                                                    Icons.add,
-                                                    size: 16,
-                                                    color: Colors.grey[700],
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-
-                                    // Price and Delete
-                                    Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.end,
-                                      children: [
-                                        // Delete Button - UPDATED
-                                        IconButton(
-                                          onPressed: () async {
-                                            try {
-                                              await cartProvider.removeFromCart(
-                                                productId: item.product.idProduct,
-                                                productAttributeId:
-                                                    item.idProductAttribute ??
-                                                    0,
-                                              );
-                                            } catch (e) {
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                    'Failed to remove: $e',
-                                                  ),
-                                                  backgroundColor: Colors.red,
-                                                ),
-                                              );
-                                            }
-                                          },
-                                          icon: Icon(
-                                            Icons.delete_outline,
-                                            color: Colors.red[400],
-                                          ),
-                                        ),
-
-                                        const SizedBox(height: 20),
-
-                                        // Price
-                                        Text(
-                                          "${item.totalPrice.toStringAsFixed(2)} ${t.lyd}",
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: Color(0xFF008AD2),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
+                            ),
+                          ],
                         ),
-              ),
-
-              // Cart Summary
-              if (cartProvider.cartItems.isNotEmpty) ...[
-                const SizedBox(height: 20),
-                const Divider(thickness: 1),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Column(
-                    children: [
-                      // Subtotal
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            t.subTotal,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          Text(
-                            "${cartProvider.totalAmount.toStringAsFixed(2)} ${t.lyd}",
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ],
                       ),
-
-                      const SizedBox(height: 8),
-
-                      // Shipping
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Shipping',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                          Text(
-                            '0.00 ${t.lyd}',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 8),
-                      const Divider(thickness: 1),
-
-                      // Total
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Total',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          Text(
-                            "${cartProvider.totalAmount.toStringAsFixed(2)} ${t.lyd}",
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF008AD2),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
-                const SizedBox(height: 20),
-
-                // Checkout Button
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: ElevatedButton(
-                    onPressed:
-                        cartProvider.isLoading
-                            ? null
-                            : () async {
-                              final isLoggedIn = await _isUserLoggedIn();
+              ),
+              //  Checkout Button
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: ElevatedButton(
+                  onPressed:
+                      _shoppingCartController.isLoading
+                          ? null
+                          : () async {
+                            setState(
+                              () => _shoppingCartController.isLoading = true,
+                            );
+                            try {
+                              final isLoggedIn =
+                                  await _shoppingCartController
+                                      .loadCustomerData();
 
                               if (isLoggedIn) {
-                                // Sync cart with server before checkout
-                                try {
-                                  await cartProvider.syncCartWithServer();
-
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const Checkout(),
-                                    ),
-                                  );
-                                } catch (e) {
-                                  _showErrorSnackBar(
-                                    context,
-                                    'Error syncing cart: $e',
-                                  );
-                                }
-                              } else {
-                                // Navigate to login and then check if user logged in when returning
-                                await Navigator.push(
+                                Navigator.push(
                                   context,
-                                  MaterialPageRoute(builder: (_) => Login()),
+                                  MaterialPageRoute(
+                                    builder: (_) => const Checkout(),
+                                  ),
                                 );
-
-                                // Check if user logged in after returning from login page
-                                final loggedInNow = await _isUserLoggedIn();
-                                if (loggedInNow && mounted) {
-                                  // Sync cart with server before checkout
-                                  try {
-                                    await cartProvider.syncCartWithServer();
-
+                              } else {
+                                final loggedIn = await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const Login(),
+                                  ),
+                                );
+                                if (loggedIn == true) {
+                                  final recheck =
+                                      await _shoppingCartController
+                                          .loadCustomerData();
+                                  if (recheck) {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
                                         builder: (_) => const Checkout(),
                                       ),
                                     );
-                                  } catch (e) {
-                                    _showErrorSnackBar(
-                                      context,
-                                      'Error syncing cart: $e',
-                                    );
                                   }
                                 }
                               }
-                            },
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 50),
-                      backgroundColor: const Color(0xFF008AD2),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 2,
+                            } catch (e) {
+                              print("❌ Checkout Error: $e");
+                            } finally {
+                              setState(
+                                () => _shoppingCartController.isLoading = false,
+                              );
+                            }
+                          },
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 50),
+                    backgroundColor: const Color(0xFF008AD2),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child:
-                        cartProvider.isLoading
-                            ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                            : Text(
-                              t.checkout,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
+                  ),
+                  child:
+                      _shoppingCartController.isLoading
+                          ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
                             ),
+                          )
+                          : Text(
+                            "Checkout",
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                ),
+              ),
+
+              //  Clear Cart Button
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+
+                child: OutlinedButton(
+                  onPressed:
+                      _shoppingCartController.isLoading
+                          ? null
+                          : () {
+                            _showClearCartDialog(context);
+                          },
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    minimumSize: const Size(double.infinity, 50),
+                    foregroundColor: const Color.fromARGB(255, 255, 255, 255),
+                    side: const BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    "Clear",
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-
-                const SizedBox(height: 10),
-
-                // Clear Cart Button
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: OutlinedButton(
-                    onPressed:
-                        cartProvider.isLoading
-                            ? null
-                            : () {
-                              _showClearCartDialog(context, cartProvider);
-                            },
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 50),
-                      foregroundColor: Colors.red,
-                      side: const BorderSide(color: Colors.red),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text(
-                      t.clear,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-              ],
+              ),
+              SizedBox(height: 45),
             ],
-          ),
-        ),
+          );
+        },
       ),
     );
   }
 
-  void _showErrorSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 3),
-      ),
-    );
-  }
-
-  void _showClearCartDialog(BuildContext context, CartProvider cartProvider) {
+  //  Confirmation dialog for clearing cart
+  void _showClearCartDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Clear Cart'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            "Clear Cart",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           content: const Text(
-            'Are you sure you want to clear your entire cart?',
+            "Are you sure you want to remove all items from your cart?",
           ),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Cancel'),
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
             ),
-            TextButton(
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
               onPressed: () {
-                cartProvider.clearCart();
-                Navigator.of(context).pop();
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Cart cleared successfully'),
-                    backgroundColor: Colors.green,
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
+                Navigator.pop(context);
+                _clearCartItems();
               },
-              child: const Text('Clear', style: TextStyle(color: Colors.red)),
+              child: const Text("Clear"),
             ),
           ],
         );
       },
     );
   }
+
+  //  Clear the cart in the UI only
+  void _clearCartItems() {
+    setState(() {
+      _shoppingCartController.cartItems.clear();
+      _futureCartItems = Future.value([]);
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Cart cleared successfully."),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
 }
+
+class ShoppingCartController {
+  int? customerId;
+  List<dynamic> addresses = [];
+  dynamic selectedAddress;
+  bool isLoading = false;
+  String errorMessage = '';
+  String errorCode = '';
+  bool isUsingStoredData = false;
+  List<CartResponse> cartItems = [];
+
+  ShoppingCartController({this.customerId});
+
+  Future<bool> loadCustomerData() async {
+    try {
+      isLoading = true;
+      print("🔍 Loading customer data from API...");
+
+      final customerResponse = await ApiService.getCustomerDetails();
+
+      if (customerResponse['success'] == true) {
+        customerId = customerResponse['id'];
+        print(" Customer ID set to $customerId");
+        return true;
+      } else {
+        print(" API failed: ${customerResponse['message']}");
+        errorMessage =
+            customerResponse['message'] ?? 'Failed to load customer details';
+        errorCode = customerResponse['code'] ?? 'UNKNOWN_ERROR';
+        return false;
+      }
+    } catch (e) {
+      errorMessage = 'Failed to load customer data: $e';
+      errorCode = 'EXCEPTION';
+      print("❌ Exception in loadCustomerData: $e");
+      return false;
+    } finally {
+      isLoading = false;
+    }
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// import 'dart:convert';
+// import 'package:flutter/material.dart';
+// import 'package:http/http.dart' as http;
+// import 'package:shared_preferences/shared_preferences.dart';
+// import 'package:tawasul_application/Services/api_service.dart';
+// import 'package:tawasul_application/l10n/app_localizations.dart';
+// import 'package:tawasul_application/view/Checkout/checkout.dart';
+// import 'package:tawasul_application/view/Connexion/login.dart';
+// import 'package:tawasul_application/view/home_page.dart';
+
+// const String baseUrl = "https://tawasul-dev.app-staging.fr";
+
+// // ======================== MODEL CLASSES =========================
+// class CartResponse {
+//   final String idCart;
+//   final List<CartItem> products;
+
+//   CartResponse({required this.idCart, required this.products});
+
+//   factory CartResponse.fromJson(Map<String, dynamic> json) {
+//     try {
+//       final productsData = json['products'];
+//       List<CartItem> productList = [];
+
+//       if (productsData is List) {
+//         productList =
+//             productsData
+//                 .where((item) => item is Map<String, dynamic>)
+//                 .map((e) => CartItem.fromJson(e))
+//                 .where((item) => item.quantity > 0) // Only include valid items
+//                 .toList();
+//       }
+
+//       return CartResponse(
+//         idCart: json['id_cart']?.toString() ?? 'unknown',
+//         products: productList,
+//       );
+//     } catch (e) {
+//       print("❌ Error parsing CartResponse: $e");
+//       return CartResponse(idCart: 'error', products: []);
+//     }
+//   }
+// }
+
+// class CartItem {
+//   final String name;
+//   final String image;
+//   final int quantity;
+//   final double price;
+
+//   CartItem({
+//     required this.name,
+//     required this.image,
+//     required this.quantity,
+//     required this.price,
+//   });
+
+//   factory CartItem.fromJson(Map<String, dynamic> json) {
+//     try {
+//       return CartItem(
+//         name: json['name']?.toString() ?? 'Unknown Product',
+//         image: json['image']?.toString() ?? '',
+//         quantity: int.tryParse(json['cart_quantity']?.toString() ?? '0') ?? 0,
+//         price: double.tryParse(json['unit_price']?.toString() ?? '0.0') ?? 0.0,
+//       );
+//     } catch (e) {
+//       print("❌ Error parsing CartItem: $e");
+//       return CartItem(
+//         name: 'Error parsing product',
+//         image: '',
+//         quantity: 0,
+//         price: 0.0,
+//       );
+//     }
+//   }
+// }
+
+// // ======================== MAIN SHOPPING CART PAGE =========================
+
+// class ShoppingCart extends StatefulWidget {
+//   final String? cartId;
+
+//   const ShoppingCart({super.key, this.cartId});
+
+//   @override
+//   State<ShoppingCart> createState() => _ShoppingCartState();
+// }
+
+// class _ShoppingCartState extends State<ShoppingCart> {
+//   Future<List<CartResponse>>? _futureCartItems;
+//   late ShoppingCartController _shoppingCartController;
+
+//   @override
+//   void initState() {
+//     super.initState();
+    // _shoppingCartController = ShoppingCartController();
+//     _loadCart();
+//   }
+
+//   //  Load cart data safely
+//   Future<void> _loadCart() async {
+//     final prefs = await SharedPreferences.getInstance();
+//     final cartId = prefs.getString('cart_id');
+
+//     if (cartId != null && cartId.isNotEmpty) {
+//       print(" Found cart ID: $cartId");
+//       setState(() {
+//         _futureCartItems = getCartById(cartId);
+//       });
+//     } else {
+//       print(" No cart ID found in SharedPreferences");
+//       setState(() {
+//         _futureCartItems = Future.value([]); // Empty fallback
+//       });
+//     }
+//   }
+
+//   //  API to fetch cart by ID
+//   Future<List<CartResponse>> getCartById(String cartId) async {
+//     try {
+//       final uri = Uri.parse(
+//         "$baseUrl/public/getproductcart",
+//       ).replace(queryParameters: {'id_cart': cartId});
+
+//       final response = await http.get(uri);
+//       print("🛒 API URL: $uri");
+//       print("📦 Response Status: ${response.statusCode}");
+
+//       if (response.statusCode == 200) {
+//         final jsonData = jsonDecode(response.body);
+//         print("📦 Raw API Response: $jsonData");
+
+//         // Handle empty response
+//         if (jsonData == null) {
+//           print("⚠️ API returned null");
+//           return [];
+//         }
+
+//         // Handle different response formats safely
+//         if (jsonData is List) {
+//           if (jsonData.isEmpty) {
+//             print("🛒 Empty cart list from API");
+//             return [];
+//           }
+//           final results =
+//               jsonData.map((e) => CartResponse.fromJson(e)).toList();
+//           print("🛒 Parsed ${results.length} cart items");
+//           return results;
+//         } else if (jsonData is Map<String, dynamic>) {
+//           final result = CartResponse.fromJson(jsonData);
+//           print(
+//             "🛒 Parsed single cart with ${result.products.length} products",
+//           );
+//           return [result];
+//         } else {
+//           print("❌ Unexpected JSON format: ${jsonData.runtimeType}");
+//           return [];
+//         }
+//       } else if (response.statusCode == 404) {
+//         print("❌ Cart not found (404)");
+//         return [];
+//       } else {
+//         print("❌ API Error ${response.statusCode}: ${response.body}");
+//         throw Exception("Failed to load cart: ${response.statusCode}");
+//       }
+//     } catch (e) {
+//       print("❌ Error loading cart: $e");
+//       return [];
+//     }
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     final t = AppLocalizations.of(context);
+//     if (t == null) {
+//       return Scaffold(body: Center(child: CircularProgressIndicator()));
+//     }
+
+//     return Scaffold(
+//       appBar: AppBar(
+//         backgroundColor: Colors.white,
+//         leading: IconButton(
+//           icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF008AD2)),
+//           onPressed:
+//               () => Navigator.pushReplacement(
+//                 context,
+//                 MaterialPageRoute(builder: (_) => const HomePage()),
+//               ),
+//         ),
+//         title: Text(
+//           t.shoppingCart,
+//           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+//         ),
+//         actions: [
+//           Image.asset(
+//             "assets/images/tawasul_logo.png",
+//             height: 35,
+//             width: 35,
+//             errorBuilder:
+//                 (context, error, stackTrace) =>
+//                     const Icon(Icons.account_circle, size: 35),
+//           ),
+//         ],
+//       ),
+
+//       //  Ensure future is initialized
+//       body:
+//           _futureCartItems == null
+//               ? const Center(child: CircularProgressIndicator())
+//               : FutureBuilder<List<CartResponse>>(
+//                 future: _futureCartItems,
+//                 builder: (context, snapshot) {
+//                   if (snapshot.connectionState == ConnectionState.waiting) {
+//                     return const Center(child: CircularProgressIndicator());
+//                   }
+
+//                   if (snapshot.hasError) {
+//                     return Center(
+//                       child: Text(
+//                         "❌ Error: ${snapshot.error}",
+//                         style: const TextStyle(color: Colors.red),
+//                         textAlign: TextAlign.center,
+//                       ),
+//                     );
+//                   }
+
+//                   if (!snapshot.hasData || snapshot.data!.isEmpty) {
+//                     return const Center(
+//                       child: Text(
+//                         "🛍️ Your cart is empty.",
+//                         style: TextStyle(fontSize: 16),
+//                       ),
+//                     );
+//                   }
+
+//                   final cartItems =
+//                       snapshot.data!.expand((c) => c.products).toList();
+
+//                   return Column(
+//                     children: [
+//                       Expanded(
+//                         child: ListView.builder(
+//                           itemCount: cartItems.length,
+//                           itemBuilder: (context, index) {
+//                             final item = cartItems[index];
+//                             return Card(
+//                               margin: const EdgeInsets.symmetric(
+//                                 horizontal: 10,
+//                                 vertical: 6,
+//                               ),
+//                               shape: RoundedRectangleBorder(
+//                                 borderRadius: BorderRadius.circular(12),
+//                               ),
+//                               elevation: 2,
+//                               child: ListTile(
+//                                 leading: Image.network(
+//                                   item.image,
+//                                   width: 80,
+//                                   height: 80,
+//                                   fit: BoxFit.cover,
+//                                   errorBuilder:
+//                                       (context, error, stackTrace) =>
+//                                           const Icon(Icons.image_not_supported),
+//                                 ),
+//                                 title: Text(
+//                                   item.name,
+//                                   style: const TextStyle(
+//                                     fontWeight: FontWeight.bold,
+//                                   ),
+//                                 ),
+//                                 subtitle: Text(
+//                                   "Qty: ${item.quantity} • ${item.price.toStringAsFixed(2)} LYD",
+//                                 ),
+//                                 trailing: Text(
+//                                   "${(item.quantity * item.price).toStringAsFixed(2)} LYD",
+//                                   style: const TextStyle(
+//                                     fontWeight: FontWeight.bold,
+//                                     color: Colors.green,
+//                                   ),
+//                                 ),
+//                               ),
+//                             );
+//                           },
+//                         ),
+//                       ),
+
+                      // //  Checkout Button
+                      // Padding(
+                      //   padding: const EdgeInsets.all(8.0),
+                      //   child: ElevatedButton(
+                      //     onPressed:
+                      //         _shoppingCartController.isLoading
+                      //             ? null
+                      //             : () async {
+                      //               setState(
+                      //                 () =>
+                      //                     _shoppingCartController.isLoading =
+                      //                         true,
+                      //               );
+                      //               try {
+                      //                 final isLoggedIn =
+                      //                     await _shoppingCartController
+                      //                         .loadCustomerData();
+
+                      //                 if (isLoggedIn) {
+                      //                   Navigator.push(
+                      //                     context,
+                      //                     MaterialPageRoute(
+                      //                       builder: (_) => const Checkout(),
+                      //                     ),
+                      //                   );
+                      //                 } else {
+                      //                   final loggedIn = await Navigator.push(
+                      //                     context,
+                      //                     MaterialPageRoute(
+                      //                       builder: (_) => const Login(),
+                      //                     ),
+                      //                   );
+                      //                   if (loggedIn == true) {
+                      //                     final recheck =
+                      //                         await _shoppingCartController
+                      //                             .loadCustomerData();
+                      //                     if (recheck) {
+                      //                       Navigator.push(
+                      //                         context,
+                      //                         MaterialPageRoute(
+                      //                           builder:
+                      //                               (_) => const Checkout(),
+                      //                         ),
+                      //                       );
+                      //                     }
+                      //                   }
+                      //                 }
+                      //               } catch (e) {
+                      //                 print("❌ Checkout Error: $e");
+                      //               } finally {
+                      //                 setState(
+                      //                   () =>
+                      //                       _shoppingCartController.isLoading =
+                      //                           false,
+                      //                 );
+                      //               }
+                      //             },
+                      //     style: ElevatedButton.styleFrom(
+                      //       minimumSize: const Size(double.infinity, 50),
+                      //       backgroundColor: const Color(0xFF008AD2),
+                      //       foregroundColor: Colors.white,
+                      //       shape: RoundedRectangleBorder(
+                      //         borderRadius: BorderRadius.circular(12),
+                      //       ),
+                      //     ),
+                      //     child:
+                      //         _shoppingCartController.isLoading
+                      //             ? const SizedBox(
+                      //               width: 20,
+                      //               height: 20,
+                      //               child: CircularProgressIndicator(
+                      //                 strokeWidth: 2,
+                      //                 color: Colors.white,
+                      //               ),
+                      //             )
+                      //             : Text(
+                      //               t.checkout,
+                      //               style: const TextStyle(
+                      //                 fontSize: 16,
+                      //                 fontWeight: FontWeight.w600,
+                      //               ),
+                      //             ),
+                      //   ),
+                      // ),
+
+  //                     //  Clear Cart Button
+  //                     Padding(
+  //                       padding: const EdgeInsets.symmetric(
+  //                         horizontal: 8.0,
+  //                         vertical: 8.0,
+  //                       ),
+  //                       child: OutlinedButton(
+  //                         onPressed:
+  //                             _shoppingCartController.isLoading
+  //                                 ? null
+  //                                 : () {
+  //                                   _showClearCartDialog(context);
+  //                                 },
+  //                         style: OutlinedButton.styleFrom(
+  //                           minimumSize: const Size(double.infinity, 50),
+  //                           foregroundColor: Colors.red,
+  //                           side: const BorderSide(color: Colors.red),
+  //                           shape: RoundedRectangleBorder(
+  //                             borderRadius: BorderRadius.circular(12),
+  //                           ),
+  //                         ),
+  //                         child: Text(
+  //                           t.clear,
+  //                           style: const TextStyle(
+  //                             fontSize: 16,
+  //                             fontWeight: FontWeight.w600,
+  //                           ),
+  //                         ),
+  //                       ),
+  //                     ),
+  //                   ],
+  //                 );
+  //               },
+  //             ),
+  //   );
+  // }
+
+//   //  Confirmation dialog for clearing cart
+//   void _showClearCartDialog(BuildContext context) {
+//     showDialog(
+//       context: context,
+//       builder: (BuildContext context) {
+//         return AlertDialog(
+//           shape: RoundedRectangleBorder(
+//             borderRadius: BorderRadius.circular(16),
+//           ),
+//           title: const Text(
+//             "Clear Cart",
+//             style: TextStyle(fontWeight: FontWeight.bold),
+//           ),
+//           content: const Text(
+//             "Are you sure you want to remove all items from your cart?",
+//           ),
+//           actions: [
+//             TextButton(
+//               onPressed: () => Navigator.pop(context),
+//               child: const Text("Cancel"),
+//             ),
+//             ElevatedButton(
+//               style: ElevatedButton.styleFrom(
+//                 backgroundColor: Colors.red,
+//                 foregroundColor: Colors.white,
+//               ),
+//               onPressed: () {
+//                 Navigator.pop(context);
+//                 _clearCartItems();
+//               },
+//               child: const Text("Clear"),
+//             ),
+//           ],
+//         );
+//       },
+//     );
+//   }
+
+//   //  Clear the cart in the UI only
+//   void _clearCartItems() {
+//     setState(() {
+//       _shoppingCartController.cartItems.clear();
+//       _futureCartItems = Future.value([]);
+//     });
+
+//     ScaffoldMessenger.of(context).showSnackBar(
+//       const SnackBar(
+//         content: Text("Cart cleared successfully."),
+//         duration: Duration(seconds: 2),
+//       ),
+//     );
+//   }
+// }
+
+// // ======================== CONTROLLER =========================
+
+// class ShoppingCartController {
+//   int? customerId;
+//   List<dynamic> addresses = [];
+//   dynamic selectedAddress;
+//   bool isLoading = false;
+//   String errorMessage = '';
+//   String errorCode = '';
+//   bool isUsingStoredData = false;
+//   List<CartResponse> cartItems = [];
+
+//   ShoppingCartController({this.customerId});
+
+//   Future<bool> loadCustomerData() async {
+//     try {
+//       isLoading = true;
+//       print("🔍 Loading customer data from API...");
+
+//       final customerResponse = await ApiService.getCustomerDetails();
+
+//       if (customerResponse['success'] == true) {
+//         customerId = customerResponse['id'];
+//         print(" Customer ID set to $customerId");
+//         return true;
+//       } else {
+//         print(" API failed: ${customerResponse['message']}");
+//         errorMessage =
+//             customerResponse['message'] ?? 'Failed to load customer details';
+//         errorCode = customerResponse['code'] ?? 'UNKNOWN_ERROR';
+//         return false;
+//       }
+//     } catch (e) {
+//       errorMessage = 'Failed to load customer data: $e';
+//       errorCode = 'EXCEPTION';
+//       print("❌ Exception in loadCustomerData: $e");
+//       return false;
+//     } finally {
+//       isLoading = false;
+//     }
+//   }
+// }

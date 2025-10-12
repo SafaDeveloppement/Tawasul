@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:http/http.dart' as http;
@@ -19,144 +18,85 @@ extension StringExtensions on String {
     return double.tryParse(this) != null;
   }
 }
-
 class CheckoutController {
   final int customerId;
   List<dynamic> addresses = [];
   dynamic selectedAddress;
   bool isLoading = false;
   String errorMessage = '';
-  String errorCode = '';
-  bool isUsingStoredData = false;
-
   CheckoutController(this.customerId);
-
   Future<bool> loadCustomerData() async {
     try {
       isLoading = true;
       errorMessage = '';
-      errorCode = '';
-      isUsingStoredData = false;
-
-      print(" Loading customer data from API...");
-
       final customerResponse = await ApiService.getCustomerDetails();
-
-      if (customerResponse['success'] != true) {
-        print(" API failed: ${customerResponse['message']}");
-        errorMessage =
-            customerResponse['message'] ?? 'Failed to load customer details';
-        errorCode = customerResponse['code'] ?? 'UNKNOWN_ERROR';
-        isUsingStoredData = true;
-
-        await _loadAddresses();
-        return false;
-      }
-
-      print(" Customer details loaded from API");
-
       await _loadAddresses();
-
-      return true;
+      return customerResponse['success'] == true;
     } catch (e) {
       errorMessage = 'Failed to load customer data: $e';
-      errorCode = 'EXCEPTION';
-      print(" Exception in loadCustomerData: $e");
       return false;
     } finally {
       isLoading = false;
     }
   }
-
   Future<void> _loadAddresses() async {
     try {
-      print("🔄 Loading addresses from API...");
       final addressesResponse = await ApiService.getCustomerAddresses();
 
       if (addressesResponse['success'] == true) {
         addresses = addressesResponse['addresses'] ?? [];
-
-        if (addressesResponse['fromLocalStorage'] == true) {
-          isUsingStoredData = true;
-          print("📍 Using addresses from local storage");
-        } else {
-          print("📍 Addresses loaded from API: ${addresses.length} found");
-        }
-
-        // Auto-select the first address if available
         if (addresses.isNotEmpty) {
           selectedAddress = addresses.first;
-          print(
-            " Auto-selected address: ${selectedAddress['firstname']} ${selectedAddress['lastname']}",
-          );
-        } else {
-          print("ℹ️ No addresses found");
         }
       } else {
-        print("❌ Failed to load addresses: ${addressesResponse['message']}");
         addresses = [];
       }
     } catch (e) {
-      print(" Error loading addresses: $e");
       addresses = [];
     }
   }
-
-  Future<bool> createOrUpdateAddress(Map<String, dynamic> addressData) async {
+  Future<Map<String, dynamic>> createAddress(
+    Map<String, dynamic> addressData,
+  ) async {
     try {
       isLoading = true;
       errorMessage = '';
-      errorCode = '';
-
-      print("🔄 Creating address via API...");
-
-      // Use the API to create address
-      final result = await ApiService.createAddress(
-        firstname: addressData['firstname'],
-        lastname: addressData['lastname'],
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) {
+        return {'success': false, 'message': 'Authentication required'};
+      }
+      final response = await ApiService.createAddressUser(
+        firstName: addressData['firstname'],
+        lastName: addressData['lastname'],
         address1: addressData['address1'],
+        address2: addressData['address2'],
         city: addressData['city'],
-        postcode: addressData['postcode'],
+        postCode: addressData['postcode'],
         idState: addressData['idState'],
         phone: addressData['phone'],
-        address2: addressData['address2'],
+        token: token,
       );
-
+      final Map<String, dynamic> result = json.decode(response.body);
       if (result['success'] == true) {
-        // Refresh addresses list
         await _loadAddresses();
-
-        // Select the newly created address
-        if (result['id_address'] != null) {
-          selectedAddress = addresses.firstWhere(
-            (addr) => addr['id_address'] == result['id_address'],
-            orElse: () => addresses.isNotEmpty ? addresses.first : null,
-          );
-        }
-
-        print(" Address created successfully");
-        return true;
+        return result;
       } else {
         errorMessage = result['message'] ?? 'Failed to create address';
-        errorCode = 'API_ERROR';
-        return false;
+        return result;
       }
     } catch (e) {
       errorMessage = 'Failed to create address: $e';
-      errorCode = 'EXCEPTION';
-      return false;
+      return {'success': false, 'message': 'Exception: $e'};
     } finally {
       isLoading = false;
     }
   }
-
   void selectAddress(dynamic address) {
     selectedAddress = address;
   }
-
   bool get hasExistingAddresses => addresses.isNotEmpty;
 }
-
 class Checkout extends StatefulWidget {
   const Checkout({Key? key}) : super(key: key);
 
@@ -190,6 +130,7 @@ class _CheckoutState extends State<Checkout> {
   int _customerId = 0;
 
   bool _isDisposed = false;
+  bool _isUsingStoredData = false;
 
   // States data from API
   List<dynamic> _states = [];
@@ -200,9 +141,9 @@ class _CheckoutState extends State<Checkout> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _debugAllStoredData();
-      _manualTokenCheck();
-      _checkTokenStorageOnStartup();
+      // _debugAllStoredData();
+      // _manualTokenCheck();
+      // _checkTokenStorageOnStartup();
       _initializeController();
     });
   }
@@ -210,7 +151,7 @@ class _CheckoutState extends State<Checkout> {
   Future<void> _manualTokenCheck() async {
     try {
       print("\n" + "=" * 50);
-      print("🛠️ MANUAL TOKEN CHECK");
+      print(" MANUAL TOKEN CHECK");
       print("=" * 50);
 
       // Test SharedPreferences directly
@@ -221,7 +162,7 @@ class _CheckoutState extends State<Checkout> {
       final userFirstName = prefs.getString('user_firstName');
       final userLastName = prefs.getString('user_lastName');
 
-      print("🔧 Direct SharedPreferences Check:");
+      print(" Direct SharedPreferences Check:");
       print(
         "   - auth_token: ${directToken != null ? 'EXISTS (${directToken.length} chars)' : 'NULL'}",
       );
@@ -239,7 +180,6 @@ class _CheckoutState extends State<Checkout> {
           "   - Token ends with: ...${directToken.substring(directToken.length - 10)}",
         );
 
-        // Check token format
         print("   - Contains spaces: ${directToken.contains(' ')}");
         print(
           "   - Contains quotes: ${directToken.contains('"') || directToken.contains("'")}",
@@ -248,7 +188,7 @@ class _CheckoutState extends State<Checkout> {
 
       // Test if we can make an API call with the token
       if (directToken != null && directToken.isNotEmpty) {
-        print("\n🔐 TESTING API CALL WITH TOKEN:");
+        print("\n TESTING API CALL WITH TOKEN:");
         try {
           final response = await http
               .get(
@@ -282,7 +222,7 @@ class _CheckoutState extends State<Checkout> {
           print("   -  API CALL ERROR: $e");
         }
       } else {
-        print("\n❌ NO TOKEN AVAILABLE FOR API TEST");
+        print("\n NO TOKEN AVAILABLE FOR API TEST");
       }
 
       print("=" * 50 + "\n");
@@ -372,7 +312,7 @@ class _CheckoutState extends State<Checkout> {
       print("   - User ID: $userId");
 
       if (token == null) {
-        print("❌ STOPPING TEST: No token found");
+        print(" STOPPING TEST: No token found");
         return;
       }
 
@@ -398,16 +338,16 @@ class _CheckoutState extends State<Checkout> {
           final data = json.decode(response.body);
           print("   - Success: ${data['success']}");
           if (data['success'] == true) {
-            print("🎉 DIRECT CALL SUCCESS!");
+            print(" DIRECT CALL SUCCESS!");
           } else {
-            print("❌ Direct call failed: ${data['message']}");
+            print(" Direct call failed: ${data['message']}");
           }
         } else {
-          print("❌ HTTP Error: ${response.statusCode}");
+          print(" HTTP Error: ${response.statusCode}");
           print("   - Response: ${response.body}");
         }
       } catch (e) {
-        print("❌ Direct call error: $e");
+        print(" Direct call error: $e");
       }
 
       print("\n3. 🔧 APISERVICE METHOD TEST:");
@@ -441,7 +381,7 @@ class _CheckoutState extends State<Checkout> {
       print("  - Token length: ${token?.length ?? 0}");
 
       if (token == null) {
-        print("❌ USER IS NOT LOGGED IN - No token found");
+        print(" USER IS NOT LOGGED IN - No token found");
         print(
           "💡 Solution: User needs to login first before accessing checkout",
         );
@@ -521,9 +461,8 @@ class _CheckoutState extends State<Checkout> {
         print("  - Token ends with: ...${token.substring(token.length - 10)}");
       }
 
-      // 2. Test if token is valid by making API call
       if (token != null && token.isNotEmpty) {
-        print("\n🔐 TESTING API WITH TOKEN...");
+        print(" TESTING API WITH TOKEN...");
 
         try {
           final response = await http
@@ -539,7 +478,7 @@ class _CheckoutState extends State<Checkout> {
               )
               .timeout(Duration(seconds: 10));
 
-          print("📡 API RESPONSE:");
+          print(" API RESPONSE:");
           print("  - Status Code: ${response.statusCode}");
           print("  - Response Headers: ${response.headers}");
 
@@ -552,32 +491,32 @@ class _CheckoutState extends State<Checkout> {
               if (responseData['success'] == true &&
                   responseData['customer'] != null) {
                 final customer = responseData['customer'];
-                print("🎉 CUSTOMER DATA RECEIVED:");
+                print(" CUSTOMER DATA RECEIVED:");
                 print("  - ID: ${customer['id']}");
                 print(
                   "  - Name: ${customer['firstname']} ${customer['lastname']}",
                 );
                 print("  - Email: ${customer['email']}");
               } else {
-                print("❌ API returned success: false");
+                print(" API returned success: false");
                 print("  - Full response: $responseData");
               }
             } catch (e) {
-              print("❌ JSON Parse Error: $e");
+              print(" JSON Parse Error: $e");
               print("  - Raw response: ${response.body}");
             }
           } else if (response.statusCode == 401) {
-            print("❌ AUTHENTICATION FAILED - 401 Unauthorized");
+            print(" AUTHENTICATION FAILED - 401 Unauthorized");
             print("  - The token is invalid or expired");
           } else {
-            print("❌ SERVER ERROR: ${response.statusCode}");
+            print(" SERVER ERROR: ${response.statusCode}");
             print("  - Response: ${response.body}");
           }
         } catch (e) {
-          print("❌ NETWORK ERROR: $e");
+          print(" NETWORK ERROR: $e");
         }
       } else {
-        print("\n❌ NO TOKEN FOUND - User might not be logged in properly");
+        print("\n NO TOKEN FOUND - User might not be logged in properly");
       }
 
       // 3. Test the ApiService.getCustomerDetails method directly
@@ -589,13 +528,13 @@ class _CheckoutState extends State<Checkout> {
         print("  - Code: ${customerResult['code']}");
 
         if (customerResult['success'] == true) {
-          print("🎉 ApiService SUCCESS:");
+          print(" ApiService SUCCESS:");
           print("  - First Name: ${customerResult['firstName']}");
           print("  - Last Name: ${customerResult['lastName']}");
           print("  - Email: ${customerResult['email']}");
         }
       } catch (e) {
-        print("❌ ApiService Error: $e");
+        print(" ApiService Error: $e");
       }
 
       print("=" * 50 + "\n");
@@ -1035,62 +974,6 @@ class _CheckoutState extends State<Checkout> {
     );
   }
 
-  Widget _buildAddressSelection() {
-    final t = AppLocalizations.of(context)!;
-
-    if (_checkoutController.addresses.isEmpty) {
-      return Container();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          t.selectExistingAddress,
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-        ),
-        SizedBox(height: 10),
-        ..._checkoutController.addresses
-            .map(
-              (address) => Card(
-                child: ListTile(
-                  title: Text(_getAddressDisplayText(address)),
-                  subtitle: Text(
-                    '${address['firstname']} ${address['lastname']}',
-                  ),
-                  trailing: Radio<dynamic>(
-                    value: address,
-                    groupValue: _checkoutController.selectedAddress,
-                    onChanged: (dynamic value) {
-                      if (value != null) {
-                        setState(() {
-                          _checkoutController.selectAddress(value);
-                          _populateFormFromExistingData();
-                        });
-                      }
-                    },
-                  ),
-                  onTap: () {
-                    setState(() {
-                      _checkoutController.selectAddress(address);
-                      _populateFormFromExistingData();
-                    });
-                  },
-                ),
-              ),
-            )
-            .toList(),
-        SizedBox(height: 20),
-        Divider(),
-        SizedBox(height: 10),
-        Text(
-          t.orAddNewAddress,
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-        ),
-        SizedBox(height: 10),
-      ],
-    );
-  }
 
   String _getAddressDisplayText(Map<String, dynamic> address) {
     return '${address['address1'] ?? ''}, ${address['city'] ?? ''}, ${address['state'] ?? ''} ${address['postcode'] ?? ''}';
@@ -1099,7 +982,6 @@ class _CheckoutState extends State<Checkout> {
   Widget _buildErrorWidget() {
     final t = AppLocalizations.of(context)!;
 
-    // Check if it's an authentication error
     final isAuthError =
         _errorMessage.toLowerCase().contains('login') ||
         _errorMessage.toLowerCase().contains('authentication') ||
@@ -1237,91 +1119,159 @@ class _CheckoutState extends State<Checkout> {
     );
   }
 
-  Widget _buildContent() {
-    final t = AppLocalizations.of(context)!;
+  // Widget _buildContent() {
+  //   final t = AppLocalizations.of(context)!;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (_checkoutController.isUsingStoredData)
-            Container(
-              padding: EdgeInsets.all(12),
-              margin: EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(
-                color: Colors.orange[50],
-                border: Border.all(color: Colors.orange),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.warning, color: Colors.orange),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      "Using stored information. Some data may not be up to date.",
-                      style: TextStyle(color: Colors.orange[800]),
-                    ),
-                  ),
-                ],
+  //   return SingleChildScrollView(
+  //     padding: const EdgeInsets.all(16),
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         //if (_checkoutController.isUsingStoredData)
+  //         Container(
+  //           padding: EdgeInsets.all(12),
+  //           margin: EdgeInsets.only(bottom: 16),
+  //           decoration: BoxDecoration(
+  //             color: Colors.orange[50],
+  //             border: Border.all(color: Colors.orange),
+  //             borderRadius: BorderRadius.circular(8),
+  //           ),
+  //           child: Row(
+  //             children: [
+  //               Icon(Icons.warning, color: Colors.orange),
+  //               SizedBox(width: 8),
+  //               Expanded(
+  //                 child: Text(
+  //                   "Using stored information. Some data may not be up to date.",
+  //                   style: TextStyle(color: Colors.orange[800]),
+  //                 ),
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+  //         if (_checkoutController.hasExistingAddresses)
+  //           _buildAddressSelection(),
+  //         Text(t.addYourDetails, style: TextStyle(fontWeight: FontWeight.bold)),
+  //         const SizedBox(height: 20),
+  //         Text(t.deliveryAddress),
+  //         const SizedBox(height: 10),
+  //         _buildTextField(t.firstName, controller: firstNameController),
+  //         _buildTextField(t.lastName, controller: lastNameController),
+  //         _buildTextField(
+  //           t.phoneNumber,
+  //           controller: phoneController,
+  //           keyboardType: TextInputType.phone,
+  //         ),
+  //         const SizedBox(height: 20),
+  //         Text(t.setYourLocalization),
+  //         const SizedBox(height: 10),
+  //         _buildLocationPicker(),
+  //         const SizedBox(height: 20),
+  //         Text(t.orSetAllYourInformationBelow),
+  //         const SizedBox(height: 10),
+  //         _buildTextField(t.address, controller: addressController),
+  //         _buildTextField(
+  //           t.additionalAddress,
+  //           controller: additionalAddressController,
+  //           hint: t.optional,
+  //         ),
+  //         Row(
+  //           children: [
+  //             Expanded(
+  //               flex: 3,
+  //               child: _buildTextField(t.city, controller: cityController),
+  //             ),
+  //             SizedBox(width: 10),
+  //             Expanded(
+  //               flex: 2,
+  //               child: _buildTextField(
+  //                 t.zipCode,
+  //                 controller: zipCodeController,
+  //                 hint: t.zipCode,
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //         const SizedBox(height: 10),
+  //         _buildStateDropdown(),
+  //         const SizedBox(height: 20),
+  //         _buildBillingCheckbox(),
+  //         const SizedBox(height: 30),
+  //         _isLoading
+  //             ? Center(child: CircularProgressIndicator())
+  //             : _buildValidateButton(),
+  //       ],
+  //     ),
+  //   );
+  // }
+// In your Checkout class, update the _buildContent method:
+Widget _buildContent() {
+  final t = AppLocalizations.of(context)!;
+
+  return SingleChildScrollView(
+    padding: const EdgeInsets.all(16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Remove the address selection section entirely
+        // if (_checkoutController.hasExistingAddresses)
+        //   _buildAddressSelection(), // Remove this
+        
+        Text(t.addYourDetails, style: TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 20),
+        
+        // Keep only the form fields for new address
+        Text(t.deliveryAddress),
+        const SizedBox(height: 10),
+        _buildTextField(t.firstName, controller: firstNameController),
+        _buildTextField(t.lastName, controller: lastNameController),
+        _buildTextField(
+          t.phoneNumber,
+          controller: phoneController,
+          keyboardType: TextInputType.phone,
+        ),
+        const SizedBox(height: 20),
+        Text(t.setYourLocalization),
+        const SizedBox(height: 10),
+        _buildLocationPicker(),
+        const SizedBox(height: 20),
+        Text(t.orSetAllYourInformationBelow),
+        const SizedBox(height: 10),
+        _buildTextField(t.address, controller: addressController),
+        _buildTextField(
+          t.additionalAddress,
+          controller: additionalAddressController,
+          hint: t.optional,
+        ),
+        Row(
+          children: [
+            Expanded(
+              flex: 3,
+              child: _buildTextField(t.city, controller: cityController),
+            ),
+            SizedBox(width: 10),
+            Expanded(
+              flex: 2,
+              child: _buildTextField(
+                t.zipCode,
+                controller: zipCodeController,
+                hint: t.zipCode,
               ),
             ),
-          if (_checkoutController.hasExistingAddresses)
-            _buildAddressSelection(),
-          Text(t.addYourDetails, style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 20),
-          Text(t.deliveryAddress),
-          const SizedBox(height: 10),
-          _buildTextField(t.firstName, controller: firstNameController),
-          _buildTextField(t.lastName, controller: lastNameController),
-          _buildTextField(
-            t.phoneNumber,
-            controller: phoneController,
-            keyboardType: TextInputType.phone,
-          ),
-          const SizedBox(height: 20),
-          Text(t.setYourLocalization),
-          const SizedBox(height: 10),
-          _buildLocationPicker(),
-          const SizedBox(height: 20),
-          Text(t.orSetAllYourInformationBelow),
-          const SizedBox(height: 10),
-          _buildTextField(t.address, controller: addressController),
-          _buildTextField(
-            t.additionalAddress,
-            controller: additionalAddressController,
-            hint: t.optional,
-          ),
-          Row(
-            children: [
-              Expanded(
-                flex: 3,
-                child: _buildTextField(t.city, controller: cityController),
-              ),
-              SizedBox(width: 10),
-              Expanded(
-                flex: 2,
-                child: _buildTextField(
-                  t.zipCode,
-                  controller: zipCodeController,
-                  hint: t.zipCode,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          _buildStateDropdown(),
-          const SizedBox(height: 20),
-          _buildBillingCheckbox(),
-          const SizedBox(height: 30),
-          _isLoading
-              ? Center(child: CircularProgressIndicator())
-              : _buildValidateButton(),
-        ],
-      ),
-    );
-  }
+          ],
+        ),
+        const SizedBox(height: 10),
+        _buildStateDropdown(),
+        const SizedBox(height: 20),
+        _buildBillingCheckbox(),
+        const SizedBox(height: 30),
+        _isLoading
+            ? Center(child: CircularProgressIndicator())
+            : _buildValidateButton(),
+      ],
+    ),
+  );
+}
 
   Widget _buildTextField(
     String label, {
@@ -1540,7 +1490,7 @@ class _CheckoutState extends State<Checkout> {
       } else {
         // Show specific error message
         final errorMsg = apiResult['message'] ?? 'Failed to create address';
-        print("❌ ADDRESS CREATION FAILED: $errorMsg");
+        print(" ADDRESS CREATION FAILED: $errorMsg");
 
         if (mounted) {
           ScaffoldMessenger.of(
@@ -1575,8 +1525,6 @@ class _CheckoutState extends State<Checkout> {
       print("   - Is Local: $isLocal");
 
       if (!mounted) return;
-
-      // Navigate to address selection
       await Navigator.push(
         context,
         MaterialPageRoute(
@@ -1588,10 +1536,10 @@ class _CheckoutState extends State<Checkout> {
         ),
       );
 
-      print("✅ NAVIGATION COMPLETED");
+      print(" NAVIGATION COMPLETED");
     } catch (e) {
-      print("💥 VALIDATE AND CONTINUE ERROR: $e");
-      print("🔄 Stack trace: ${e.toString()}");
+      print(" VALIDATE AND CONTINUE ERROR: $e");
+      print(" Stack trace: ${e.toString()}");
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1652,19 +1600,9 @@ class _CheckoutState extends State<Checkout> {
       'alias': 'Home Address',
     };
 
-    // First try API
-    final apiResult = await _checkoutController.createOrUpdateAddress(
-      addressData,
-    );
-
-    if (apiResult) {
-      return true;
-    }
-
-    // If API fails, save locally
     if (_checkoutController.errorMessage.contains('Authentication') ||
         _checkoutController.errorMessage.contains('Token')) {
-      print('🔄 API authentication failed, saving address locally...');
+      print(' API authentication failed, saving address locally...');
       final localResult = await LocalAddressService.saveLocalAddress(
         addressData,
       );
@@ -1737,7 +1675,7 @@ class _CheckoutState extends State<Checkout> {
         final lastName = prefs.getString('user_lastName');
 
         if (firstName == null || lastName == null) {
-          print("🔄 Basic user data missing, storing default values...");
+          print(" Basic user data missing, storing default values...");
 
           // Store default values based on available data
           await UserDataService.storeUserData(
@@ -1755,3 +1693,57 @@ class _CheckoutState extends State<Checkout> {
     }
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

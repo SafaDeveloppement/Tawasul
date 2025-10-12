@@ -6,7 +6,7 @@ class Product {
   final String image;
   final double price;
   final String description;
-  final String categoryName;
+  final String? categoryName;
   final int idAttributeDefault;
   final int idProduct;
   final int stock;
@@ -30,7 +30,7 @@ class Product {
     required this.image,
     required this.price,
     required this.description,
-    required this.categoryName,
+    this.categoryName,
     required this.idAttributeDefault,
     required this.idProduct,
     this.stock = 0,
@@ -192,10 +192,9 @@ class Product {
     );
   }
 
-  static Product? fromDetailedJson(productData) {}
-
   getImagesForColor(ProductCombination? selectedColor) {}
 
+  static Product? fromDetailedJson(productData) {}
 
   //   /* ------------------------- COLOR & STOCK MANAGEMENT METHODS ------------------------- */
   //   List<Map<String, dynamic>> get parsedColorsWithNames {

@@ -402,5 +402,10 @@
   "addressRequired": "Address is required",
   "cityRequired": "City is required",
   "stateRequired": "State is required",
-  "zipCodeRequired": "Zip code is required"
+  "zipCodeRequired": "Zip code is required",
+  "selectAddress": "Select Address",
+  "selectDeliveryAddress": "Select Delivery Address",
+  "selectShippingAddress": "Select Shipping Address",
+  "saveAddress": "Save Address",
+  "failedToLoadAddresses": "Failed to load addresses"
 }

@@ -396,5 +396,10 @@
   "addressRequired": "العنوان مطلوب",
   "cityRequired": "المدينة مطلوبة",
   "stateRequired": "الولاية مطلوبة",
-  "zipCodeRequired": "الرمز البريدي مطلوب"
+  "zipCodeRequired": "الرمز البريدي مطلوب",
+  "selectAddress": "اختر العنوان",
+  "selectDeliveryAddress": "اختر عنوان التوصيل",
+  "selectShippingAddress": "اختر عنوان الشحن",
+  "saveAddress": "احفظ العنوان",
+  "failedToLoadAddresses": "فشل في تحميل العناوين"
 }

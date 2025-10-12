@@ -213,10 +213,10 @@ class _SignupState extends State<Signup> {
       );
 
       // Ensure we have exactly 8 digits
-      if (cleanPhone.length != 8) {
+      if (cleanPhone.length != 9) {
         setState(() {
           _isLoading = false;
-          _errorMessage = 'Phone number must be 8 digits';
+          _errorMessage = 'Phone number must be 9 digits';
         });
         return;
       }
@@ -233,7 +233,7 @@ class _SignupState extends State<Signup> {
       request.fields['firstname'] = _firstNameController.text.trim();
       request.fields['password'] = _passwordController.text;
       request.fields['mobile'] =
-          cleanPhone; // Use ONLY the 8-digit local number
+          cleanPhone; // Use ONLY the 9-digit local number
       request.fields['gender'] = genderValue;
 
       // Only add birthday if it's not null

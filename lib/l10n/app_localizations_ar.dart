@@ -4,7 +4,6 @@ import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
 
-/// The translations for Arabic (`ar`).
 class AppLocalizationsAr extends AppLocalizations {
   AppLocalizationsAr([String locale = 'ar']) : super(locale);
 
@@ -143,7 +142,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shariAlQayrawanBenghaziLibya => 'شارع القيروان، بنغازي، ليبيا';
 
   @override
-  String get almadarStreetSertLibya => 'شارع المدار، مقابل ساحة المدينة، سرت، ليبيا';
+  String get almadarStreetSertLibya =>
+      'شارع المدار، مقابل ساحة المدينة، سرت، ليبيا';
 
   @override
   String get qadisiyahSquareTripoliLibya => 'ميدان القادسية، طرابلس، ليبيا';
@@ -152,7 +152,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get binAshourStreetTripoliLibya => 'شارع بن عاشور، طرابلس، ليبيا';
 
   @override
-  String get awladBinAlHajStreetTripoliLibya => 'شارع أولاد بن الحاج، طرابلس، ليبيا';
+  String get awladBinAlHajStreetTripoliLibya =>
+      'شارع أولاد بن الحاج، طرابلس، ليبيا';
 
   @override
   String get alJarabaMallTripoliLibya => 'مول الجرابة، طرابلس، ليبيا';
@@ -167,7 +168,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get tripoliStreetTripoliLibya => 'شارع طرابلس، طرابلس، ليبيا';
 
   @override
-  String get investmentMarketMisurataLibya => 'سوق الاستثمار، شارع سناء، قرب المسجد العالي، مصراتة، ليبيا';
+  String get investmentMarketMisurataLibya =>
+      'سوق الاستثمار، شارع سناء، قرب المسجد العالي، مصراتة، ليبيا';
 
   @override
   String get alMurqubDistrictMisurataLibya => 'منطقة المرقب، مصراتة، ليبيا';
@@ -275,7 +277,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get addNewAddress => 'إضافة عنوان جديد';
 
   @override
-  String get myFavorites => 'مفضلاتي';
+  String get myFavorites => 'منتجاتي المفضلة';
 
   @override
   String get login => 'تسجيل الدخول';
@@ -293,7 +295,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get connexion => 'اتصال';
 
   @override
-  String get pleaseEnterYourInformation => 'يرجى إدخال معلوماتك لتسجيل الدخول إلى حسابك';
+  String get pleaseEnterYourInformation =>
+      'يرجى إدخال معلوماتك لتسجيل الدخول إلى حسابك';
 
   @override
   String get forgotPassword => 'هل نسيت كلمة المرور؟';
@@ -308,7 +311,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get resetPassword => 'إعادة تعيين كلمة المرور';
 
   @override
-  String get pleaseEnterYourPhoneNumber => 'يرجى إدخال رقم هاتفك المرتبط بحسابك';
+  String get pleaseEnterYourPhoneNumber =>
+      'يرجى إدخال رقم هاتفك المرتبط بحسابك';
 
   @override
   String get confirm => 'تأكيد';
@@ -317,7 +321,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get useEmailInstead => 'استخدم البريد الإلكتروني بدلًا من ذلك';
 
   @override
-  String get pleaseEnterYourEmail => 'يرجى إدخال بريدك الإلكتروني المرتبط بحسابك';
+  String get pleaseEnterYourEmail =>
+      'يرجى إدخال بريدك الإلكتروني المرتبط بحسابك';
 
   @override
   String get email => 'البريد الإلكتروني';
@@ -362,10 +367,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get pleaseEnterTheCodeNumber => 'يرجى إدخال رمز التحقق';
 
   @override
-  String get pleaseEnterUsernameAndPassword => 'يرجى إدخال اسم المستخدم وكلمة المرور';
+  String get pleaseEnterUsernameAndPassword =>
+      'يرجى إدخال اسم المستخدم وكلمة المرور';
 
   @override
-  String get pleaseEnterYourInformationsToConnectToYourAccount => 'يرجى إدخال معلوماتك لتسجيل الدخول إلى حسابك';
+  String get pleaseEnterYourInformationsToConnectToYourAccount =>
+      'يرجى إدخال معلوماتك لتسجيل الدخول إلى حسابك';
 
   @override
   String get codeNumber => 'رمز التحقق';
@@ -455,10 +462,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get failedToLoad => 'فشل في التحميل';
 
   @override
-  String get networkError => 'خطأ في الشبكة: يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.';
+  String get networkError =>
+      'خطأ في الشبكة: يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.';
 
   @override
-  String get requestTimeout => 'انتهت مهلة الطلب: يرجى التحقق من اتصال الإنترنت.';
+  String get requestTimeout =>
+      'انتهت مهلة الطلب: يرجى التحقق من اتصال الإنترنت.';
 
   @override
   String get anErrorOccurred => 'حدث خطأ';
@@ -761,7 +770,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get gadames => 'غدامس';
 
   @override
-  String get pleaseEnterAllMandatoryInformationToCreateAnAccount => 'يرجى إدخال جميع المعلومات الإلزامية لإنشاء حساب';
+  String get pleaseEnterAllMandatoryInformationToCreateAnAccount =>
+      'يرجى إدخال جميع المعلومات الإلزامية لإنشاء حساب';
 
   @override
   String get libya => 'Libya';
@@ -770,7 +780,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get pleaseEnterAValidEmail => 'الرجاء إدخال بريد إلكتروني صالح';
 
   @override
-  String get passwordMustBeAtLeast8Characters => 'يجب أن تتكون كلمة المرور من 8 أحرف على الأقل';
+  String get passwordMustBeAtLeast8Characters =>
+      'يجب أن تتكون كلمة المرور من 8 أحرف على الأقل';
 
   @override
   String get mustContainUppercaseLetter => 'يجب أن تحتوي على حرف كبير';
@@ -839,7 +850,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get productAddedToCart => 'تمت إضافة المنتج إلى السلة بنجاح!';
 
   @override
-  String get failedToLoadUserInfo => 'فشل تحميل معلومات المستخدم. يرجى المحاولة مرة أخرى.';
+  String get failedToLoadUserInfo =>
+      'فشل تحميل معلومات المستخدم. يرجى المحاولة مرة أخرى.';
 
   @override
   String get selectedLocation => 'الموقع المحدد';
@@ -854,7 +866,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get pleaseEnterValidPhoneNumber => 'يرجى إدخال رقم هاتف صالح';
 
   @override
-  String get pleaseSelectLocationOrEnterAddress => 'يرجى تحديد الموقع أو إدخال العنوان';
+  String get pleaseSelectLocationOrEnterAddress =>
+      'يرجى تحديد الموقع أو إدخال العنوان';
 
   @override
   String get pleaseFillAllRequiredFields => 'يرجى ملء جميع الحقول المطلوبة';
@@ -884,13 +897,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get addressAddedSuccessfully => 'تمت إضافة العنوان بنجاح';
 
   @override
-  String get failedToAddAddress => 'فشل إضافة العنوان. تحقق من وحدة التحكم للتفاصيل.';
+  String get failedToAddAddress =>
+      'فشل إضافة العنوان. تحقق من وحدة التحكم للتفاصيل.';
 
   @override
   String get addressUpdatedSuccessfully => 'تم تحديث العنوان بنجاح';
 
   @override
-  String get failedToUpdateAddress => 'فشل تحديث العنوان. تحقق من وحدة التحكم للتفاصيل.';
+  String get failedToUpdateAddress =>
+      'فشل تحديث العنوان. تحقق من وحدة التحكم للتفاصيل.';
 
   @override
   String get addressDeletedSuccessfully => 'تم حذف العنوان بنجاح';
@@ -899,7 +914,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get failedToDeleteAddress => 'فشل حذف العنوان';
 
   @override
-  String get pleaseSelectBothAddresses => 'يرجى تحديد كل من عناوين التوصيل والشحن';
+  String get pleaseSelectBothAddresses =>
+      'يرجى تحديد كل من عناوين التوصيل والشحن';
 
   @override
   String get deliveryMethod => 'طريقة التوصيل';
@@ -1019,7 +1035,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get wasPlacedSuccessfully => 'تم تقديمه بنجاح.';
 
   @override
-  String get checkOrdersForDetails => 'لمزيد من التفاصيل، تحقق من صفحة جميع طلباتي تحت علامة التبويب الملف الشخصي';
+  String get checkOrdersForDetails =>
+      'لمزيد من التفاصيل، تحقق من صفحة جميع طلباتي تحت علامة التبويب الملف الشخصي';
 
   @override
   String get download => 'تحميل';

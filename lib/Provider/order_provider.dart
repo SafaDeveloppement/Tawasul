@@ -83,7 +83,7 @@ import 'package:tawasul_application/model/time_slot_model.dart';
 
 class OrderProvider with ChangeNotifier {
   int? _cartId;
-  Carrier? _selectedCarrier;
+  //Carrier? _selectedCarrier;
   RelayGroup? _selectedRelayGroup;
   Shop? _selectedShop;
   DateTime? _selectedDate;
@@ -91,7 +91,7 @@ class OrderProvider with ChangeNotifier {
 
   // Getters
   int? get cartId => _cartId;
-  Carrier? get selectedCarrier => _selectedCarrier;
+  //Carrier? get selectedCarrier => _selectedCarrier;
   RelayGroup? get selectedRelayGroup => _selectedRelayGroup;
   Shop? get selectedShop => _selectedShop;
   DateTime? get selectedDate => _selectedDate;
@@ -103,8 +103,8 @@ class OrderProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void setDeliveryMethod(Carrier carrier) {
-    _selectedCarrier = carrier;
+  void setDeliveryMethod() {   //Carrier carrier
+   // _selectedCarrier = carrier;
     _selectedRelayGroup = null;
     _selectedShop = null;
     _selectedTimeSlot = null;
@@ -138,16 +138,16 @@ class OrderProvider with ChangeNotifier {
 
   // Check if store pickup is complete
   bool get isStorePickupComplete {
-    return _selectedCarrier != null &&
-        _selectedCarrier!.hasRelayGroups &&
-        _selectedRelayGroup != null &&
+    //  _selectedCarrier != null &&
+    //     _selectedCarrier!.hasRelayGroups &&
+      return  _selectedRelayGroup != null &&
         _selectedShop != null &&
         _selectedDate != null &&
         _selectedTimeSlot != null;
   }
 
   // Check if regular delivery is selected
-  bool get isRegularDeliverySelected {
-    return _selectedCarrier != null && !_selectedCarrier!.hasRelayGroups;
-  }
+  // bool get isRegularDeliverySelected {
+  //   return _selectedCarrier != null && !_selectedCarrier!.hasRelayGroups;
+  // }
 }
