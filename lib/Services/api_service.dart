@@ -8,8 +8,10 @@ import 'package:tawasul_application/model/address_model.dart';
 import 'package:tawasul_application/model/carrier_model.dart';
 import 'package:tawasul_application/model/cart_model.dart';
 import 'package:tawasul_application/model/product_model.dart';
+import 'package:tawasul_application/model/slot_model.dart';
 import 'package:tawasul_application/model/state_model..dart';
 import 'package:tawasul_application/model/category_model.dart';
+import 'package:tawasul_application/preferences/shared_preferences_services.dart';
 import 'package:tawasul_application/tools/language_manager.dart';
 
 class ApiService {
@@ -95,8 +97,11 @@ class ApiService {
     String password,
   ) async {
     try {
+    //    await SharedPreferencesService.saveAuthToken(token);
+    // await SharedPreferencesService.saveUserId(user.idCustomer);
+    // await SharedPreferencesService.saveUserEmail(user.email);
       print(" STARTING LOGIN PROCESS");
-      print("📧 Email: $email");
+      print(" Email: $email");
 
       var request = await http.MultipartRequest(
         'POST',
@@ -1647,124 +1652,187 @@ class ApiService {
       }
     } catch (e) {
       print(' Exception in getAddresses: $e');
-      return []; // Return empty list instead of throwing
+      return [];
     }
   }
 
-/*-------------------------- SHIPPING LIST ----------------------------------*/
-static Future<List<CarrierModel>> getShippingList(int cartId) async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('auth_token');
+  // /*-------------------------- SHIPPING LIST ----------------------------------*/
+  // static Future<List<CarrierModel>> getShippingList(int cartId) async {
+  //   try {
+  //     final prefs = await SharedPreferences.getInstance();
+  //     final token = prefs.getString('auth_token');
 
-    if (token == null) {
-      print(' No auth token found');
-      return [];
-    }
+  //     if (token == null) {
+  //       print(' No auth token found');
+  //       return [];
+  //     }
+  //     if (cartId == null) {
+  //       print(" Cart ID is missing, cannot fetch cart");
+  //       return [];
+  //     }
 
-    if (cartId == 0) {
-      print(' Invalid cart ID: $cartId');
-      return [];
-    }
+  //     final response = await http.get(
+  //       Uri.parse('$baseUrl/public/getshippinglist?id_cart=$cartId'),
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //         'Authorization': 'Bearer $token',
+  //         'Accept': 'application/json',
+  //       },
+  //     );
 
-    final response = await http.get(
-      Uri.parse('$baseUrl/public/getshippinglist?id_cart=$cartId'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-      },
-    );
+  //     print(' Shipping API Response Status: ${response.statusCode}');
+  //     print(' Shipping API Response Body: ${response.body}');
 
-    print(' Shipping API Response Status: ${response.statusCode}');
-    print(' Shipping API Response Body: ${response.body}');
+  //     if (response.statusCode == 200) {
+  //       final responseData = json.decode(response.body);
 
-    if (response.statusCode == 200) {
-      final responseData = json.decode(response.body);
+  //       if (responseData['success'] == true) {
+  //         final carriersData = responseData['carriers'];
 
-      if (responseData['success'] == true) {
-        final carriersData = responseData['carriers'];
+  //         if (carriersData == null || carriersData is! List) {
+  //           print(' No carriers found or invalid format');
+  //           return [];
+  //         }
 
-        if (carriersData == null || carriersData is! List) {
-          print(' No carriers found or invalid format');
-          return [];
+  //         final List<CarrierModel> carriers =
+  //             carriersData
+  //                 .map<CarrierModel>(
+  //                   (carrierJson) => CarrierModel.fromJson(carrierJson),
+  //                 )
+  //                 .toList();
+
+  //         print(' Loaded ${carriers.length} carriers for cart $cartId');
+  //         return carriers;
+  //       } else {
+  //         print(' API returned success: false - ${responseData['message']}');
+  //         return [];
+  //       }
+  //     } else {
+  //       print(' HTTP Error: ${response.statusCode}');
+  //       return [];
+  //     }
+  //   } catch (e) {
+  //     print(' Exception in getShippingList: $e');
+  //     return [];
+  //   }
+  // }
+
+  /*-------------------------- SHIPPING STORE ----------------------------------*/
+  Future<List<RelayPoint>> getRelayPoints(int cartId, int relayId) async {
+    try {
+      final url = Uri.parse(
+        'https://tawasul-dev.app-staging.fr/public/getshippingstore?id_cart=$cartId&id_relay=$relayId',
+      );
+
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+
+        if (body['success'] == true && body['data'] != null) {
+          final List<dynamic> dataList = body['data'];
+          return dataList.map((e) => RelayPoint.fromJson(e)).toList();
+        } else if (body['stores'] != null) {
+          final List<dynamic> dataList = body['stores'];
+          return dataList.map((e) => RelayPoint.fromJson(e)).toList();
+        } else if (body is List) {
+          // Direct array response
+          return body.map((e) => RelayPoint.fromJson(e)).toList();
         }
-
-        final List<CarrierModel> carriers = carriersData
-            .map<CarrierModel>((carrierJson) => CarrierModel.fromJson(carrierJson))
-            .toList();
-
-        print(' Loaded ${carriers.length} carriers for cart $cartId');
-        return carriers;
-      } else {
-        print(' API returned success: false - ${responseData['message']}');
-        return [];
       }
-    } else {
-      print(' HTTP Error: ${response.statusCode}');
+
+      return [];
+    } catch (e) {
+      //if (SHOW_DEBUG) print('Error in getRelayPoints: $e');
       return [];
     }
-  } catch (e) {
-    print(' Exception in getShippingList: $e');
-    return [];
   }
-}
-/*-------------------------- SHIPPING LIST ----------------------------------*/
-// static Future<List<CarrierModel>> getShippingList(int cartId) async {
-//   try {
-//     final prefs = await SharedPreferences.getInstance();
-//     final token = prefs.getString('auth_token');
 
-//     if (token == null) {
-//       print(' No auth token found');
-//       return [];
-//     }
+  /*-------------------------- SHIPPING HOURS ----------------------------------*/
+  Future<List<SlotModel>> getAvailableSlots(int cartId, int groupId) async {
+    try {
+      final url = Uri.parse(
+        'https://tawasul-dev.app-staging.fr/public/getshippinghours?id_cart=$cartId&id_group=$groupId',
+      );
 
-//     final response = await http.get(
-//       Uri.parse('$baseUrl/public/getshippinglist?id_cart=$cartId'),
-//       headers: {
-//         'Content-Type': 'application/json',
-//         'Authorization': 'Bearer $token',
-//         'Accept': 'application/json',
-//       },
-//     );
+      final response = await http.get(url);
 
-//     print(' Shipping API Response Status: ${response.statusCode}');
-//     print(' Shipping API Response Body: ${response.body}');
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
 
-//     if (response.statusCode == 200) {
-//       final responseData = json.decode(response.body);
+        // Handle different response structures
+        if (body['success'] == true && body['slots'] != null) {
+          final List<dynamic> slotsList = body['slots'];
+          return slotsList.map((e) => SlotModel.fromJson(e)).toList();
+        } else if (body['data'] != null && body['data']['slots'] != null) {
+          final List<dynamic> slotsList = body['data']['slots'];
+          return slotsList.map((e) => SlotModel.fromJson(e)).toList();
+        } else if (body is List) {
+          // Direct array response
+          return body.map((e) => SlotModel.fromJson(e)).toList();
+        }
+      }
 
-//       if (responseData['success'] == true) {
-//         final carriersData = responseData['carriers'];
+      return [];
+    } catch (e) {
+      // if (SHOW_DEBUG) print('Error in getAvailableSlots: $e');
+      return [];
+    }
+  }
+  // static Future<List<CarrierModel>> getShippingList(int cartId) async {
+  //   try {
+  //     final prefs = await SharedPreferences.getInstance();
+  //     final token = prefs.getString('auth_token');
 
-//         // Handle null or empty carriers
-//         if (carriersData == null || carriersData is! List) {
-//           print(' No carriers found or invalid format');
-//           return [];
-//         }
+  //     if (token == null) {
+  //       print(' No auth token found');
+  //       return [];
+  //     }
 
-//         // Convert to CarrierModel list
-//         final List<CarrierModel> carriers = carriersData
-//             .map<CarrierModel>((carrierJson) => CarrierModel.fromJson(carrierJson))
-//             .toList();
+  //     final response = await http.get(
+  //       Uri.parse('$baseUrl/public/getshippinglist?id_cart=$cartId'),
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //         'Authorization': 'Bearer $token',
+  //         'Accept': 'application/json',
+  //       },
+  //     );
 
-//         print(' Loaded ${carriers.length} carriers');
-//         return carriers;
-//       } else {
-//         print(' API returned success: false - ${responseData['message']}');
-//         return [];
-//       }
-//     } else {
-//       print(' HTTP Error: ${response.statusCode}');
-//       return [];
-//     }
-//   } catch (e) {
-//     print(' Exception in getShippingList: $e');
-//     return [];
-//   }
-// }
+  //     print(' Shipping API Response Status: ${response.statusCode}');
+  //     print(' Shipping API Response Body: ${response.body}');
 
+  //     if (response.statusCode == 200) {
+  //       final responseData = json.decode(response.body);
+
+  //       if (responseData['success'] == true) {
+  //         final carriersData = responseData['carriers'];
+
+  //         // Handle null or empty carriers
+  //         if (carriersData == null || carriersData is! List) {
+  //           print(' No carriers found or invalid format');
+  //           return [];
+  //         }
+
+  //         // Convert to CarrierModel list
+  //         final List<CarrierModel> carriers = carriersData
+  //             .map<CarrierModel>((carrierJson) => CarrierModel.fromJson(carrierJson))
+  //             .toList();
+
+  //         print(' Loaded ${carriers.length} carriers');
+  //         return carriers;
+  //       } else {
+  //         print(' API returned success: false - ${responseData['message']}');
+  //         return [];
+  //       }
+  //     } else {
+  //       print(' HTTP Error: ${response.statusCode}');
+  //       return [];
+  //     }
+  //   } catch (e) {
+  //     print(' Exception in getShippingList: $e');
+  //     return [];
+  //   }
+  // }
 
   /* ------------------------- GET CUSTOMER ADDRESSES ------------------------- */
   static Future<Map<String, dynamic>> getCustomerAddresses() async {

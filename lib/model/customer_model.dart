@@ -47,6 +47,6 @@ class User {
 
   String get fullName => '$firstName $lastName';
 
-  // Helper method to check if user data is valid
   bool get isValid => idCustomer > 0 && email.isNotEmpty;
+ 
 }
